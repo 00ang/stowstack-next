@@ -24,8 +24,8 @@ export interface CaseStudy {
 
 export const CASE_STUDIES: CaseStudy[] = [
   {
-    slug: 'two-paws-self-storage',
-    facilityName: 'Two Paws Self Storage',
+    slug: 'climate-controlled-independent',
+    facilityName: 'Climate-Controlled Independent',
     location: 'Paw Paw, MI',
     unitCount: 340,
     challenge: 'Occupancy stuck at 74% despite being the only climate-controlled facility in the area. Previous agency was reporting clicks, not move-ins.',
@@ -37,7 +37,7 @@ export const CASE_STUDIES: CaseStudy[] = [
       { label: 'Monthly move-ins', before: '8', after: '34', change: '+325%', isPositive: true },
       { label: 'Monthly ad spend', before: '$2,400', after: '$1,500', change: '-38%', isPositive: true },
     ],
-    quote: { text: "For the first time, I can see exactly which ads produce move-ins. Not clicks, not leads. Actual signed leases.", author: 'Blake', role: 'Owner, Two Paws Self Storage' },
+    quote: { text: "For the first time, I can see exactly which ads produce move-ins. Not clicks, not leads. Actual signed leases.", author: 'Blake', role: 'Owner, 340-unit independent facility' },
     timelineWeeks: 6,
     tags: ['climate-controlled', 'meta-ads', 'rural-market'],
   },

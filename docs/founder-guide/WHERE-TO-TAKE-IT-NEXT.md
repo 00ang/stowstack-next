@@ -30,7 +30,7 @@ This is the whole ballgame. The pieces exist; connect them.
 
 1. **Fire a real move-in conversion to Meta.** When the lead-to-tenant matcher finds that a captured lead actually moved in, send a *move-in* (Purchase) event to Meta's Conversions API — not the form-fill (Lead) event it sends today. The matcher, the sender, and the move-in webhook all already exist; this is connecting them and changing which event fires.
 2. **Trigger it from the move-in, not the form.** The storEDGE webhook fires on a completed move-in but currently only logs. Make that the trigger that runs the matcher and fires the conversion.
-3. **Prove it end-to-end on your own facility.** Use Two Paws Storage as customer zero. Run a small Meta campaign, capture a lead, move someone in, and watch the move-in event land in Meta's Events Manager. *Seeing that fire is the moment the company becomes real.*
+3. **Prove it end-to-end on your own facility.** Use your own facility as customer zero. Run a small Meta campaign, capture a lead, move someone in, and watch the move-in event land in Meta's Events Manager. *Seeing that fire is the moment the company becomes real.*
 
 **Why Meta first and not Google:** the Meta path is nearly wired already; the Google path needs a proper "offline conversion import" built from scratch (the current Google code uses the wrong, legacy mechanism). Get the win on Meta, then schedule the Google build as a follow-on — and remember Meta is your strategic channel anyway (cheap, ignored by competitors).
 
@@ -68,7 +68,7 @@ Once the loop works and partners are live, harden the money path.
 
 This is where it pays off.
 
-1. **Build the case study.** Take your best design partner (or Two Paws), and produce one undeniable story: "Spent $X, drove Y move-ins, at $Z cost-per-move-in — a number they could never see before." This single artifact is worth more than any feature.
+1. **Build the case study.** Take your best design partner (or your own facility), and produce one undeniable story: "Spent $X, drove Y move-ins, at $Z cost-per-move-in — a number they could never see before." This single artifact is worth more than any feature.
 2. **Ship the SpareFoot cost calculator** — a public tool showing operators what SpareFoot's per-move-in commissions cost them forever vs. owning their funnel. Cheap to build, attacks a hated incumbent, generates leads.
 3. **Build the Google side of the loop** (proper offline-conversion import) now that Meta is proven — this rounds out the "we close the loop on *both* platforms" claim.
 4. **Then decide the end-game.** With a working loop, paying partners, and a real case study in hand, you'll finally have the information to choose between A1 (build the company), A2 (build to sell), or A3 (keep it as your own edge) — see [YOUR-OPTIONS.md](./YOUR-OPTIONS.md). *Don't make this decision now; make it from this position of proof.*

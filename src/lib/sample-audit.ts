@@ -1,10 +1,9 @@
 /**
  * Static fixture for the public "See a sample diagnostic report" link.
  *
- * Synthesized for: Midway Self Storage & U-Haul, 24560 Cole Ave, Mattawan, MI.
- * Numbers are plausible for a rural SW-Michigan combo storage/U-Haul dealer
- * but are not derived from the real business. Visitor sees an amber banner
- * indicating this is a sample.
+ * Synthesized for a fictional rural SW-Michigan combo storage/U-Haul dealer.
+ * Numbers are plausible for that profile but are not derived from any real
+ * business. Visitor sees an amber banner indicating this is a sample.
  *
  * Lives in /lib (not the DB) so it never expires, never inflates view counts,
  * never triggers admin "first view" or "hot lead" emails, and renders even if
@@ -114,7 +113,7 @@ export interface SampleAuditData {
   views: number;
 }
 
-const FACILITY_NAME = "Midway Self Storage & U-Haul";
+const FACILITY_NAME = "Northline Self Storage & U-Haul";
 
 const CATEGORIES: SampleCategoryAudit[] = [
   {
@@ -477,7 +476,7 @@ function buildSampleAudit(): SampleAuditData {
       overallScore,
       overallGrade: "C",
       executiveSummary:
-        "Midway Self Storage & U-Haul has a strong physical asset and a defensible local moat, but the marketing and revenue-management muscle isn't built, and it's costing roughly $2,576/month in vacancy plus another $1,000+/month in unrealized rate and insurance revenue. Lead generation is effectively unfunded, follow-up systems don't exist, and the Google review gap to Kalamazoo competitors is widening every month. Every issue is fixable in 90 days with a structured plan; doing nothing means dropping from 79% to 73% occupancy by Q4 while two newly permitted competitors prepare to come online within 18 months.",
+        "Northline Self Storage & U-Haul has a strong physical asset and a defensible local moat, but the marketing and revenue-management muscle isn't built, and it's costing roughly $2,576/month in vacancy plus another $1,000+/month in unrealized rate and insurance revenue. Lead generation is effectively unfunded, follow-up systems don't exist, and the Google review gap to Kalamazoo competitors is widening every month. Every issue is fixable in 90 days with a structured plan; doing nothing means dropping from 79% to 73% occupancy by Q4 while two newly permitted competitors prepare to come online within 18 months.",
       categories: CATEGORIES,
       vacancyCost: {
         vacantUnits: 28,

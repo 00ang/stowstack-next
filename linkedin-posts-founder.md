@@ -28,9 +28,9 @@ Attribution isn't a buzzword. It's knowing which dollar made you money and which
 
 ---
 
-## Post 3: The Two Paws Experiment
+## Post 3: The Two-Week Experiment
 
-When I took over marketing at Two Paws Storage, I did something my agency thought was crazy.
+When I took over marketing on my own facility, I did something my agency thought was crazy.
 
 I turned off all the ads for two weeks.
 
@@ -62,7 +62,7 @@ At 92% occupancy, most operators stop marketing.
 
 I get it. Feels wasteful to spend money when you're nearly full.
 
-But here's what I learned at Two Paws: the best time to push marketing is when you're strong. That's when you raise rates. That's when you build a waitlist. That's when you have leverage.
+But here's what I learned running my own facility: the best time to push marketing is when you're strong. That's when you raise rates. That's when you build a waitlist. That's when you have leverage.
 
 Cutting marketing at 92% means you're scrambling at 84%.
 
@@ -134,7 +134,7 @@ Everything else is decoration.
 
 ## Post 10: I Still Run Ads on My Own Facility
 
-People ask why I still personally manage marketing at Two Paws.
+People ask why I still personally manage the marketing on my own facility.
 
 Because I need to feel the pain.
 
@@ -160,7 +160,7 @@ Alignment matters. Your marketing partner should win when you win. Not when your
 
 ## Post 12: What Happened When I Tracked Phone Calls
 
-I started recording and tracking every inbound call at Two Paws.
+I started recording and tracking every inbound call at my own facility.
 
 Within the first month I discovered:
 
@@ -202,7 +202,7 @@ Stop forcing your business into tools that weren't built for it.
 
 ## Post 15: The Rate Increase Hack Nobody Talks About
 
-Here's something I learned at Two Paws that changed everything:
+Here's something I learned running my own facility that changed everything:
 
 When your marketing is dialed in and you have consistent lead flow, rate increases become easy.
 

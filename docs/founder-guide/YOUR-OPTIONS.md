@@ -32,7 +32,7 @@ Get to a working platform with real attribution data and a few reference custome
 - **Best if:** You want a defined outcome and you'd rather not run a SaaS company for five years. **My read: this is the most natural fit given how the project is already framed.**
 
 ### Option A3 — Run it as your own operator advantage
-Use StorageAds to dominate marketing for your own facilities (Two Paws Storage) and maybe a few friends, and don't try to make it a company.
+Use StorageAds to dominate marketing for your own facilities and maybe a few friends, and don't try to make it a company.
 - **Upside:** Lowest risk, lowest stress. The thing already mostly works for this. You get the benefit without the burden of being a software vendor.
 - **Cost:** You leave the bigger opportunity on the table, and ~125k lines of acquisition-grade code mostly sit idle.
 - **Best if:** Your real love is the storage business and this was always meant to be your edge.

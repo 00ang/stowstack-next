@@ -50,15 +50,15 @@ describe("OCCUPANCY_MAP / UNIT_COUNT_MAP", () => {
 
 describe("generateSlug", () => {
   it("slugifies, lowercases, and appends a short random suffix", () => {
-    expect(generateSlug("Two Paws Self-Storage!")).toMatch(
-      /^two-paws-self-storage-[a-z0-9]+$/,
+    expect(generateSlug("Northline Self-Storage!")).toMatch(
+      /^northline-self-storage-[a-z0-9]+$/,
     );
   });
 
   it("strips leading/trailing separators", () => {
-    const slug = generateSlug("  --Midway--  ");
+    const slug = generateSlug("  --Northline--  ");
     expect(slug.startsWith("-")).toBe(false);
-    expect(slug).toMatch(/^midway-[a-z0-9]+$/);
+    expect(slug).toMatch(/^northline-[a-z0-9]+$/);
   });
 
   it("falls back to 'facility' for empty input", () => {

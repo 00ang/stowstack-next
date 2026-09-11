@@ -39,8 +39,8 @@ describe("isMissedCall", () => {
 
 describe("missed-call copy", () => {
   it("names the facility, invites a reply, and carries an opt-out", () => {
-    const m = missedCallText("Midway Storage");
-    expect(m).toContain("Midway Storage");
+    const m = missedCallText("Northline Storage");
+    expect(m).toContain("Northline Storage");
     expect(m).toMatch(/STOP/);
   });
   it("is one segment and plain ASCII", () => {
@@ -68,18 +68,18 @@ describe("abandoned-rescue window", () => {
 });
 
 describe("rescue copy", () => {
-  const base = { name: "Dana Reeves", unitSize: "10x10", facilityName: "Midway Storage" };
+  const base = { name: "Dana Reeves", unitSize: "10x10", facilityName: "Northline Storage" };
 
   it("uses the first name, the size and the facility", () => {
     const m = rescueText(base);
     expect(m).toContain("Dana");
     expect(m).not.toContain("Reeves");
     expect(m).toContain("10x10");
-    expect(m).toContain("Midway Storage");
+    expect(m).toContain("Northline Storage");
   });
 
   it("degrades without a name or size rather than printing null", () => {
-    const m = rescueText({ name: null, unitSize: null, facilityName: "Midway" });
+    const m = rescueText({ name: null, unitSize: null, facilityName: "Northline" });
     expect(m).toContain("a unit");
     expect(m).not.toMatch(/null|undefined/);
   });
@@ -119,7 +119,7 @@ describe("lead acknowledgement copy", () => {
   });
 
   it("degrades without a name or size rather than printing null", () => {
-    const m = COPY.en.leadAck({ name: null, unitSize: null, facilityName: "Midway" });
+    const m = COPY.en.leadAck({ name: null, unitSize: null, facilityName: "Northline" });
     expect(m).not.toMatch(/null|undefined/);
     expect(m).not.toMatch(/\s{2,}/);
   });
@@ -147,7 +147,7 @@ describe("operator alert copy", () => {
   });
 
   it("still reads as a sentence when the lead left no name or size", () => {
-    const m = COPY.en.operatorAlert({ name: null, phone: null, unitSize: null, facilityName: "Midway" });
+    const m = COPY.en.operatorAlert({ name: null, phone: null, unitSize: null, facilityName: "Northline" });
     expect(m).not.toMatch(/null|undefined/);
     expect(m).toContain("no name given");
     expect(segmentCount(m)).toBe(1);

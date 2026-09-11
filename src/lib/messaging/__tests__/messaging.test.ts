@@ -127,14 +127,14 @@ describe("checkSendable — the gate", () => {
 });
 
 describe("waitlist message", () => {
-  const base = { name: "Dana Reeves", sizeLabel: "10x10", facilityName: "Midway Storage", streetRate: 149 };
+  const base = { name: "Dana Reeves", sizeLabel: "10x10", facilityName: "Northline Storage", streetRate: 149 };
 
   it("names the person, the size, the place and the price", () => {
     const m = waitlistMessage(base);
     expect(m).toContain("Dana");
     expect(m).not.toContain("Reeves"); // first name only
     expect(m).toContain("10x10");
-    expect(m).toContain("Midway Storage");
+    expect(m).toContain("Northline Storage");
     expect(m).toContain("$149");
   });
 
@@ -153,7 +153,7 @@ describe("waitlist message", () => {
   });
 
   it("degrades gracefully with nothing known", () => {
-    const m = waitlistMessage({ name: null, sizeLabel: null, facilityName: "Midway", streetRate: null });
+    const m = waitlistMessage({ name: null, sizeLabel: null, facilityName: "Northline", streetRate: null });
     expect(m).toContain("a unit");
     expect(m).not.toContain("undefined");
     expect(m).not.toContain("null");

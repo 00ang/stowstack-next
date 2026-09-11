@@ -16,7 +16,7 @@ type CaseStudy = {
 
 const CASE_STUDIES: CaseStudy[] = [
   {
-    name: "Midway Self Storage: Cassopolis, MI",
+    name: "Single-Site Independent: Cassopolis, MI",
     context:
       "A 247-unit facility at 71% occupancy with no paid ads and a default storEDGE rental page. StorageAds launched a Meta campaign with 3 ad-specific landing pages targeting climate-controlled, vehicle storage, and first-month-free audiences.",
     stats: [

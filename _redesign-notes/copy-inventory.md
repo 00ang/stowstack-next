@@ -133,10 +133,10 @@
 - Table rows (`DASHBOARD_ROWS`, final-month values; earlier months scale by `rowScale` and CPM ratio):
   | Campaign | Channel | Spend | Clicks | Res. | Move-ins | Cost/MI | Trend |
   |---|---|---|---|---|---|---|---|
-  | Two Paws · 10x10 Climate | Meta | $847 | 312 | 14 | 9 | $94 | down |
-  | Midway · Drive-up | Google | $612 | 198 | 11 | 7 | $87 | down |
-  | Two Paws · Boat / RV | Meta | $423 | 156 | 6 | 4 | $106 | flat |
-  | Midway · Climate retarget | Meta | $298 | 89 | 5 | 4 | $74 | down |
+  | 10x10 Climate | Meta | $847 | 312 | 14 | 9 | $94 | down |
+  | Drive-up Units | Google | $612 | 198 | 11 | 7 | $87 | down |
+  | Boat / RV Storage | Meta | $423 | 156 | 6 | 4 | $106 | flat |
+  | Climate Retargeting | Meta | $298 | 89 | 5 | 4 | $74 | down |
   - Channel dot `aria-label="{Meta|Google} channel"`; trend arrow svg `aria-label="trending down"`; flat dash `aria-label="flat"`. Channel dot colors: Meta = dark, Google = blue, Retargeting = green.
 - 6-month demo data (`HERO_DEMO_MONTHS`; starting occupancy 64%):
   | Month | Spend | Leads | Move-ins | CPM (cost/move-in) | Occupancy | Top audience | Top creative |
@@ -428,7 +428,7 @@ None (cites link to `#source-N`).
 - Italic sub:
   > Two facilities. Real campaigns. Numbers pulled directly from storEDGE and the StorageAds reporting layer. No case-study polish.
 
-**Case study 1 — Midway Self Storage: Cassopolis, MI**
+**Case study 1 — Single-Site Independent: Cassopolis, MI**
 > A 247-unit facility at 71% occupancy with no paid ads and a default storEDGE rental page. StorageAds launched a Meta campaign with 3 ad-specific landing pages targeting climate-controlled, vehicle storage, and first-month-free audiences.
 
 | Value | Label |

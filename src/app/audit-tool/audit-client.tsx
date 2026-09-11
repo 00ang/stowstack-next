@@ -342,7 +342,7 @@ export default function AuditToolPage() {
                 value={facilityName}
                 onChange={(e) => setFacilityName(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-medium)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-dark)]/30 focus:border-transparent transition-all"
-                placeholder="e.g. Midway Self Storage"
+                placeholder="e.g. Northline Self Storage"
               />
             </div>
             <div>

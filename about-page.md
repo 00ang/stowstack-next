@@ -24,4 +24,4 @@ This isn't a marketing agency. It's a demand engine built by someone who signs t
 
 **Blake**
 Founder, StorageAds.com
-Operator, Two Paws Storage
+Operator, independent self-storage

@@ -503,10 +503,10 @@ function StatItem({ stat, active, delay }: { stat: (typeof STATS)[0]; active: bo
 // Demo data — designed to match the public stats on the rest of the site so
 // the numbers reconcile between hero, ROI, and funnel sections.
 const DASHBOARD_ROWS = [
-  { campaign: "Two Paws · 10x10 Climate", channel: "Meta", spend: 847, clicks: 312, reservations: 14, moveIns: 9, cpm: 94, trend: "down" as const },
-  { campaign: "Midway · Drive-up", channel: "Google", spend: 612, clicks: 198, reservations: 11, moveIns: 7, cpm: 87, trend: "down" as const },
-  { campaign: "Two Paws · Boat / RV", channel: "Meta", spend: 423, clicks: 156, reservations: 6, moveIns: 4, cpm: 106, trend: "flat" as const },
-  { campaign: "Midway · Climate retarget", channel: "Meta", spend: 298, clicks: 89, reservations: 5, moveIns: 4, cpm: 74, trend: "down" as const },
+  { campaign: "10x10 Climate", channel: "Meta", spend: 847, clicks: 312, reservations: 14, moveIns: 9, cpm: 94, trend: "down" as const },
+  { campaign: "Drive-up Units", channel: "Google", spend: 612, clicks: 198, reservations: 11, moveIns: 7, cpm: 87, trend: "down" as const },
+  { campaign: "Boat / RV Storage", channel: "Meta", spend: 423, clicks: 156, reservations: 6, moveIns: 4, cpm: 106, trend: "flat" as const },
+  { campaign: "Climate Retargeting", channel: "Meta", spend: 298, clicks: 89, reservations: 5, moveIns: 4, cpm: 74, trend: "down" as const },
 ];
 
 // 6-month campaign progression — mirrors /demo data so the hero dashboard

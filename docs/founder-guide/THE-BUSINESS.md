@@ -72,7 +72,7 @@ This leaves the **~40,000 independent and small-portfolio facilities** in the US
 | **Pricing-intelligence tools** | Adverank (SSA-backed) | They optimize rates, they don't *generate demand*. Flagged as the most dangerous *emerging* competitor. |
 
 **Your stated moats** (the things that are hard to copy):
-1. **Operator credibility.** Built by a real storage operator (you, Two Paws Storage), not a marketing agency. This can't be faked, and it's the core of the brand. "Operator-built, not marketer-built."
+1. **Operator credibility.** Built by a real storage operator (you), not a marketing agency. This can't be faked, and it's the core of the brand. "Operator-built, not marketer-built."
 2. **The full attribution chain.** Landing pages + the embed in the facility's PMS + UTM tracking + call tracking, all connected. Technically hard to replicate — it's a lot of plumbing.
 3. **Compounding data.** The longer it runs, the more move-in data it has, the better it gets — a flywheel a new entrant can't instantly match.
 
@@ -84,7 +84,7 @@ This leaves the **~40,000 independent and small-portfolio facilities** in the US
 
 ## Who's building it
 
-- **Blake** (you) — founder. A real self-storage operator (Two Paws Storage). You own product and sales, and you *are* the credibility moat.
+- **Blake** (you) — founder. A real self-storage operator. You own product and sales, and you *are* the credibility moat.
 - **Angelo** — co-founder, engineer. Built the ad-platform integrations and the AI image/video generation studio.
 
 Two people. ~125,000 lines of code. ~6 weeks. That story itself is part of the pitch — especially the funding posture below.
