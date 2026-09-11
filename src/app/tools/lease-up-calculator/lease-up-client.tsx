@@ -375,7 +375,7 @@ export default function LeaseUpClient() {
           <div className="mt-12">
             <ToolCta
               heading="Stabilize faster"
-              body="Lease-up is a race between move-ins and move-outs. StorageAds runs the ads that raise the move-in pace and proves which campaigns filled the gap. Built by an operator, tested on our own facilities first."
+              body="Lease-up is a race between move-ins and move-outs. StorageAds runs the ads that raise the move-in pace and proves which campaigns filled the gap. Built for storage operators, not adapted from another industry."
             />
           </div>
         </div>

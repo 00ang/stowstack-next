@@ -16,7 +16,7 @@ type CaseStudy = {
 
 const CASE_STUDIES: CaseStudy[] = [
   {
-    name: "Single-Site Independent: Cassopolis, MI",
+    name: "Single-Site Independent: Rural Trade Area",
     context:
       "A 247-unit facility at 71% occupancy with no paid ads and a default storEDGE rental page. StorageAds launched a Meta campaign with 3 ad-specific landing pages targeting climate-controlled, vehicle storage, and first-month-free audiences.",
     stats: [
@@ -31,7 +31,7 @@ const CASE_STUDIES: CaseStudy[] = [
     },
   },
   {
-    name: "Lakeshore Storage: South Haven, MI",
+    name: "Seasonal Lakefront Market",
     context:
       "A seasonal market with 60% winter occupancy. StorageAds ran targeted campaigns for boat/RV storage and temperature-sensitive items during the fall shoulder season.",
     stats: [
@@ -71,7 +71,7 @@ export default function Results() {
             className="font-semibold"
             style={{ fontSize: "var(--text-section-head)" }}
           >
-            <RevealText>We tested it on our own facilities first. Here&apos;s what happened.</RevealText>
+            <RevealText>Here&apos;s what the system does once it&apos;s running.</RevealText>
           </h2>
           <p
             className="mt-5 mx-auto"

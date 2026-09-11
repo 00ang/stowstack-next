@@ -65,8 +65,8 @@ const ROWS: Row[] = [
     values: ["yes", "yes", "yes", "no"],
   },
   {
-    capability: "Built by a working storage operator",
-    detail: "Tested on our own facilities before anyone else's",
+    capability: "Built for storage operators, nothing else",
+    detail: "Not a general marketing tool with a storage page bolted on",
     values: ["yes", "no", "no", "no"],
   },
   {

@@ -72,7 +72,7 @@ const SECTIONS: ApiSection[] = [
   "data": [{
     "id": "fac_abc123",
     "name": "Lakeview Self Storage",
-    "location": "Grand Rapids, MI",
+    "location": "Columbus, OH",
     "occupancy_range": "75-85",
     "total_units": "100-300",
     "status": "active"

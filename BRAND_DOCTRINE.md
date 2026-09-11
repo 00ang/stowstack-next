@@ -253,10 +253,10 @@ StorageAds is a SaaS product, not a website with side projects bolted on.
 
 ### Measurement Doctrine (Internal Reporting)
 
-> Measurement is how we prove the funnel works and decide what to optimize. It is the proof, not the pitch. The product is the full acquisition system (see positioning.md); the moat is the operator-built version of that system, not the tracking itself. None of the language below is how we *sell* — it is how we *report* and *optimize*.
+> Measurement is how we prove the funnel works and decide what to optimize. It is the proof, not the pitch. The product is the full acquisition system (see positioning.md); the moat is the storage-only version of that system, not the tracking itself. None of the language below is how we *sell* — it is how we *report* and *optimize*.
 
 - **Move-ins are the result that matters to the client.** Everything else — impressions, clicks, CTR, CPM, CPC — is internal optimization data. The client report leads with move-ins and what each one cost, framed as outcomes ("which ads brought paying tenants"), not as a measurement product.
-- **End-to-end tracking is the measurement layer, not the moat.** Ad click → page view → form fill → reservation start → reservation complete. If any step in this chain breaks, fix it before doing anything else — a broken chain means we can't prove the funnel or optimize it. But we win on the full system and the operator-built angle, never on owning a tracking term.
+- **End-to-end tracking is the measurement layer, not the moat.** Ad click → page view → form fill → reservation start → reservation complete. If any step in this chain breaks, fix it before doing anything else — a broken chain means we can't prove the funnel or optimize it. But we win on the full system and on being storage-only, never on owning a tracking term.
 - **Never report vanity metrics as success.** 10,000 impressions means nothing. 500 clicks means nothing. 12 move-ins at $43 each means everything.
 
 ### Conversion Rate Optimization (Perpetual)
@@ -279,7 +279,7 @@ When building new features for StorageAds, every design decision must be filtere
 
 3. **Does this scale across all facilities with zero marginal effort?** If adding a new client requires manual work beyond entering their config data, the feature isn't platform-ready.
 
-4. **Does this make the product more defensible?** Features that deepen the full acquisition system, increase switching costs, or create compounding data advantages are prioritized over features that look impressive but don't compound. The moat is the operator-built system end to end, not the measurement layer alone.
+4. **Does this make the product more defensible?** Features that deepen the full acquisition system, increase switching costs, or create compounding data advantages are prioritized over features that look impressive but don't compound. The moat is the storage-only system end to end, not the measurement layer alone.
 
 5. **Does the output meet the aesthetic standard?** If this feature generates creative — does it pass the Porsche test? If it generates UI — does it meet the Anthropic/Dieter Rams standard? If it generates video — does it follow the Kubrick/A24 motion doctrine?
 

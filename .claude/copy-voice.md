@@ -32,11 +32,11 @@ The product is the full customer-acquisition system, and that is what copy weigh
 
 ### Don't claim we're "the only ones who do X"
 
-Never frame differentiation as owning a measurement term — no "the only ones who do attribution right," "nobody else tracks move-ins," "the only platform that closes the loop." We win on the full system and the operator-built angle, not on a tracking word. The competitor we displace is the operator's inaction, not another vendor's reporting.
+Never frame differentiation as owning a measurement term — no "the only ones who do attribution right," "nobody else tracks move-ins," "the only platform that closes the loop." We win on the full system and on being storage-only, not on a tracking word. The competitor we displace is the operator's inaction, not another vendor's reporting.
 
 ### The frame we lead with
 
-We are operators who built software, not marketers selling to operators. We had the same problem they have. We built the thing we needed. We turned it into software so they can plug it in.
+Storage is the only thing we build for, and the system is the whole acquisition machine, not ads bolted onto a website. The REITs already run this. Independents haven't had the option. We turned it into software so they can plug it in.
 
 That frame replaces the agency frame, the attribution frame, and the SaaS frame. Use it.
 
@@ -67,7 +67,7 @@ Never anywhere customer-facing: demand engine, full-funnel attribution, server-s
 
 WRONG: "StorageAds is a full-funnel demand engine that delivers measurable cost-per-move-in attribution for self-storage operators."
 
-RIGHT: "StorageAds is the marketing system we built for our own facilities. We turned it into software so you can plug it in."
+RIGHT: "StorageAds is the marketing system the REITs run, built for independent operators. Plug it in and it fills units."
 
 WRONG: "Our server-side conversion forwarding architecture closes the attribution loop from click to PMS-confirmed move-in."
 

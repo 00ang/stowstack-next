@@ -16,7 +16,7 @@ import { ResponsiveChart } from "@/components/ui/responsive-chart";
 
 const FACILITY = {
   name: "Lakeview Self Storage",
-  location: "Grand Rapids, MI",
+  location: "Midwest Metro",
   totalUnits: 214,
   startingOccupancy: 64,
   unitMix: [

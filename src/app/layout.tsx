@@ -83,18 +83,12 @@ const jsonLd = {
       name: "StorageAds",
       url: "https://storageads.com",
       description: siteDescription,
-      email: "blake@storageads.com",
       telephone: "+12699298541",
       logo: {
         "@type": "ImageObject",
         url: "https://storageads.com/og-image.png",
       },
       areaServed: { "@type": "Country", name: "US" },
-      founder: {
-        "@type": "Person",
-        name: "Blake Burkett",
-        jobTitle: "Founder",
-      },
     },
     {
       "@type": "SoftwareApplication",

@@ -2522,7 +2522,7 @@ export default function Hero() {
                 textWrap: "pretty",
               }}
             >
-              Public Storage and Extra Space run this exact machine to hit 92.6% occupancy<Cite n={1} />. We built the same system for our own facilities. Now it maps your competitors, runs Meta and Google, builds a page for every ad, chases every reservation to a signed lease, and finds where you&apos;re leaking revenue. Run it yourself or hand the whole thing to us.
+              Public Storage and Extra Space run this exact machine to hit 92.6% occupancy<Cite n={1} />. StorageAds is that same system, built for independent operators. It maps your competitors, runs Meta and Google, builds a page for every ad, chases every reservation to a signed lease, and finds where you&apos;re leaking revenue. Run it yourself or hand the whole thing to us.
             </p>
 
             {/* CTAs */}
@@ -2562,7 +2562,7 @@ export default function Hero() {
               </p>
               <div className="flex items-center gap-x-3 gap-y-1.5 sm:gap-4 justify-center lg:justify-start flex-wrap">
                 {([
-                  { icon: Star, text: "Built and tested on our own facilities" },
+                  { icon: Star, text: "Built for storage, not adapted to it" },
                   { icon: Layers, text: "storEDGE rental built in" },
                   { icon: TrendingUp, text: "Ads live in your first week" },
                 ] as Array<{ icon: typeof Star; text: string; cites?: number[] }>).map((badge, i) => {

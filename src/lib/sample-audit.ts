@@ -1,7 +1,7 @@
 /**
  * Static fixture for the public "See a sample diagnostic report" link.
  *
- * Synthesized for a fictional rural SW-Michigan combo storage/U-Haul dealer.
+ * Synthesized for a fictional rural combo storage/U-Haul dealer.
  * Numbers are plausible for that profile but are not derived from any real
  * business. Visitor sees an amber banner indicating this is a sample.
  *
@@ -121,13 +121,13 @@ const CATEGORIES: SampleCategoryAudit[] = [
     slug: "occupancy",
     score: 78,
     summary:
-      "Physical occupancy of 79% trails the 87% Midwest market average. 5x10s and 10x10s are essentially full, but a surplus of 10x20 inventory at 62% occupancy is driving most of the vacancy gap.",
+      "Physical occupancy of 79% trails the 87% market average. 5x10s and 10x10s are essentially full, but a surplus of 10x20 inventory at 62% occupancy is driving most of the vacancy gap.",
     greenFlags: [
       "Climate-controlled units running at 91% occupancy, strong demand for the premium product",
-      "Move-in pace of 6 per month exceeds the typical rural-Michigan facility benchmark of 4–5",
+      "Move-in pace of 6 per month exceeds the typical rural facility benchmark of 4–5",
     ],
     yellowFlag:
-      "Large-unit segment (10x20, 10x25) has 14 units vacant, either overbuilt for the rural Mattawan market or under-marketed to the right customer (contractors, U-Haul one-way movers, boat/RV owners).",
+      "Large-unit segment (10x20, 10x25) has 14 units vacant, either overbuilt for the rural local market or under-marketed to the right customer (contractors, U-Haul one-way movers, boat/RV owners).",
     redFlags: [
       "28 vacant units bleeding $2,576 every month while paid acquisition spend is $0",
       "No waitlist for 5x10 or 10x10 despite both sizes being at 96%+ occupancy. Captured demand is walking out the door",
@@ -175,13 +175,13 @@ const CATEGORIES: SampleCategoryAudit[] = [
       "Website contact form sends to a generic Gmail inbox with no auto-response, no SMS notification, and no follow-up sequence",
     ],
     doNothingConsequence:
-      "With Extra Space, CubeSmart, and U-Stor all running paid in the Kalamazoo corridor, your share of voice keeps dropping. Every quarter without paid acquisition is roughly 20–30 missed move-ins you'll never recover.",
+      "With Extra Space, CubeSmart, and U-Stor all running paid in the nearby metro corridor, your share of voice keeps dropping. Every quarter without paid acquisition is roughly 20–30 missed move-ins you'll never recover.",
     inactionCost: 28800,
     actions: [
       {
-        title: "Launch Google Ads + LSA in the Mattawan/Paw Paw/Kalamazoo corridor",
+        title: "Launch Google Ads + LSA in the local corridor",
         detail:
-          "Start at $1,200/month targeting 'storage near me' plus competitor brand terms. Based on Kalamazoo market data, expect 18–24 qualified leads per month at a $50–65 CPL within the first 60 days.",
+          "Start at $1,200/month targeting 'storage near me' plus competitor brand terms. Based on metro market data, expect 18–24 qualified leads per month at a $50–65 CPL within the first 60 days.",
         priority: "high",
       },
       {
@@ -246,7 +246,7 @@ const CATEGORIES: SampleCategoryAudit[] = [
     summary:
       "No active marketing beyond yellow-pages-era roadside signage and the U-Haul dealer placement. Every prospect arrives by accident: no campaigns, no seasonal promotions, no community presence, no referral program, no social.",
     greenFlags: [
-      "U-Haul co-branded signage drives steady free brand impressions to Cole Ave traffic",
+      "U-Haul co-branded signage drives steady free brand impressions to passing road traffic",
       "Roadside sign with phone number is visible from the road. A baseline lead source is in place",
     ],
     yellowFlag:
@@ -254,10 +254,10 @@ const CATEGORIES: SampleCategoryAudit[] = [
     redFlags: [
       "Zero brand presence on Facebook, Instagram, TikTok, or YouTube. Competitors are running $400–800/month in video ads",
       "No tenant referral program. Your highest-converting channel (word of mouth) is uninstrumented and unrewarded",
-      "No partnerships with local realtors, movers, or apartment complexes. Those channels feed Kalamazoo competitors for ~$50 per referral",
+      "No partnerships with local realtors, movers, or apartment complexes. Those channels feed metro competitors for ~$50 per referral",
     ],
     doNothingConsequence:
-      "Without seasonal marketing live by April, the May–September moving peak gets missed again. That's 18–25 move-ins walking directly to Kalamazoo competitors, or roughly $20–25K in first-year revenue gone.",
+      "Without seasonal marketing live by April, the May–September moving peak gets missed again. That's 18–25 move-ins walking directly to metro competitors, or roughly $20–25K in first-year revenue gone.",
     inactionCost: 24000,
     actions: [
       {
@@ -275,7 +275,7 @@ const CATEGORIES: SampleCategoryAudit[] = [
       {
         title: "Partner with 3 local realtors + 2 apartment complexes",
         detail:
-          "Offer a co-branded $25 storage credit to anyone moving in or out of their property. Mattawan and Paw Paw realtors handle 200+ moves per year combined. A 10% capture rate is 20 move-ins.",
+          "Offer a co-branded $25 storage credit to anyone moving in or out of their property. Realtors in your town and the next one over handle 200+ moves per year combined. A 10% capture rate is 20 move-ins.",
         priority: "medium",
       },
       {
@@ -299,12 +299,12 @@ const CATEGORIES: SampleCategoryAudit[] = [
     yellowFlag:
       "GBP has had no posts, no new photos, and no Q&A engagement for 8+ months. Google ranks active profiles materially higher in the local pack.",
     redFlags: [
-      "14 reviews vs. CubeSmart Kalamazoo's 287 and Extra Space's 412. Review volume is the single biggest local-SEO signal and you're losing it badly",
+      "14 reviews vs. the nearby CubeSmart's 287 and Extra Space's 412. Review volume is the single biggest local-SEO signal and you're losing it badly",
       "Website has no live unit availability, no displayed rates, and no online reservation. Prospects compare you to one-click competitors and bounce",
       "No LocalBusiness schema.org markup on the site. Search engines can't parse hours, address, or rates into rich results",
     ],
     doNothingConsequence:
-      "Every month without active review solicitation, the gap to Kalamazoo competitors widens. By Q4 the facility will be effectively invisible in 'storage near me' map-pack results within a 12-mile radius, roughly 70% of your addressable market.",
+      "Every month without active review solicitation, the gap to metro competitors widens. By Q4 the facility will be effectively invisible in 'storage near me' map-pack results within a 12-mile radius, roughly 70% of your addressable market.",
     inactionCost: 18000,
     actions: [
       {
@@ -414,7 +414,7 @@ const CATEGORIES: SampleCategoryAudit[] = [
     slug: "competition",
     score: 82,
     summary:
-      "Mattawan/Paw Paw market has only 2 direct competitors within 8 miles and neither is a REIT. Kalamazoo (12 miles east) has Extra Space and CubeSmart marketing aggressively into your radius, but local geography still favors you for Mattawan/Lawton/Decatur customers.",
+      "Your market has only 2 direct competitors within 8 miles and neither is a REIT. The metro 12 miles east has Extra Space and CubeSmart marketing aggressively into your radius, but local geography still favors you for in-town and surrounding-village customers.",
     greenFlags: [
       "No REIT competitor within 8 miles. Local pricing power is intact",
       "U-Haul dealer status is a defensible moat. Only one U-Haul dealer per zip and you have it",
@@ -422,18 +422,18 @@ const CATEGORIES: SampleCategoryAudit[] = [
     yellowFlag:
       "Two new self-storage development permits were filed in Van Buren County in the last 12 months. Local supply could grow 15–20% over the next 18–24 months.",
     redFlags: [
-      "Extra Space Kalamazoo bids on 'storage Mattawan' and 'storage Paw Paw' in Google Ads. They are intercepting prospects in your own backyard",
-      "CubeSmart's Kalamazoo location has 287 Google reviews and a 4.6 rating. They win the trust comparison every time a Mattawan prospect comparison-shops",
-      "Your street rate is 6–9% below the Kalamazoo market. That trains prospects to expect rural pricing, then you lose them anyway when life pulls them toward Kalamazoo",
+      "The nearby Extra Space bids on your town's name plus 'storage' in Google Ads. They are intercepting prospects in your own backyard",
+      "the nearby CubeSmart has 287 Google reviews and a 4.6 rating. They win the trust comparison every time a local prospect comparison-shops",
+      "Your street rate is 6–9% below the nearby metro market. That trains prospects to expect rural pricing, then you lose them anyway when life pulls them toward the metro",
     ],
     doNothingConsequence:
-      "When the two permitted facilities come online in 12–18 months, your Mattawan/Paw Paw market share will erode unless paid acquisition, review volume, and brand presence are built now. Defending share is 3–5x cheaper than recapturing it after a new entrant lands.",
+      "When the two permitted facilities come online in 12–18 months, your local market share will erode unless paid acquisition, review volume, and brand presence are built now. Defending share is 3–5x cheaper than recapturing it after a new entrant lands.",
     inactionCost: 16000,
     actions: [
       {
         title: "Bid defensively on competitor brand terms",
         detail:
-          "Run Google Ads on 'Extra Space Kalamazoo' and 'CubeSmart Kalamazoo'. Anyone within 12 miles searching those terms is your customer if you can land rural-Michigan pricing in front of them.",
+          "Run Google Ads on the nearby REIT brand names. Anyone within 12 miles searching those terms is your customer if you can land rural pricing in front of them.",
         priority: "high",
       },
       {
@@ -465,7 +465,7 @@ function buildSampleAudit(): SampleAuditData {
       generatedAt: createdAt,
       facility: {
         name: FACILITY_NAME,
-        address: "24560 Cole Ave, Mattawan, MI 49071",
+        address: "1400 Commerce Drive",
         contactName: "Sample Owner",
         contactEmail: "owner@example.com",
         websiteUrl: "https://example.com",
@@ -476,7 +476,7 @@ function buildSampleAudit(): SampleAuditData {
       overallScore,
       overallGrade: "C",
       executiveSummary:
-        "Northline Self Storage & U-Haul has a strong physical asset and a defensible local moat, but the marketing and revenue-management muscle isn't built, and it's costing roughly $2,576/month in vacancy plus another $1,000+/month in unrealized rate and insurance revenue. Lead generation is effectively unfunded, follow-up systems don't exist, and the Google review gap to Kalamazoo competitors is widening every month. Every issue is fixable in 90 days with a structured plan; doing nothing means dropping from 79% to 73% occupancy by Q4 while two newly permitted competitors prepare to come online within 18 months.",
+        "Northline Self Storage & U-Haul has a strong physical asset and a defensible local moat, but the marketing and revenue-management muscle isn't built, and it's costing roughly $2,576/month in vacancy plus another $1,000+/month in unrealized rate and insurance revenue. Lead generation is effectively unfunded, follow-up systems don't exist, and the Google review gap to metro competitors is widening every month. Every issue is fixable in 90 days with a structured plan; doing nothing means dropping from 79% to 73% occupancy by Q4 while two newly permitted competitors prepare to come online within 18 months.",
       categories: CATEGORIES,
       vacancyCost: {
         vacantUnits: 28,
@@ -555,7 +555,7 @@ function buildSampleAudit(): SampleAuditData {
             difficulty: "easy",
           },
           {
-            source: "Paid search + LSA in Mattawan/Paw Paw/Kalamazoo corridor",
+            source: "Paid search + LSA in local corridor",
             estimatedMonthlyGain: 1100,
             timeToImplement: "60 days",
             difficulty: "moderate",
@@ -585,7 +585,7 @@ function buildSampleAudit(): SampleAuditData {
         projectedOccupancy6Months: "73%",
         projectedOccupancy12Months: "67%",
         competitorGapWidening:
-          "Extra Space and CubeSmart Kalamazoo each run aggressive Google Ads and carry 200+ reviews at 4.6+ stars. Every prospect searching 'storage near Mattawan' is intercepted before they ever see your listing, and the review gap compounds every month it isn't closed.",
+          "the nearby Extra Space and CubeSmart each run aggressive Google Ads and carry 200+ reviews at 4.6+ stars. Every prospect searching 'storage near me' is intercepted before they ever see your listing, and the review gap compounds every month it isn't closed.",
         urgencyStatement:
           "At the current move-out pace (~4–5/month) and $0 paid acquisition, you'll bleed roughly $31K in vacancy this year plus another $18K in undermarket rates and forgone insurance. Every month without a fix is roughly $4K gone, permanently.",
       },
@@ -596,7 +596,7 @@ function buildSampleAudit(): SampleAuditData {
           revenueRecaptured: 2400,
           keyWins: [
             "Reactivate 24+ dormant leads from the past 12 months and convert 4–6 to move-ins from inquiries already in the CRM",
-            "Google Ads + LSA live across the Mattawan/Paw Paw/Kalamazoo corridor producing 18–24 leads/month",
+            "Google Ads + LSA live across the local corridor producing 18–24 leads/month",
             "Hit 87% physical occupancy with ECRI on 30+ tenured units adding $450/month in recurring revenue",
           ],
         },
@@ -607,7 +607,7 @@ function buildSampleAudit(): SampleAuditData {
           consequences: [
             "Net unit count drops by another 8 over 90 days. Vacancy bleed grows from $2,576 to $3,100+ per month",
             "$9,700 in lost revenue compounds because every undermarket tenant who stays is another month of rate revenue left on the table",
-            "Extra Space and CubeSmart Kalamazoo widen the review-volume gap, pushing your listing further down the local map pack and out of consideration",
+            "the nearby Extra Space and CubeSmart widen the review-volume gap, pushing your listing further down the local map pack and out of consideration",
           ],
         },
       },
@@ -617,7 +617,7 @@ function buildSampleAudit(): SampleAuditData {
             name: "Market Awareness",
             status: "critical",
             evidence:
-              "$0 paid acquisition and no Google Ads. Prospects searching 'storage near Mattawan' never see you.",
+              "$0 paid acquisition and no Google Ads. Prospects searching 'storage near me' never see you.",
             leakPercentage: 70,
           },
           {
@@ -652,7 +652,7 @@ function buildSampleAudit(): SampleAuditData {
         biggestLeak:
           "Market Awareness: with $0 paid spend, ~70% of in-market demand never even reaches your listing, so every downstream stage is starved before it starts.",
         narrative:
-          "A renter in Mattawan searches 'storage near me,' sees Extra Space and CubeSmart's ads and 200+ reviews first, and books before your listing ever loads. The few who do find you hit a stale site with no online reservation, then a voicemail after hours. Your counter staff close well, but almost no one makes it that far.",
+          "A renter in your town searches 'storage near me,' sees Extra Space and CubeSmart's ads and 200+ reviews first, and books before your listing ever loads. The few who do find you hit a stale site with no online reservation, then a voicemail after hours. Your counter staff close well, but almost no one makes it that far.",
       },
       operatorAlignment: {
         accuracy: "misdiagnosed",

@@ -46,7 +46,7 @@ npx prisma generate    # Regenerate Prisma client after schema changes
 
 **StorageAds.com** — Marketing automation SaaS for the self-storage industry. Two product lines (names live in `src/app/pricing/page.tsx`): per-facility/month subscription tiers — **Launch / Growth / Portfolio** — and one-time site-build packages — **Single Site / Site + Landing Pages / Portfolio Build**. No "Enterprise" tier. Primary buyers: facility owners, operators, managers, and management companies (white-label for management cos).
 
-**Status:** Pre-launch. Finishing build, then alpha testing with Blake's own portfolio of facilities. Not live with paying customers yet.
+**Status:** Pre-launch. Finishing build, then alpha testing. Not live with paying customers yet.
 
 **Domain:** storageads.com (live). Deploys straight to production on Vercel — no staging environment.
 
@@ -141,7 +141,7 @@ Occupancy intelligence and market intelligence features should scrape ALL availa
 
 ## Build Priorities
 
-1. **Alpha-readiness** — onboarding flow polish, PMS upload UX, audit-funnel conversion (prep for alpha with Blake's own portfolio)
+1. **Alpha-readiness** — onboarding flow polish, PMS upload UX, audit-funnel conversion (prep for alpha)
 2. **Feature completion** across the platform
 
 ## Team

@@ -44,7 +44,7 @@ export default function Footer() {
               className="text-xs mt-4 italic"
               style={{ color: "var(--text-tertiary)" }}
             >
-              Deployed on our own portfolio before any client engagement.
+              Built for independent operators, not for agencies.
             </p>
           </div>
 

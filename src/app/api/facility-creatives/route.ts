@@ -274,7 +274,7 @@ CREATIVE DOCTRINE:
 - Write like a smart friend, not a salesperson. Confident, warm, specific, never desperate.
 - Wit is welcome — in the 1980s Porsche print ad tradition. Clever, never forced. A line that makes someone smirk gets remembered.
 - Lead with what the customer gets, not what the facility has.
-- Specificity is credibility. "$49/mo" beats "affordable." "4.8★ from 312 reviews" beats "highly rated." "Paw Paw, MI" beats "near you."
+- Specificity is credibility. "$49/mo" beats "affordable." "4.8★ from 312 reviews" beats "highly rated." Naming the actual town beats "near you."
 - Pre-qualify in the ad. Price, unit size, location, offer — all visible. We optimize for FEWER, BETTER clicks. Every non-converting click is wasted spend.
 - Headlines: maximum 7 words. Every word earns its place. The best headline is a complete thought.
 - Write at an 8th-grade reading level. Attention is scarce and clarity converts.

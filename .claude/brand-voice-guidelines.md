@@ -8,7 +8,7 @@
 
 ## 1. The Company in One Line
 
-StorageAds is the marketing infrastructure that independent self-storage operators (1–50 facilities) use to fill units the way the REITs do — built by an operator, sold to operators, priced per facility per month, no agency retainer, no PMS lock-in.
+StorageAds is the marketing infrastructure that independent self-storage operators (1–50 facilities) use to fill units the way the REITs do — built for storage and nothing else, priced per facility per month, no agency retainer, no PMS lock-in.
 
 It is the full customer-acquisition funnel, not just ad management: market mapping, Meta + Google acquisition, per-ad landing pages with the storEDGE rental flow, reservation-to-move-in conversion, facility audit, and ancillary revenue, run self-serve or fully managed. Attribution — tying each move-in back to the ad that produced it — is the measurement layer that proves the funnel and guides optimization. It is support, never the headline. (Full hierarchy: `.claude/positioning.md`.)
 
@@ -20,7 +20,7 @@ StorageAds runs on **two strictly separated voices**. The register is determined
 |---|---|---|
 | Audience | Self-storage operators, 1–5 facilities, age 35–65. Owner-operators and managers. | Vertical SaaS investors, Storable corp dev, technical DD reviewers, PMS-vendor partnership leads, industry analysts. |
 | Surface | Website, landing pages, ads, cold emails, in-app text, audit tool output, blog, sales decks for operators. | Whitepaper, investor decks, due-diligence memos, partnership briefs, acquirer-targeted one-pagers. |
-| Frame | "We're operators who built software, not marketers selling to operators." | "Vertical SaaS at the intersection of server-side attribution, PMS data, and operator-knowledge encoding — outside the PMS." |
+| Frame | "Storage is the only thing we build for. The REITs already run this system; independents haven't had the option." | "Vertical SaaS at the intersection of server-side attribution, PMS data, and operator-knowledge encoding — outside the PMS." |
 | Test | "Would Nick Huber tweet this?" | "Would this survive a Storable corp dev review?" |
 | Default | **Use this unless explicitly told otherwise.** | Only when the brief names an investor, acquirer, partner, or whitepaper context. If unsure, ask. |
 
@@ -74,7 +74,7 @@ Acceptable only in deep product pages or docs (never hero, landing, or email): "
 
 | WRONG | RIGHT |
 |---|---|
-| "StorageAds is a full-funnel demand engine that delivers measurable cost-per-move-in attribution for self-storage operators." | "StorageAds is the marketing system we built for our own facilities. We turned it into software so you can plug it in." |
+| "StorageAds is a full-funnel demand engine that delivers measurable cost-per-move-in attribution for self-storage operators." | "StorageAds is the marketing system the REITs run, built for independent operators. Plug it in and it fills units." |
 | "Our server-side conversion forwarding architecture closes the attribution loop from click to PMS-confirmed move-in." | "We tie every ad dollar to the unit that actually got rented. You see what's filling the place." |
 | "Leverage AI-powered insights to optimize your acquisition funnel." | "One dashboard. What you spent, what you got, what each move-in cost." |
 | "Empower your facility with enterprise-grade marketing technology." | "The REITs have a marketing team. Now you do too." |

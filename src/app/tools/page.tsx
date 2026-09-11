@@ -19,7 +19,7 @@ import { BreadcrumbJsonLd } from "@/components/tools/tool-jsonld";
 
 const title = "Free Tools for Storage Operators";
 const description =
-  "Free, no-signup calculators for self-storage operators: NOI, rate-increase (ECRI) impact, break-even occupancy, valuation by cap rate, DSCR & loan sizing, lease-up, expansion ROI, concession cost, marketing ROI, and a free facility audit. Built by an operator.";
+  "Free, no-signup calculators for self-storage operators: NOI, rate-increase (ECRI) impact, break-even occupancy, valuation by cap rate, DSCR & loan sizing, lease-up, expansion ROI, concession cost, marketing ROI, and a free facility audit. Built for storage operators.";
 
 export const metadata: Metadata = {
   title,
@@ -199,8 +199,8 @@ export default function ToolsPage() {
             style={{ color: "var(--color-body-text)" }}
           >
             No signup, no email wall. Run the numbers on your facility the way an
-            operator actually thinks about them. Built by people who run storage,
-            tested on our own facilities first.
+            operator actually thinks about them. Built for storage operators,
+            not adapted from another industry.
           </p>
         </div>
 

@@ -354,7 +354,7 @@ export default function AuditToolPage() {
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="w-full px-4 py-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-medium)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-dark)]/30 focus:border-transparent transition-all"
-                placeholder="e.g. Grand Rapids, MI"
+                placeholder="e.g. Columbus, OH"
               />
             </div>
           </div>

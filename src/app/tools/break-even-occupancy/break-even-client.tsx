@@ -334,7 +334,7 @@ export default function BreakEvenClient() {
           <div className="mt-12">
             <ToolCta
               heading="Get further above break-even"
-              body="The units above your break-even line are where the profit lives. StorageAds runs the ads and proves which campaigns filled the gap. Built by an operator, tested on our own facilities first."
+              body="The units above your break-even line are where the profit lives. StorageAds runs the ads and proves which campaigns filled the gap. Built for storage operators, not adapted from another industry."
             />
           </div>
         </div>

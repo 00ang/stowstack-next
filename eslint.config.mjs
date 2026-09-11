@@ -34,7 +34,10 @@ const eslintConfig = defineConfig([
     "**/build/**",
     "next-env.d.ts",
     // Generated/deployed static bundles checked into the repo.
+    // The resume export is archived (hidden) at _archive/resume/ rather than
+    // served from public/; keep both paths ignored.
     "public/resume/**",
+    "_archive/**",
   ]),
 ]);
 

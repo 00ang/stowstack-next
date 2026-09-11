@@ -329,7 +329,7 @@ export default function ConcessionClient() {
           <div className="mt-12">
             <ToolCta
               heading="Discount less by marketing more"
-              body="A full funnel of ready-to-rent demand means you win move-ins on visibility, not giveaways. StorageAds runs the ads that bring it. Built by an operator, tested on our own facilities first."
+              body="A full funnel of ready-to-rent demand means you win move-ins on visibility, not giveaways. StorageAds runs the ads that bring it. Built for storage operators, not adapted from another industry."
             />
           </div>
         </div>

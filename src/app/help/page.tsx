@@ -15,7 +15,7 @@ const FAQ_CATEGORIES: { title: string; items: FaqItem[] }[] = [
     title: "Getting Started",
     items: [
       { question: "How does StorageAds work?", answer: "StorageAds creates ad-specific landing pages with embedded reservation flows. We track every click from your ads through to a signed lease, giving you real cost-per-move-in data instead of just clicks." },
-      { question: "How long does setup take?", answer: "Most facilities are live within 48 hours. Blake handles the initial setup, including ad account connections, landing page creation, and campaign configuration." },
+      { question: "How long does setup take?", answer: "Most facilities are live within 48 hours. We handle the initial setup, including ad account connections, landing page creation, and campaign configuration." },
       { question: "Do I need a storEDGE account?", answer: "Yes. StorageAds integrates with storEDGE for online reservations and move-in tracking. This connection is how we tie each move-in back to the ad that produced it." },
     ],
   },

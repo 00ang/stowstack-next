@@ -333,7 +333,7 @@ export default function RateIncreaseClient() {
           <div className="mt-12">
             <ToolCta
               heading="Raise rates without bleeding occupancy"
-              body="StorageAds keeps the funnel full so the handful of tenants who leave after an increase get replaced fast. Built by an operator, tested on our own facilities first."
+              body="StorageAds keeps the funnel full so the handful of tenants who leave after an increase get replaced fast. Built for storage operators, not adapted from another industry."
             />
           </div>
         </div>

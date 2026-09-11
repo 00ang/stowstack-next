@@ -93,7 +93,7 @@ export default function DemandTriggers() {
               lineHeight: 1.15,
             }}
           >
-            <RevealText>We understand storage demand because we see these triggers in our own facilities every week.</RevealText>
+            <RevealText>These are the triggers that send someone looking for a unit.</RevealText>
           </h2>
           <p
             className="mt-5 mx-auto"
@@ -104,9 +104,9 @@ export default function DemandTriggers() {
               maxWidth: "62ch",
             }}
           >
-            These are the reasons people rent a unit. We watch them walk
-            through our own gates every week. Meta puts your facility in front
-            of these renters before they ever open Google.
+            These are the reasons people rent a unit. Every one of them
+            starts long before someone opens Google. Meta puts your facility in
+            front of these renters while they&apos;re still deciding.
           </p>
         </div>
 

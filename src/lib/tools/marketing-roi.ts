@@ -23,7 +23,7 @@ export interface MarketingRoiState {
   costPerMoveIn: number;
 }
 
-/** Default cost per move-in, from our own operator data. */
+/** Default cost per move-in, from the platform average. */
 export const DEFAULT_COST_PER_MOVE_IN = 14.2;
 
 export const MARKETING_ROI_DEFAULTS: MarketingRoiState = {

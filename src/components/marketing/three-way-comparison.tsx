@@ -56,7 +56,7 @@ const ROWS = [
     label: "Who Builds It",
     diy: "You, at 11pm after gate calls",
     agency: "Agency that also does dentists",
-    storageads: "An operator who built this for his own facilities",
+    storageads: "A team that builds for storage and nothing else",
   },
   {
     label: "Time to Results",

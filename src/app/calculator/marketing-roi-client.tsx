@@ -142,7 +142,7 @@ export default function MarketingRoiClient() {
             Plug in your units, occupancy, average rate, and ad budget to model
             the move-ins a marketing program can produce, the revenue they add,
             and your return on ad spend. The default cost per move-in comes from
-            our own operator data; override it with yours. Runs in your browser.
+            our platform average; override it with yours. Runs in your browser.
           </p>
         </div>
 
@@ -199,7 +199,7 @@ export default function MarketingRoiClient() {
             <SectionCard
               step="Step 2"
               title="Cost per move-in"
-              subtitle="The single biggest driver of the result. We default to our operator-average; if you know your own blended cost per move-in, use it."
+              subtitle="The single biggest driver of the result. We default to the platform average; if you know your own blended cost per move-in, use it."
             >
               <div className="max-w-xs">
                 <MoneyField
@@ -356,7 +356,7 @@ export default function MarketingRoiClient() {
           <div className="mt-12">
             <ToolCta
               heading="A sign on a chainlink fence is not an acquisition strategy"
-              body="StorageAds runs the Meta and Google ads, builds a landing page for every ad, and proves which campaigns filled units. One bill per facility per month. Built by an operator, tested on our own facilities first."
+              body="StorageAds runs the Meta and Google ads, builds a landing page for every ad, and proves which campaigns filled units. One bill per facility per month. Built for storage operators, not adapted from another industry."
             />
           </div>
         </div>

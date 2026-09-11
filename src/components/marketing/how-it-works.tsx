@@ -17,7 +17,7 @@ const STEPS = [
     title: "Ads on Meta and Google.",
     body: "We build Meta and Google campaigns from your facility data and put them live from one dashboard. Meta reaches renters before they search. Google catches the ones already looking. Retargeting brings back the ones who left.",
     examples: [
-      "[your-facility].storageads.com/climate-pawpaw: climate-controlled search campaign",
+      "[your-facility].storageads.com/climate-controlled: climate-controlled search campaign",
       "[your-facility].storageads.com/10x10-offer: first-month-free Meta campaign",
       "[your-facility].storageads.com/finish-your-rental: retargeting campaign",
     ],

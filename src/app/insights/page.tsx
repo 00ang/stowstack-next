@@ -21,15 +21,15 @@ export const metadata: Metadata = {
 const POSTS = [
   {
     title: "The Receipt That Started Everything",
-    body: `I once paid a marketing agency $4,200/month for my storage facility.
+    body: `Operators routinely pay a marketing agency $4,200 a month and cannot get a straight answer about move-ins.
 
-When I asked how many move-ins the ads actually drove, the answer was "well, your impressions are up."
+Ask how many the ads actually drove and you get "well, your impressions are up."
 
 Impressions don't pay the mortgage on a $3M building.
 
-That was the month I started building my own tracking system. Not because I wanted to be in marketing tech. Because I wanted to know where my money was going.
+That gap is the reason this system exists. Not because storage needs more marketing tech. Because operators deserve to know where the money went.
 
-Turns out a lot of operators feel the same way.`,
+A lot of operators feel the same way.`,
   },
   {
     title: "Clicks Are Not Move-Ins",
@@ -43,13 +43,13 @@ Attribution isn't a buzzword. It's knowing which dollar made you money and which
   },
   {
     title: "The Two-Week Experiment",
-    body: `When I took over marketing on my own facility, I did something my agency thought was crazy.
+    body: `Here's a test most agencies will talk you out of.
 
-I turned off all the ads for two weeks.
+Turn off all the ads for two weeks.
 
-Move-in rate barely changed.
+If your move-in rate barely changes, you just learned something expensive.
 
-That told me most of my "results" were people who were going to find me anyway. I was paying to show ads to people already searching my facility name.
+It means most of those "results" were people who would have found you anyway. You were paying to show ads to renters already searching your facility by name.
 
 Real marketing finds NEW customers. Not people already walking through the door.`,
   },
@@ -71,7 +71,7 @@ Ask your agency what percentage of your spend is branded vs. non-branded. Watch 
 
 I get it. Feels wasteful to spend money when you're nearly full.
 
-But here's what I learned running my own facility: the best time to push marketing is when you're strong. That's when you raise rates. That's when you build a waitlist. That's when you have leverage.
+But the best time to push marketing is when you're strong. That's when you raise rates. That's when you build a waitlist. That's when you have leverage.
 
 Cutting marketing at 92% means you're scrambling at 84%.
 
@@ -85,7 +85,7 @@ But what's a "lead"?
 
 Someone who clicked an ad? Someone who visited your website? Someone who called and asked your hours and never came back?
 
-I spent two years tracking this at my own facility. The real number that matters is cost per move-in. And for most operators, that number is 3-5x what their agency is reporting as "cost per lead."
+Track it properly for two quarters and the real number shows up. It's cost per move-in. For most operators that number is 3-5x what their agency reports as "cost per lead."
 
 The gap between those two numbers is where your money disappears.`,
   },
@@ -132,16 +132,16 @@ The only metrics that matter: calls from new prospects, walk-ins attributed to a
 Everything else is decoration.`,
   },
   {
-    title: "I Still Run Ads on My Own Facility",
-    body: `People ask why I still personally manage the marketing on my own facility.
+    title: "One Test For Every Feature",
+    body: `Every feature in this system has to answer one question. Does it fill units?
 
-Because I need to feel the pain.
+Not does it look good in a demo. Not does it make a chart go up.
 
-If I'm going to build tools for operators, I need to spend my own money on ads every month. I need to feel that sting when a campaign flops. I need to celebrate when one works.
+Plenty of storage software gets built to win a sales call. It adds a tab, a score, a badge. None of it puts a renter in a unit.
 
-The day I stop operating is the day I stop understanding what operators need.
+If a feature can't be traced to a move-in, it doesn't ship.
 
-I eat my own cooking. Every single month.`,
+That's the whole bar.`,
   },
   {
     title: "The Agency Model Is Broken",
@@ -154,28 +154,28 @@ Would you pay your facility manager a bonus every time they increased expenses?
 Alignment matters. Your marketing partner should win when you win. Not when your credit card bill goes up.`,
   },
   {
-    title: "What Happened When I Tracked Phone Calls",
-    body: `I started recording and tracking every inbound call at my own facility.
+    title: "What Happens When You Track Phone Calls",
+    body: `Start recording and tracking every inbound call at your facility. Give it a month.
 
-Within the first month I discovered:
+Here's the usual result:
 
-40% of "leads" from our ads were existing tenants calling about their account. Another 15% were vendors and spam.
+About 40% of the "leads" from your ads are existing tenants calling about their account. Another 15% are vendors and spam.
 
-My agency was counting all of those as conversions.
+Your agency is counting all of those as conversions.
 
-I was paying for leads that were already my customers. Once I cleaned that up, my actual cost per new customer nearly doubled from what was being reported.
+You're paying for leads who are already your customers. Clean that up and your real cost per new tenant often doubles from what was being reported.
 
 The truth hurts. But it saves you money.`,
   },
   {
-    title: "The 3am Realization",
-    body: `I was up at 3am staring at a spreadsheet trying to figure out which of my three ad campaigns actually drove the 11 move-ins we got that month.
+    title: "The 3am Spreadsheet",
+    body: `Every operator has had this night. You're up at 3am trying to work out which of three ad campaigns produced the 11 move-ins you got that month.
 
-Google said one thing. The agency said another. My site manager's gut said something else entirely.
+Google says one thing. The agency says another. Your site manager's gut says something else entirely.
 
-That was the night I decided: if I have to build a system that actually connects ad spend to move-ins, I will.
+Nobody is lying. The connection between the ad spend and the signed lease was never built.
 
-Not because I wanted a side project. Because I was tired of guessing with my own money.`,
+That's the problem this system was built to end. Not for the reporting. So you stop guessing with your own money.`,
   },
   {
     title: "Why Storage Marketing Is Different",
@@ -191,9 +191,9 @@ Stop forcing your business into tools that weren't built for it.`,
   },
   {
     title: "The Rate Increase Hack Nobody Talks About",
-    body: `Here's something I learned running my own facility that changed everything:
+    body: `This one changes how operators price:
 
-When your marketing is dialed in and you have consistent lead flow, rate increases become easy.
+When your marketing is dialed in and lead flow is steady, rate increases get easy.
 
 You're not desperate. You're not worried about vacancies. You raise rates because you can backfill any unit that walks.
 
@@ -383,26 +383,8 @@ export default function InsightsPage() {
             className="text-sm italic"
             style={{ color: "var(--text-tertiary)" }}
           >
-            All of these are from my own experience running ads on my own
-            facilities and talking to hundreds of operators. No theory. No
-            vendor pitch.
-          </p>
-          <p className="mt-4">
-            <span
-              className="font-semibold"
-              style={{
-                fontFamily: "var(--font-heading)",
-                color: "var(--text-primary)",
-              }}
-            >
-              Blake
-            </span>
-            <span
-              className="text-sm ml-2"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              Founder, StorageAds.com
-            </span>
+            These notes come from running ads for storage and from hundreds of
+            conversations with operators. No theory. No vendor pitch.
           </p>
         </div>
 

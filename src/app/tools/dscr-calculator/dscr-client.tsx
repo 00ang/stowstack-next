@@ -439,7 +439,7 @@ export default function DscrClient() {
           <div className="mt-12">
             <ToolCta
               heading="The loan follows the NOI"
-              body="Every unit you fill and rate you hold lifts NOI, and the loan your facility can carry rises with it. StorageAds runs the ads that move NOI. Built by an operator, tested on our own facilities first."
+              body="Every unit you fill and rate you hold lifts NOI, and the loan your facility can carry rises with it. StorageAds runs the ads that move NOI. Built for storage operators, not adapted from another industry."
             />
           </div>
         </div>

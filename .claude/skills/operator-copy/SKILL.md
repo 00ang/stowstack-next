@@ -69,7 +69,7 @@ enterprise-grade, AI-powered, world-class, next-generation, holistic
 
 **Positioning framing — banned everywhere customer-facing:**
 - **Attribution as the lede.** If a headline, opening line, section opener, or primary differentiator is about tracking/measurement, rewrite. Attribution is at most one supporting line inside a funnel or optimization section. Lead with move-ins, occupancy, revenue, and the full system.
-- **"Only ones who do X right" framing.** Drop "the only," "nobody else," "no one else does this," "the only platform/system that," and every variant when X is a measurement or attribution capability. We do not differentiate by owning a tracking term. Differentiate on the full acquisition system and the operator-built angle.
+- **"Only ones who do X right" framing.** Drop "the only," "nobody else," "no one else does this," "the only platform/system that," and every variant when X is a measurement or attribution capability. We do not differentiate by owning a tracking term. Differentiate on the full acquisition system and on being built for storage and nothing else. Never claim we own or operate facilities.
 - **Translate measurement to outcomes** (from positioning.md):
   - "closed-loop / full-funnel attribution" → "you'll know exactly which ads brought paying tenants"
   - "cost-per-move-in attribution" → "every dollar tracked to a move-in, so we cut what doesn't work"
@@ -94,11 +94,11 @@ For every hero, headline, and CTA, ask:
 
 If no, rewrite.
 
-Acid test for SaaS-slop: if a competitor (StoragePug, G5, SpareFoot, Storable, SiteLink marketing modules) could put the same line on their website without changing a word, it's wrong. Our voice is **operator-built-this**. Theirs is **agency-sells-this**.
+Acid test for SaaS-slop: if a competitor (StoragePug, G5, SpareFoot, Storable, SiteLink marketing modules) could put the same line on their website without changing a word, it's wrong. Our voice is **storage-only, built-for-this**. Theirs is **agency-sells-this**.
 
 ## Step 5 — The frame we lead with
 
-> We are operators who built software, not marketers selling to operators. We had the same problem you have. We built the thing we needed. We turned it into software so you can plug it in.
+> Storage is the only thing we build for, and the system is the whole acquisition machine, not ads bolted onto a website. The REITs already run this. Independents haven't had the option. We turned it into software so you can plug it in.
 
 That frame replaces the agency frame, the attribution frame, and the SaaS frame. Use it when in doubt.
 

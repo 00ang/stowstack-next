@@ -60,7 +60,7 @@ const FAQS: FaqEntry[] = [
   },
   {
     q: "We only have one facility. Is this for us?",
-    a: "Yes. The system was built on a single facility and runs on our own portfolio. One facility is the primary use case. The Portfolio plan covers operators with five or more.",
+    a: "Yes. One facility is the primary use case. The Portfolio plan covers operators with five or more.",
   },
   {
     q: "How does the storEDGE integration work?",
@@ -68,7 +68,7 @@ const FAQS: FaqEntry[] = [
   },
   {
     q: "What if it doesn't work?",
-    a: "If move-ins haven't improved by the end of month three, month four is free. We run this same system on our own facilities. We're in the same boat.",
+    a: "If move-ins haven't improved by the end of month three, month four is free. You carry no risk for a quarter that didn't fill units.",
   },
 ];
 

@@ -12,7 +12,7 @@ import { RevealText } from "./motion";
 const TRUST_SIGNALS = [
   { icon: Shield, text: "No long-term contracts" },
   { icon: Clock, text: "Live in your first week" },
-  { icon: Wrench, text: "Built and tested on our own facilities" },
+  { icon: Wrench, text: "Built for storage, not adapted to it" },
   { icon: Zap, text: "storEDGE built in" },
 ];
 

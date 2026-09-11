@@ -354,7 +354,7 @@ export default function ExpansionClient() {
           <div className="mt-12">
             <ToolCta
               heading="Capex only pays once the units fill"
-              body="A great development spread is worth nothing until the new units lease up. StorageAds runs the ads that fill them and proves which campaigns did it. Built by an operator, tested on our own facilities first."
+              body="A great development spread is worth nothing until the new units lease up. StorageAds runs the ads that fill them and proves which campaigns did it. Built for storage operators, not adapted from another industry."
             />
           </div>
         </div>

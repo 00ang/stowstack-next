@@ -3,18 +3,18 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "About StorageAds: Built by an Operator",
+  title: "About StorageAds: Built for Storage Operators",
   description:
-    "StorageAds was built by a storage operator who got tired of guessing which ads were filling units. Every feature is tested on real facilities before it ships.",
+    "StorageAds is the marketing system independent storage operators never had: market mapping, Meta and Google ads, a page for every ad, and every reservation chased to a signed lease.",
   openGraph: {
-    title: "About StorageAds: Built by an Operator",
-    description: "StorageAds was built by a storage operator who got tired of guessing which ads were filling units. Every feature is tested on real facilities before it ships.",
+    title: "About StorageAds: Built for Storage Operators",
+    description: "StorageAds is the marketing system independent storage operators never had: market mapping, Meta and Google ads, a page for every ad, and every reservation chased to a signed lease.",
     url: "https://storageads.com/about",
   },
   twitter: {
     card: "summary_large_image",
-    title: "About StorageAds: Built by an Operator",
-    description: "Built by a storage operator who got tired of guessing which ads were filling units.",
+    title: "About StorageAds: Built for Storage Operators",
+    description: "The marketing system independent storage operators never had.",
   },
 };
 
@@ -69,8 +69,8 @@ export default function AboutPage() {
             letterSpacing: "var(--tracking-tight)",
           }}
         >
-          Built by an operator.{" "}
-          <span style={{ color: "var(--color-gold)" }}>For operators.</span>
+          Built for storage.{" "}
+          <span style={{ color: "var(--color-gold)" }}>Nothing else.</span>
         </h1>
 
         <div
@@ -83,25 +83,25 @@ export default function AboutPage() {
           }}
         >
           <p>
-            I run a storage facility. I spend my own money on ads every month.
-            And for years, I had the same problem every operator has: I
-            couldn&apos;t tell which ads were actually driving move-ins.
+            Most independent operators have the same problem. Money goes out to
+            ads every month, and nobody can say which of those ads actually
+            filled a unit.
           </p>
 
           <p>
-            My agency sent pretty dashboards. Clicks were up. Impressions looked
-            great. But when I asked how many of those clicks turned into tenants,
-            nobody had an answer.
+            The agency sends a tidy report. Clicks are up. Everything looks
+            great. Ask how many of those clicks turned into tenants and the
+            answer stops coming.
           </p>
 
           <p style={{ color: "var(--text-primary)", fontWeight: 500 }}>
-            So I started building the tracking system I wished existed.
+            StorageAds exists to answer that question, and then fix it.
           </p>
 
           <p>
-            Not a generic marketing platform. Not something designed for
-            e-commerce and retrofitted for storage. A system built specifically
-            for the way storage operators think about their business:
+            Not a general marketing tool with a storage page bolted on. Not
+            something built for e-commerce and reshaped to fit. A system built
+            around the way storage operators actually run the business:
             move-ins, occupancy, and revenue.
           </p>
 
@@ -115,22 +115,20 @@ export default function AboutPage() {
           />
 
           <p>
-            I tested it across my own facilities first. Every dollar of ad
-            spend, tracked to the phone call, the walk-in, the move-in. For
-            the first time, I could see exactly which campaigns were making
-            money and which were wasting it.
+            Every dollar of ad spend gets tracked to the phone call, the
+            walk-in, and the move-in. Not a guess and not a model. The actual
+            unit that got rented, traced back to the ad that filled it.
           </p>
 
           <p>
-            The results changed how I run marketing entirely. I cut spend that
-            looked good on paper but wasn&apos;t converting. I doubled down on
-            what actually worked. My cost per move-in dropped. My confidence in
-            every marketing dollar went up.
+            That changes what you do next. Spend that looks good on paper but
+            never fills a unit gets cut. What works gets more. The cost of
+            filling a unit comes down, and every month you know why.
           </p>
 
           <p style={{ color: "var(--text-primary)", fontWeight: 500 }}>
-            That&apos;s when other operators started asking what I was doing
-            differently.
+            The REITs have run this way for years. Independents have not had the
+            option.
           </p>
 
           {/* Divider */}
@@ -143,17 +141,16 @@ export default function AboutPage() {
           />
 
           <p>
-            StorageAds exists because operators deserve to know where their money
-            is going. Not &quot;impressions&quot; and &quot;click-through
-            rates&quot;: real answers. How many move-ins did my ads drive this
-            month? What did each one cost? Which campaigns should I keep and
-            which should I kill?
+            You deserve to know where the money is going. Not
+            &quot;impressions&quot; and &quot;click-through rates&quot;: real
+            answers. How many move-ins did the ads bring this month? What did
+            each one cost? Which campaigns stay and which ones go?
           </p>
 
           <p>
-            I still operate. I still spend my own money on ads. Every feature we
-            build gets tested on my own facilities before it reaches yours. If it
-            doesn&apos;t work for me, it doesn&apos;t ship.
+            Storage is the only thing we build for. Every feature has to earn
+            its place against one test: does it fill units? If it
+            doesn&apos;t, it doesn&apos;t ship.
           </p>
 
           <p
@@ -163,34 +160,10 @@ export default function AboutPage() {
               fontFamily: "var(--font-heading)",
             }}
           >
-            This isn&apos;t a marketing agency. It&apos;s the system I needed,
-            built by someone who signs the same checks you do.
+            This isn&apos;t a marketing agency. It&apos;s the marketing system
+            the REITs already have, built for the operators who don&apos;t.
           </p>
 
-          {/* Sign-off */}
-          <div className="pt-8">
-            <p
-              className="font-semibold"
-              style={{
-                color: "var(--text-primary)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
-              Blake
-            </p>
-            <p
-              className="text-sm"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              Founder, StorageAds.com
-            </p>
-            <p
-              className="text-sm"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              Storage operator &amp; founder
-            </p>
-          </div>
         </div>
 
         {/* CTA */}

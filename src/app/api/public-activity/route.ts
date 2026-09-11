@@ -28,8 +28,8 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Location strings are freeform (e.g. "Paw Paw, MI" or "123 Main St,
-    // Kalamazoo, MI 49001"). Pull the trailing state abbr if we can,
+    // Location strings are freeform (e.g. "Columbus, OH" or "123 Main St,
+    // Columbus, OH 43004"). Pull the trailing state abbr if we can,
     // otherwise a city-level hint. Never surfaces facility name.
     function extractLocale(loc: string | null | undefined): string | null {
       if (!loc) return null;

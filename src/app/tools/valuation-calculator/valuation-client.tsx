@@ -376,7 +376,7 @@ export default function ValuationClient() {
           <div className="mt-12">
             <ToolCta
               heading="Value is just NOI with a multiplier"
-              body="Every unit you fill and every rate you hold compounds into asset value at your cap rate. StorageAds runs the ads that move NOI. Built by an operator, tested on our own facilities first."
+              body="Every unit you fill and every rate you hold compounds into asset value at your cap rate. StorageAds runs the ads that move NOI. Built for storage operators, not adapted from another industry."
             />
           </div>
         </div>

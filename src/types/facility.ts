@@ -3,7 +3,7 @@
 export interface Facility {
   id: string;
   name: string;
-  location: string; // "Paw Paw, MI"
+  location: string; // "Columbus, OH"
   status: string; // "active", "intake", etc.
   organizationId?: string;
   googleRating?: number;

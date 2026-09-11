@@ -48,7 +48,8 @@ These apply to all customer-facing copy and to every prompt that generates it.
 ## BANNED FRAMING — differentiation
 
 - **No "only ones who do X right" framing of any kind.** We do not own a measurement term and we do not win by claiming we're the only ones who track correctly. Drop "the only," "nobody else," "no one else does this," and every variant when the X is a measurement or attribution capability.
-- **Differentiate on the full system and the operator-built angle, not on owning a measurement term.** What separates StorageAds: it is the whole acquisition machine the REITs run, built by an operator who had the same problem, plugged in for operators who don't have it. The competitor we displace is the operator's inaction, not another vendor's tracking.
+- **Differentiate on the full system and on being storage-only, not on owning a measurement term.** What separates StorageAds: it is the whole acquisition machine the REITs run, built for independent storage operators rather than adapted from a general marketing tool. The competitor we displace is the operator's inaction, not another vendor's tracking.
+- **Never claim we own or operate facilities.** No "our own facilities," "our portfolio," "we tested it on our own gates," "built by an operator," or any first-person owner voice. Credibility comes from the system being storage-only and from what it produces, not from a founder's holdings.
 
 ---
 

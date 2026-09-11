@@ -33,7 +33,7 @@ import { normalisePhone } from "@/lib/messaging/types";
  * The facility zone used when a facility has none set.
  *
  * A guess, and a knowingly imperfect one — the facilities on the books span
- * Michigan to Colorado. It is survivable because tours are stored in absolute
+ * Eastern to Mountain time. It is survivable because tours are stored in absolute
  * time: a wrong zone changes how a time is *printed* and whether the
  * quiet-hours gate thinks it is evening, never when a reminder fires.
  */
