@@ -105,6 +105,11 @@ Nothing above this line ships to a portfolio account. These are the pieces every
   Shipped 2026-09-02: `jobs` table + `src/lib/jobs/{types,queue,runner,handlers}.ts` +
   `GET /api/cron/jobs` (every minute, `maxDuration = 300`). Postgres-backed — `FOR UPDATE SKIP
   LOCKED` — rather than a broker, so no new service to operate.
+  **2026-09-23:** the minute tick now reads a Redis alarm (`src/lib/jobs/alarm.ts`) and only
+  touches Postgres when a job is due. Polling the table every minute kept Neon awake 24/7, ran out
+  the Free-plan compute on 2026-09-20 and took the whole product down. Work that needs minutes-level
+  timing is enqueued by the fact that creates it, with `run_after` set to when it falls due; the
+  recurring list in `schedule.ts` is now six-hourly backstops only.
   *Acceptance, item by item:*
   - [x] survives a 300s boundary — the runner stops claiming inside a 30s headroom and a handler
         returns `{ kind: "more", cursor }` to be resumed next minute
@@ -291,7 +296,8 @@ Nothing above this line ships to a portfolio account. These are the pieces every
         8 simultaneous attempts for the last unit, exactly 1 won.**
   - [x] **holds expire** — and availability ignores a lapsed hold *immediately* rather than waiting
         for a sweep, because a free unit that looks taken until a cron runs is a lost rental.
-        `holds.expire` runs every 5 minutes purely to keep the operator view honest.
+        `holds.expire` purely keeps the operator view honest: each hold schedules it for the
+        moment it lapses, with a six-hourly backstop.
   - [x] one person cannot accumulate holds on the same size by replying twice
 - [ ] `s11` **Decide: absorb PostcardRobot, or keep it behind an API** — SPEC
   *Recommendation:* keep it separate behind an API. It already has a public-API task on its roadmap
@@ -326,7 +332,8 @@ hard half. Gate: Phase A complete.
 - [x] `r8` Abandoned online rental rescued within 10 minutes — **DONE** — ⚠️ **and it did not
       replace anything.** `/api/cron/process-recovery` is already 361 lines of multi-step EMAIL
       recovery running daily; that system is untouched. This adds the leg it cannot cover — a text
-      inside a 10-to-120-minute window, checked every 5 minutes. After two hours the email sequence
+      inside a 10-to-120-minute window, checked when each lead's 10 minutes are up (the partial
+      lead schedules it; no clock). After two hours the email sequence
       owns the lead. **No new column:** `message_log` already records what we sent, so the dedupe key
       is both the idempotency guard and the "have we rescued this" answer, and cannot drift from it.
 - [~] `r9` Sold-out waitlist, auto-notify, payment link — **CAPTURE → NOTIFY → HOLD DONE** — `unit_waitlist`

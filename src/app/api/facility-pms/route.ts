@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { scheduleDetection } from "@/lib/events/detect";
 import { jsonResponse, errorResponse, getOrigin, corsResponse, requireFacilityAccess, safeCompare } from "@/lib/api-helpers";
 import { getManageScope, manageScopeAllows } from "@/lib/manage-session";
 import { applyRateLimit } from "@/lib/with-rate-limit";
@@ -177,6 +178,7 @@ export async function POST(req: NextRequest) {
           last_updated = NOW()
         RETURNING *`;
 
+      await scheduleDetection(facility_id).catch((err) => console.error("[pms] scheduling detection failed:", err));
       return jsonResponse({ unit: row[0] }, 200, origin);
     }
 

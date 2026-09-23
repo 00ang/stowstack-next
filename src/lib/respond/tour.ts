@@ -14,6 +14,16 @@
  * the tour is, and `message_log` is the only truth about what we have sent — no
  * third copy of either fact to drift.
  *
+ * ## Why the sweeps are nonetheless scheduled at booking time (2026-09-23)
+ *
+ * The sweeps used to run on a 5- and 15-minute clock, and polling every five
+ * minutes kept the database awake around the clock (see src/lib/jobs/alarm.ts).
+ * So the booking now enqueues the SWEEP — not the send — for the moments it
+ * could find this tour: `scheduleTourFollowUps`. The jobs carry no facts about
+ * the tour, only a time to look. A job left pointing at a rescheduled or
+ * cancelled tour runs a sweep that finds nothing to do, which is the same
+ * outcome the clock had, so the reasoning above still holds in full.
+ *
  * ## What is deliberately NOT here
  *
  * Slot availability. Zero facilities in the database have `hours` populated, so
@@ -24,6 +34,7 @@
  */
 
 import { db } from "@/lib/db";
+import { enqueue } from "@/lib/jobs/queue";
 import { t } from "@/lib/messaging/copy";
 import { languageFor } from "@/lib/messaging/language";
 import { sendMessage } from "@/lib/messaging/send";
@@ -46,9 +57,10 @@ export const REMIND_1H_MINUTES = 60;
 /**
  * How wide a net each reminder sweep casts.
  *
- * The sweep runs every 5 minutes, so 15 leaves room for a missed run or two
- * without double-sending — the message-log dedupe key is what makes the overlap
- * safe rather than the window being exact.
+ * The sweep runs when a tour's reminder falls due, give or take the worker's
+ * one-minute tick, so 15 leaves room for a late worker without double-sending —
+ * the message-log dedupe key is what makes the overlap safe rather than the
+ * window being exact.
  */
 export const SWEEP_WINDOW_MINUTES = 15;
 
@@ -215,12 +227,81 @@ export async function bookTour(input: BookTourInput): Promise<BookTourResult> {
     dedupeKey: `tourok:${tour.id}:${input.scheduledAt.toISOString()}`,
   });
 
+  // Best effort: a failure here is picked up by the six-hourly
+  // `respond.tour-schedule` backstop, and must not fail a booking that happened.
+  await scheduleTourFollowUps({
+    id: tour.id,
+    facilityId: input.facilityId,
+    scheduledAt: input.scheduledAt,
+  }).catch((error) => console.error("[tour] scheduling follow-ups failed:", tour.id, error));
+
   return {
     booked: true,
     id: tour.id,
     rescheduled: !tour.created,
     confirmSent: outcome.sent,
   };
+}
+
+const MINUTE = 60_000;
+
+/**
+ * Enqueue the sweeps that will find this tour: the day-before and hour-before
+ * reminders, and the no-show check once the grace period has passed.
+ *
+ * Keyed on the scheduled time as well as the tour, so a reschedule gets its own
+ * jobs and a replayed booking does not double them. A reminder already past its
+ * sweep window is skipped — the sweep could not pick the tour up anyway — and
+ * one inside it runs now, which is what the old clock would have done.
+ */
+export async function scheduleTourFollowUps(
+  tour: { id: string; facilityId: string; scheduledAt: Date },
+  now: number = Date.now()
+): Promise<number> {
+  const at = tour.scheduledAt.getTime();
+  const key = `${tour.id}:${tour.scheduledAt.toISOString()}`;
+  const window = SWEEP_WINDOW_MINUTES * MINUTE;
+  const plan = [
+    { queue: "respond.tour-reminders", key: `tour24:${key}`, due: at - REMIND_24H_MINUTES * MINUTE, window },
+    { queue: "respond.tour-reminders", key: `tour1:${key}`, due: at - REMIND_1H_MINUTES * MINUTE, window },
+    // One minute past the grace: the sweep's test is strictly "older than".
+    { queue: "respond.tour-noshow", key: `tourno:${key}`, due: at + (NO_SHOW_GRACE_MINUTES + 1) * MINUTE, window: Infinity },
+  ];
+
+  let created = 0;
+  for (const p of plan) {
+    if (p.due + p.window <= now) continue;
+    const id = await enqueue({
+      queue: p.queue,
+      dedupeKey: p.key,
+      tenantKey: tour.facilityId,
+      runAfter: new Date(Math.max(p.due, now)),
+    });
+    if (id) created++;
+  }
+  return created;
+}
+
+/**
+ * The backstop for `scheduleTourFollowUps`: re-derive the jobs for every live
+ * tour that could still need one. A no-op for tours already scheduled, and the
+ * path by which tours booked before scheduling existed get their jobs.
+ */
+export async function scheduleLiveTours(): Promise<number> {
+  const tours = await db.$queryRaw<{ id: string; facility_id: string; scheduled_at: Date }[]>`
+    SELECT id, facility_id, scheduled_at FROM facility_tours
+    WHERE status IN ('booked', 'confirmed')
+      AND scheduled_at > now() - (${NO_SHOW_GRACE_MINUTES + 60}::int * interval '1 minute')
+  `;
+  let created = 0;
+  for (const tour of tours) {
+    created += await scheduleTourFollowUps({
+      id: tour.id,
+      facilityId: tour.facility_id,
+      scheduledAt: new Date(tour.scheduled_at),
+    });
+  }
+  return created;
 }
 
 interface DueTour {

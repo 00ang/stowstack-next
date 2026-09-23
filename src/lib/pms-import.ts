@@ -17,6 +17,7 @@
  */
 
 import { db } from "@/lib/db";
+import { scheduleDetection } from "@/lib/events/detect";
 import {
   type UploadType,
   EXPECTED_COLUMNS,
@@ -450,6 +451,9 @@ export async function importParsed(
       snapshotDate,
       mappedRows,
     );
+    // The rent roll and unit mix just moved — the only thing detection reads —
+    // so this is the moment to look, not the next tick of a clock.
+    await scheduleDetection(facilityId).catch((err) => console.error("[pms] scheduling detection failed:", err));
     return { type, imported, summary };
   }
   if (type === "aging") {

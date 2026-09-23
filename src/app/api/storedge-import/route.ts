@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { scheduleDetection } from "@/lib/events/detect";
 import { jsonResponse, errorResponse, getOrigin, corsResponse, requireAdminKey } from "@/lib/api-helpers";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
@@ -248,6 +249,9 @@ export async function POST(req: NextRequest) {
       return errorResponse(`Unknown report_type: ${report_type}`, 400, origin);
     }
 
+    // Most of these reports move units or the rent roll; detection is cheap and
+    // idempotent, so it runs after any of them rather than tracking which.
+    await scheduleDetection(facility_id).catch((err) => console.error("[pms] scheduling detection failed:", err));
     return jsonResponse({ success: true, report_type, ...result }, 200, origin);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

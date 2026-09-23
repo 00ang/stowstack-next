@@ -11,6 +11,7 @@
  */
 
 import { db } from "@/lib/db";
+import { enqueue } from "@/lib/jobs/queue";
 
 /** Long enough to finish a phone call and pay; short enough not to strand a unit. */
 export const HOLD_MINUTES = 30;
@@ -108,6 +109,17 @@ export async function placeHold(input: {
   `;
 
   if (rows.length === 0) return { held: false, reason: "none-available" };
+
+  // The hold knows when it lapses, so it books its own bookkeeping for then
+  // instead of a sweep polling for it every five minutes. Best effort: the
+  // six-hourly `holds.expire` backstop catches anything this misses.
+  await enqueue({
+    queue: "holds.expire",
+    dedupeKey: `hold:${rows[0].id}`,
+    tenantKey: input.facilityId,
+    runAfter: new Date(new Date(rows[0].expires_at).getTime() + 60_000),
+  }).catch((error) => console.error("[hold] scheduling expiry failed:", rows[0].id, error));
+
   return { held: true, id: rows[0].id, expiresAt: rows[0].expires_at };
 }
 

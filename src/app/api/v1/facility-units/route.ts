@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { scheduleDetection } from "@/lib/events/detect";
 import {
   v1CorsResponse,
   v1Json,
@@ -97,6 +98,8 @@ export async function POST(request: NextRequest) {
       facilityId,
       units: saved,
     }).catch((err) => console.error("[webhook] Fire-and-forget failed:", err));
+
+    if (facilityId) await scheduleDetection(facilityId).catch((err) => console.error("[pms] scheduling detection failed:", err));
 
     return v1Json({ units: saved });
   } catch {

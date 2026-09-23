@@ -11,7 +11,8 @@ import {
   requireScope,
 } from "@/lib/v1-auth";
 import { dispatchWebhook } from "@/lib/webhook";
-import { respondToNewLeadSafely } from "@/lib/respond/speed-to-lead";
+import { respondToNewLeadSafely, scheduleSpeedCheck } from "@/lib/respond/speed-to-lead";
+import { scheduleRescue } from "@/lib/respond/abandoned";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidUuid } from "@/lib/validation";
@@ -166,7 +167,20 @@ export async function POST(request: NextRequest) {
     // that has a deadline.
     if (!leadStatus || leadStatus === "new") {
       const id = rows[0]?.id;
-      if (typeof id === "string") await respondToNewLeadSafely(id);
+      if (typeof id === "string") {
+        await scheduleSpeedCheck(id, facilityId).catch(() => { /* best effort: the six-hourly sweep will find it */ });
+        await respondToNewLeadSafely(id);
+      }
+    }
+
+    // RESPOND r8. A lead pushed in as `partial` with a phone is one the
+    // abandoned-rental rescue would pick up, so it is scheduled for it.
+    if (leadStatus === "partial" && phone && typeof rows[0]?.id === "string") {
+      await scheduleRescue({
+        id: rows[0].id,
+        createdAt: new Date(rows[0].created_at as string | Date),
+        facilityId,
+      }).catch(() => { /* best effort: rescue is a nicety, not a promise */ });
     }
 
     return v1Json({ lead: rows[0] });

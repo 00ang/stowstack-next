@@ -26,6 +26,7 @@
  */
 
 import { db } from "@/lib/db";
+import { enqueue } from "@/lib/jobs/queue";
 import { t } from "@/lib/messaging/copy";
 import { languageFor } from "@/lib/messaging/language";
 import { sendMessage } from "@/lib/messaging/send";
@@ -155,6 +156,32 @@ export async function respondToNewLeadSafely(leadId: string): Promise<SpeedResul
     console.error("[speed-to-lead] failed for", leadId, error);
     return { acked: false, alerted: false, latencyMs: null, reason: "threw" };
   }
+}
+
+/** How long after a lead lands its safety check runs. */
+export const CHECK_AFTER_MINUTES = 2;
+
+/**
+ * Enqueue the safety net for a lead that was just written.
+ *
+ * The inline answer is the path; this is the net under it, for a submit request
+ * that died between writing the lead and answering it. It runs the same sweep
+ * that used to run every five minutes — `unansweredLeads` — but only when a lead
+ * has actually arrived, instead of keeping the database awake around the clock
+ * to find nothing (see src/lib/jobs/alarm.ts).
+ *
+ * Call it BEFORE the inline attempt, so the only gap left is the one between
+ * two statements; the six-hourly `respond.speed-to-lead` backstop covers that.
+ * Safe alongside the inline path: every send is keyed on the lead, so a lead
+ * that was answered is never texted twice.
+ */
+export async function scheduleSpeedCheck(leadId: string, tenantKey?: string | null): Promise<void> {
+  await enqueue({
+    queue: "respond.speed-to-lead",
+    dedupeKey: `speedcheck:${leadId}`,
+    tenantKey: tenantKey ?? undefined,
+    runAfter: new Date(Date.now() + CHECK_AFTER_MINUTES * 60_000),
+  });
 }
 
 /** Leads that were never answered. The gap this module exists to close. */
