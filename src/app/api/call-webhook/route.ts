@@ -5,6 +5,8 @@ import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isMissedCall, textBackMissedCall } from "@/lib/respond/missed-call";
 import { enqueue } from "@/lib/jobs/queue";
+import { callTouch, phoneHash } from "@/lib/attribution/touch";
+import { recordTouch } from "@/lib/attribution/visitor";
 
 const { VoiceResponse } = twilio.twiml;
 
@@ -116,7 +118,7 @@ export async function POST(req: NextRequest) {
 
   const trackingNum = await db.call_tracking_numbers.findFirst({
     where: { phone_number: To, status: "active" },
-    select: { id: true, facility_id: true, forward_to: true, utm_link_id: true },
+    select: { id: true, facility_id: true, forward_to: true, utm_link_id: true, landing_page_id: true },
   });
 
   if (!trackingNum) {
@@ -127,11 +129,15 @@ export async function POST(req: NextRequest) {
 
   // Derive campaign attribution from tracking number → UTM link
   let campaignSource: string | null = null;
+  let utmLink: {
+    utm_source: string; utm_medium: string; utm_campaign: string | null;
+    utm_content: string | null; utm_term: string | null;
+  } | null = null;
   if (trackingNum.utm_link_id) {
     try {
-      const utmLink = await db.utm_links.findUnique({
+      utmLink = await db.utm_links.findUnique({
         where: { id: trackingNum.utm_link_id },
-        select: { utm_campaign: true },
+        select: { utm_source: true, utm_medium: true, utm_campaign: true, utm_content: true, utm_term: true },
       });
       campaignSource = utmLink?.utm_campaign || null;
     } catch { /* non-critical */ }
@@ -143,6 +149,16 @@ export async function POST(req: NextRequest) {
     VALUES (${trackingNum.id}::uuid, ${trackingNum.facility_id}::uuid, ${CallSid}, ${From || null}, ${FromCity || null}, ${FromState || null}, ${campaignSource}, 'ringing', NOW(), NOW())
     ON CONFLICT (twilio_call_sid) DO NOTHING
   `.catch((err) => console.error("[call_log] Fire-and-forget failed:", err));
+
+  // MISSION.md s12 — the call is a touch too. Keyed by CallSid, so a redelivered
+  // webhook records it once; joined to a lead later by the caller's phone hash.
+  recordTouch({
+    ...callTouch(utmLink),
+    facility_id: trackingNum.facility_id,
+    landing_page_id: trackingNum.landing_page_id,
+    source_ref: CallSid || null,
+    phone_hash: phoneHash(From),
+  }).catch((err) => console.error("[call_touch] Fire-and-forget failed:", err));
 
   // Generate TwiML to forward the call with recording
   const twiml = new VoiceResponse();

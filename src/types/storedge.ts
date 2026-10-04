@@ -18,7 +18,13 @@ export interface TrackingParams {
   // Platform click IDs
   fbclid?: string;
   gclid?: string;
+  /** Google's iOS app-to-web click id — arrives instead of gclid on much iPhone traffic. */
+  gbraid?: string;
+  /** Google's iOS web-to-app click id. */
+  wbraid?: string;
   ttclid?: string;
+  /** Microsoft Advertising click id. */
+  msclkid?: string;
   // StorageAds internal params
   sa_landing_page?: string;
   sa_campaign_id?: string;

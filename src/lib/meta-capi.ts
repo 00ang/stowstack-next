@@ -29,13 +29,27 @@ type CustomData = {
   contentCategory?: string;
 };
 
-type FireArgs = {
+export type FireArgs = {
   eventName: "Lead" | "InitiateCheckout" | "Purchase" | "ViewContent" | "PageView";
   eventSourceUrl?: string;
   eventId?: string;
   userData: UserData;
   customData?: CustomData;
+  /** Defaults to "website". A move-in reported after the fact is "physical_store". */
+  actionSource?: "website" | "physical_store" | "system_generated" | "phone_call";
+  /** When the conversion happened. Defaults to now. */
+  eventTime?: Date;
+  /** Override the env pixel — a facility with its own pixel. */
+  pixelId?: string | null;
+  /** Override the env token — paired with a facility pixel override. */
+  accessToken?: string | null;
 };
+
+export type MetaSendResult =
+  | { ok: true; status: number }
+  | { ok: false; status: number | null; reason: "not_configured" | "rejected" | "transient"; detail: string };
+
+const META_GRAPH_VERSION = "v21.0";
 
 function sha256Lower(value: string): string {
   return crypto.createHash("sha256").update(value.toLowerCase().trim()).digest("hex");
@@ -67,14 +81,19 @@ function hashUserData(ud: UserData): Record<string, unknown> {
  * intentional so dev environments don't fail lead capture.
  */
 export async function fireMetaCapi(args: FireArgs): Promise<boolean> {
-  const pixelId = process.env.META_PIXEL_ID;
-  const accessToken = process.env.META_ACCESS_TOKEN;
-  if (!pixelId || !accessToken) return false;
+  const res = await sendMetaEvent(args);
+  if (!res.ok && res.reason !== "not_configured") {
+    console.error("[meta-capi] server fire failed:", res.status, res.detail);
+  }
+  return res.ok;
+}
 
+/** Build the single event object Meta expects in `data[]`. Pure. */
+export function buildMetaEvent(args: FireArgs): Record<string, unknown> {
   const event: Record<string, unknown> = {
     event_name: args.eventName,
-    event_time: Math.floor(Date.now() / 1000),
-    action_source: "website",
+    event_time: Math.floor((args.eventTime ?? new Date()).getTime() / 1000),
+    action_source: args.actionSource ?? "website",
     user_data: hashUserData(args.userData),
   };
   if (args.eventId) event.event_id = args.eventId;
@@ -89,20 +108,33 @@ export async function fireMetaCapi(args: FireArgs): Promise<boolean> {
     if (Object.keys(cd).length) event.custom_data = cd;
   }
 
+  return event;
+}
+
+/**
+ * Send one event and say what happened, for callers that need to know the
+ * difference between "Meta refused this" (do not retry — it will refuse again)
+ * and "Meta was unreachable" (retry; the event_id makes a duplicate harmless).
+ */
+export async function sendMetaEvent(args: FireArgs): Promise<MetaSendResult> {
+  const pixelId = args.pixelId || process.env.META_PIXEL_ID;
+  const accessToken = args.accessToken || process.env.META_ACCESS_TOKEN;
+  if (!pixelId || !accessToken) {
+    return { ok: false, status: null, reason: "not_configured", detail: "META_PIXEL_ID / META_ACCESS_TOKEN not set" };
+  }
+
+  const event = buildMetaEvent(args);
   try {
-    const res = await fetch(`https://graph.facebook.com/v21.0/${pixelId}/events`, {
+    const res = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/${pixelId}/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data: [event], access_token: accessToken }),
     });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      console.error("[meta-capi] server fire failed:", res.status, body.slice(0, 300));
-      return false;
-    }
-    return true;
+    if (res.ok) return { ok: true, status: res.status };
+    const body = (await res.text().catch(() => "")).slice(0, 500);
+    const transient = res.status === 429 || res.status >= 500;
+    return { ok: false, status: res.status, reason: transient ? "transient" : "rejected", detail: body };
   } catch (err) {
-    console.error("[meta-capi] server fire error:", err instanceof Error ? err.message : err);
-    return false;
+    return { ok: false, status: null, reason: "transient", detail: err instanceof Error ? err.message : String(err) };
   }
 }

@@ -15,7 +15,10 @@ const TRACKED_KEYS: (keyof TrackingParams)[] = [
   'utm_term',
   'fbclid',
   'gclid',
+  'gbraid',
+  'wbraid',
   'ttclid',
+  'msclkid',
   'sa_landing_page',
   'sa_campaign_id',
 ];
@@ -61,7 +64,15 @@ export function parseTrackingParams(searchParams: URLSearchParams): TrackingPara
 
 /** Check if any paid tracking params are present */
 export function hasPaidParams(params: TrackingParams): boolean {
-  return !!(params.utm_source || params.fbclid || params.gclid || params.ttclid);
+  return !!(
+    params.utm_source ||
+    params.fbclid ||
+    params.gclid ||
+    params.gbraid ||
+    params.wbraid ||
+    params.ttclid ||
+    params.msclkid
+  );
 }
 
 /** Determine the traffic source */
@@ -71,7 +82,7 @@ export function getTrafficSource(
   if (params.fbclid || params.utm_source === 'facebook' || params.utm_source === 'meta') {
     return 'facebook';
   }
-  if (params.gclid || params.utm_source === 'google') {
+  if (params.gclid || params.gbraid || params.wbraid || params.utm_source === 'google') {
     return 'google';
   }
   if (params.ttclid || params.utm_source === 'tiktok') {

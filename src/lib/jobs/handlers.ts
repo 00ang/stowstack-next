@@ -23,6 +23,7 @@ import { textBackMissedCall } from "@/lib/respond/missed-call";
 import { rescueAbandoned } from "@/lib/respond/abandoned";
 import { respondToNewLead, unansweredLeads } from "@/lib/respond/speed-to-lead";
 import { sweepNoShows, sweepReminders1, sweepReminders24 } from "@/lib/respond/tour";
+import { reportMoveInToGoogle, reportMoveInToMeta } from "@/lib/attribution/write-back";
 import {
   detectForFacility,
   detectInventoryForFacility,
@@ -257,4 +258,9 @@ export const HANDLERS: Record<string, JobHandler> = {
   "pms.detect-events": detectPmsEvents,
   "pms.detect-inventory": detectInventory,
   "jobs.prune": pruneJobs,
+  // MISSION.md s12 — subscribers to `lead.moved_in`. Retry-safe: each report
+  // carries the same event/order id on every attempt and the platforms drop
+  // the duplicate, so a timeout is retried rather than frozen.
+  "prove.meta-conversion": reportMoveInToMeta,
+  "prove.google-conversion": reportMoveInToGoogle,
 };
