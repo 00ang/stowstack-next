@@ -264,6 +264,26 @@ export async function attemptAndPersistLeadMatch(
     }
   }
 
+  // MISSION.md s12 — cost per move-in sums `monthly_revenue` on moved-in leads,
+  // and nothing wrote it on a match, so every matched move-in counted as $0.
+  // Fill it (and the move-in date) from the tenant, without overwriting a value
+  // an operator already set by hand.
+  if (linked && result.bestCandidate && (tenant.monthly_rate != null || tenant.move_in_date)) {
+    const rate = tenant.monthly_rate == null || tenant.monthly_rate === "" ? null : Number(tenant.monthly_rate);
+    const moveIn = tenant.move_in_date ? new Date(tenant.move_in_date) : null;
+    try {
+      await client.$executeRaw`
+        UPDATE partial_leads
+        SET monthly_revenue = COALESCE(monthly_revenue, ${rate != null && Number.isFinite(rate) && rate > 0 ? rate : null}),
+            move_in_date    = COALESCE(move_in_date, ${moveIn && !Number.isNaN(moveIn.getTime()) ? moveIn.toISOString().slice(0, 10) : null}::date),
+            updated_at      = NOW()
+        WHERE id = ${result.bestCandidate.partial_lead_id}::uuid
+      `;
+    } catch (err) {
+      console.error("[lead-matching] revenue backfill failed:", err instanceof Error ? err.message : err);
+    }
+  }
+
   // MISSION.md s12 — a confident match is a move-in we can trace, so tell the
   // ad platforms (the subscribers to `lead.moved_in` do the reporting). Only
   // "matched" gets here: an ambiguous match reports nothing until a person

@@ -33,6 +33,7 @@ import {
   TrendingUp,
   Users,
   TrendingDown,
+  SendHorizontal,
   ListChecks,
   Radio,
 } from "lucide-react";
@@ -117,6 +118,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "ECRI Finder", href: "/admin/intelligence/ecri", icon: TrendingUp, scoped: true },
       { label: "Portfolio", href: "/admin/portfolio", icon: Target },
       { label: "Cost per Move-in", href: "/admin/attribution", icon: TrendingDown },
+      { label: "Move-in Reports", href: "/admin/conversions", icon: SendHorizontal },
       { label: "Reports", href: "/admin/reports", icon: FileText },
     ],
   },

@@ -174,6 +174,29 @@ export default function AdPublisher({
     }
   }
 
+  /** MISSION.md s12 — save a connection's move-in reporting settings. */
+  async function saveWriteBackSettings(
+    connectionId: string,
+    settings: Record<string, string>
+  ): Promise<Record<string, string>> {
+    const res = await fetch("/api/platform-connections", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "X-Admin-Key": adminKey },
+      body: JSON.stringify({ connectionId, settings }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.error || "Could not save settings.");
+    const next = (json.settings ?? {}) as Record<string, string>;
+    setConnections((prev) =>
+      prev.map((c) =>
+        c.id === connectionId
+          ? { ...c, metadata: { ...(c.metadata ?? {}), ...next } }
+          : c
+      )
+    );
+    return next;
+  }
+
   async function publishAd() {
     if (!selectedVariation || !selectedConnection) return;
     setPublishing(true);
@@ -253,6 +276,7 @@ export default function AdPublisher({
         connections={connections}
         disconnect={disconnect}
         disconnecting={disconnecting}
+        saveWriteBackSettings={saveWriteBackSettings}
       />
 
       {/* Publish Controls */}

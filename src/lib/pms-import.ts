@@ -287,6 +287,8 @@ export async function importRentRoll(
       size_label: r.size_label ? String(r.size_label) : null,
       tenant_name: r.tenant_name ? String(r.tenant_name) : null,
       account: r.account ? String(r.account) : null,
+      phone: r.phone ? String(r.phone).trim().slice(0, 30) || null : null,
+      email: r.email && String(r.email).includes("@") ? String(r.email).trim().toLowerCase().slice(0, 254) : null,
       rental_start: r.rental_start ? new Date(r.rental_start as string) : null,
       paid_thru: r.paid_thru ? new Date(r.paid_thru as string) : null,
       rent_rate: toNumber(r.rent_rate),

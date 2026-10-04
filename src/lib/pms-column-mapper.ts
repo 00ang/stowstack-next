@@ -13,7 +13,7 @@ export const UPLOAD_TYPES: { key: UploadType; label: string; desc: string }[] = 
   {
     key: "rent_roll",
     label: "Rent Roll",
-    desc: "unit, size_label, tenant_name, account, rental_start, paid_thru, rent_rate, insurance_premium, total_due, days_past_due",
+    desc: "unit, size_label, tenant_name, account, rental_start, paid_thru, rent_rate, insurance_premium, total_due, days_past_due — plus optional phone, email (lets move-ins be matched to the ads that brought them)",
   },
   {
     key: "aging",
@@ -31,6 +31,9 @@ export const EXPECTED_COLUMNS: Record<UploadType, string[]> = {
   rent_roll: [
     "unit", "size_label", "tenant_name", "account", "rental_start",
     "paid_thru", "rent_rate", "insurance_premium", "total_due", "days_past_due",
+    // Optional. Not required to import; when present, a move-in can be matched
+    // to the lead that inquired (MISSION.md s12).
+    "phone", "email",
   ],
   aging: [
     "unit", "tenant_name", "bucket_0_30", "bucket_31_60",
@@ -38,6 +41,21 @@ export const EXPECTED_COLUMNS: Record<UploadType, string[]> = {
   ],
   revenue: ["year", "month", "revenue", "monthly_tax", "move_ins", "move_outs"],
 };
+
+/**
+ * Columns that are useful when present but never block an import. A rent roll
+ * without phone/email imports exactly as before; with them, a move-in can be
+ * matched to the lead that inquired (MISSION.md s12).
+ */
+export const OPTIONAL_COLUMNS: Record<UploadType, string[]> = {
+  rent_roll: ["phone", "email"],
+  aging: [],
+  revenue: [],
+};
+
+export function isOptionalColumn(type: UploadType, column: string): boolean {
+  return OPTIONAL_COLUMNS[type].includes(column);
+}
 
 /* ── CSV parsing ── */
 

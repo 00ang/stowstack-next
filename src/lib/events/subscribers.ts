@@ -11,8 +11,8 @@
  * runner), so the events accumulate visibly and are re-deliverable the day the
  * handler ships, instead of being silently dropped between now and then.
  *
- * Registered handlers today: `respond.waitlist-notify`, and the two `prove.*`
- * write-back queues (MISSION.md s12). The rest are intentional placeholders,
+ * Registered handlers today: `respond.waitlist-notify`, and the three `prove.*`
+ * queues (MISSION.md s12). The rest are intentional placeholders,
  * which is why the map is the documentation.
  */
 
@@ -21,7 +21,9 @@ import type { EventType } from "./types";
 export const SUBSCRIBERS: Record<EventType, string[]> = {
   // MAIL m2 welcome kit (gate code + map, move-in day) · RETAIN t4 autopay push
   // · RETAIN t5 insurance and lock upsell · RETAIN t1 review request at day 3
-  "unit.moved_in": ["mail.welcome-kit", "retain.autopay-push", "retain.review-request"],
+  // · PROVE s12 match the move-in to the lead that inquired (CSV path; the V1
+  // tenants API matches inline), which is what lets it reach the ad platforms
+  "unit.moved_in": ["mail.welcome-kit", "retain.autopay-push", "retain.review-request", "prove.match-move-in"],
 
   // MAIL m4 winback at 6/12/24 months · REACH h7 past-tenant audience ·
   // RETAIN t7 exit survey

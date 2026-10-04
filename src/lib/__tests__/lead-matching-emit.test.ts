@@ -12,9 +12,11 @@ const TENANT = { id: "22222222-2222-2222-2222-222222222222", facility_id: FAC, p
 const lead = (id: string) => ({ id, email: null, phone: "2695550142", name: "Pat", created_at: new Date("2026-09-20T00:00:00Z") });
 
 /** A client whose queries answer, in order: the phone strategy, then the attempt insert. */
+let $executeRaw = vi.fn();
 function client(phoneRows: unknown[]) {
   const $queryRaw = vi.fn().mockResolvedValueOnce(phoneRows).mockResolvedValueOnce([{ id: "attempt-1" }]);
-  return { $queryRaw } as never;
+  $executeRaw = vi.fn().mockResolvedValue(1);
+  return { $queryRaw, $executeRaw } as never;
 }
 
 beforeEach(() => vi.clearAllMocks());
@@ -54,5 +56,18 @@ describe("attemptAndPersistLeadMatch → lead.moved_in", () => {
   it("an emit failure never fails the tenant import", async () => {
     vi.mocked(emit).mockRejectedValueOnce(new Error("bus down"));
     await expect(attemptAndPersistLeadMatch(client([lead("L1")]), TENANT)).resolves.toMatchObject({ linked: true });
+  });
+
+  it("records the rent and move-in date on the lead, so cost per move-in has revenue", async () => {
+    await attemptAndPersistLeadMatch(client([lead("L1")]), TENANT);
+    expect($executeRaw).toHaveBeenCalledTimes(1);
+    const [strings, rate, moveIn, leadId] = $executeRaw.mock.calls[0];
+    expect((strings as TemplateStringsArray).join("?")).toMatch(/monthly_revenue = COALESCE\(monthly_revenue/);
+    expect([rate, moveIn, leadId]).toEqual([129, "2026-10-01", "L1"]);
+  });
+
+  it("does not touch revenue for an ambiguous match", async () => {
+    await attemptAndPersistLeadMatch(client([lead("L1"), lead("L2")]), TENANT);
+    expect($executeRaw).not.toHaveBeenCalled();
   });
 });

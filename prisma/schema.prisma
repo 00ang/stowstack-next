@@ -614,6 +614,9 @@ model facility_pms_rent_roll {
   size_label        String?
   tenant_name       String?
   account           String?
+  /// Optional (MISSION.md s12) — when the export carries them, a CSV move-in can be matched to its lead.
+  phone             String?    @db.VarChar(30)
+  email             String?    @db.VarChar(254)
   rental_start      DateTime?  @db.Date
   paid_thru         DateTime?  @db.Date
   rent_rate         Decimal?   @db.Decimal(8, 2)

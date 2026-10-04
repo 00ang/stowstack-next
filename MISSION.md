@@ -316,13 +316,21 @@ Nothing above this line ships to a portfolio account. These are the pieces every
   - [x] every write-back attempt leaves a `conversion_reports` row: sent, skipped with a reason, or failed
   - [x] retries cannot double-count — Meta's event_id and Google's order_id are `movein:<tenant id>`
         on every attempt, and both platforms drop the duplicate
-  - [ ] migration applied to production — needs explicit approval (CLAUDE.md)
-  - [ ] a Google conversion action per facility (`metadata.moveInConversionActionId` on the
-        `google_ads` connection, or `GOOGLE_ADS_MOVE_IN_CONVERSION_ACTION_ID` for one account), and
-        `metadata.pixelId` on any facility with its own Meta pixel. No admin UI for these yet
-  - [ ] **the CSV PMS upload matches leads.** Only `/api/v1/tenants` runs `attemptAndPersistLeadMatch`,
-        so a move-in that arrives by CSV never reaches write-back. The rent roll carries no phone or
-        email, which is why this is a decision rather than a one-line call
+  - [ ] migrations `20261004_visitors_touches` + `20261004_rent_roll_contact` applied to
+        production — needs explicit approval (CLAUDE.md)
+  - [x] write-back settings in the admin: Publisher → connection card → "Move-in reporting" (Meta
+        pixel; Google move-in conversion action and manager account), validated, merged into
+        connection `metadata` (`PATCH /api/platform-connections`)
+  - [ ] those settings filled in for each live facility — a Google conversion action is required
+        before any Google report can go
+  - [x] **the CSV PMS upload matches leads** — `unit.moved_in` → `prove.match-move-in` finds or creates
+        the tenant and runs the same matching as the V1 API. Needs phone or email in the export
+        (new optional rent-roll columns); without them nothing changes and no tenant row is created
+  - [x] a matched move-in writes `monthly_revenue` and `move_in_date` onto the lead — before this,
+        every matched move-in counted as $0 in cost per move-in
+  - [x] operator surfaces: lead journey (`/admin/consumer-leads/[id]`), Move-in Reports
+        (`/admin/conversions`) with grouped fixes and retry, and the same groups in the Console's
+        Needs-attention feed
   - [ ] proven end to end on one facility: a real ad click → move-in → a `sent` row on both platforms
 
 ### Phase B — RESPOND
@@ -593,6 +601,14 @@ Append-only. Date, decider, decision. Newest entry wins over prose above.
   field moves to order level. **Blocked on one question to the vendor:** is the 60 req/min limit
   per sub-account or account-wide? If account-wide, D buys nothing and the choice reopens between
   A, B and C. **Nothing should be built against D until that answer exists.**
+- **2026-10-04 · Angelo + Claude** — `s12` built out: operator screens, write-back settings, CSV
+  matching. One judgement call worth knowing: a CSV move-in becomes a `tenants` row **only when the
+  export carries a phone or email**, because that row is what matching links to. NOI, ECRI and churn
+  scoring all read `tenants`, so creating rows for move-ins that can never be matched would change
+  those features for no attribution gain; with contact columns, the new rows are real, recent move-ins
+  (marked `metadata.source = "pms_csv"`). Screens follow the repo's own admin design system, not the
+  mockup direction.
+
 - **2026-10-04 · Angelo + Claude** — `s12` (Visitor, Touch, move-in write-back) added to Phase A
   **ahead of the gate, by Angelo's decision.** Cost per move-in by channel is "the one number
   underneath all of it" (§1), and `p1`, `p6` and `p8` all read from this layer, so it is spine, not
