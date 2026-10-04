@@ -517,6 +517,8 @@ model facilities {
   deleted_by                   String?
 
   facility_tours               facility_tours[]
+  touches                      touches[]
+  conversion_reports           conversion_reports[]
   @@index([access_code], map: "idx_facilities_access_code")
   @@index([contact_email], map: "idx_facilities_contact_email")
   @@index([organization_id], map: "idx_facilities_organization")
@@ -612,6 +614,9 @@ model facility_pms_rent_roll {
   size_label        String?
   tenant_name       String?
   account           String?
+  /// Optional (MISSION.md s12) — when the export carries them, a CSV move-in can be matched to its lead.
+  phone             String?    @db.VarChar(30)
+  email             String?    @db.VarChar(254)
   rental_start      DateTime?  @db.Date
   paid_thru         DateTime?  @db.Date
   rent_rate         Decimal?   @db.Decimal(8, 2)
@@ -1170,6 +1175,9 @@ model partial_leads {
   matched_tenant        tenants?               @relation("LeadTenantMatch", fields: [matched_tenant_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   status_events         lead_status_events[]
   tours                 facility_tours[]
+  visitors              visitors[]
+  touches               touches[]
+  conversion_reports    conversion_reports[]
 
   @@index([created_at(sort: Desc)], map: "idx_partial_leads_created")
   @@index([email], map: "idx_partial_leads_email")
@@ -2441,4 +2449,109 @@ model facility_tours {
   @@index([facility_id, scheduled_at(sort: Desc)], map: "idx_tours_facility")
   @@index([contact_phone], map: "idx_tours_phone")
   @@index([lead_id], map: "idx_tours_lead")
+}
+
+/// MISSION.md s12 — one browser, keyed by the first-party `sa_vid` cookie that
+/// `/api/tracking/visit` sets from the server (so Safari's 7-day cap on
+/// script-written storage does not apply). Becomes known when the same browser
+/// submits a phone or email; several visitors (devices) can resolve to one lead.
+model visitors {
+  /// The cookie value. Matches `partial_leads.visitor_id`.
+  id              String    @id @db.VarChar(64)
+  partial_lead_id String?   @db.Uuid
+  first_seen_at   DateTime  @default(now()) @db.Timestamptz(6)
+  last_seen_at    DateTime  @default(now()) @db.Timestamptz(6)
+  identified_at   DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  lead    partial_leads? @relation(fields: [partial_lead_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  touches touches[]
+
+  @@index([partial_lead_id], map: "idx_visitors_lead")
+}
+
+/// MISSION.md s12 — one arrival that carries a source, or one inbound call.
+/// Append-only: first and latest touch are queries over these rows
+/// (`src/lib/attribution/touch.ts`), never fields that get overwritten.
+/// A bare direct revisit writes no row — it cannot change any attribution model.
+model touches {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  visitor_id      String?  @db.VarChar(64)
+  /// Set for call touches at write time and for web touches once the visitor is identified.
+  partial_lead_id String?  @db.Uuid
+  facility_id     String?  @db.Uuid
+  landing_page_id String?  @db.Uuid
+  /// visit | call
+  kind            String   @db.VarChar(16)
+  /// paid_search | paid_social | paid_other | organic_search | organic_social | email | referral | direct | call
+  channel         String   @db.VarChar(32)
+  /// google | meta | tiktok | microsoft | the utm_source | the referring host
+  source          String?  @db.VarChar(64)
+  /// External identity (a Twilio CallSid); unique per kind so a redelivered webhook records once.
+  source_ref      String?  @db.VarChar(128)
+  occurred_at     DateTime @default(now()) @db.Timestamptz(6)
+  url             String?  @db.VarChar(2000)
+  referrer        String?  @db.VarChar(2000)
+  utm_source      String?  @db.VarChar(200)
+  utm_medium      String?  @db.VarChar(200)
+  utm_campaign    String?  @db.VarChar(200)
+  utm_content     String?  @db.VarChar(200)
+  utm_term        String?  @db.VarChar(200)
+  gclid           String?  @db.VarChar(512)
+  gbraid          String?  @db.VarChar(512)
+  wbraid          String?  @db.VarChar(512)
+  fbclid          String?  @db.VarChar(512)
+  fbc             String?  @db.VarChar(512)
+  fbp             String?  @db.VarChar(128)
+  ttclid          String?  @db.VarChar(512)
+  msclkid         String?  @db.VarChar(512)
+  /// sha256 of the caller's last ten digits (call touches only).
+  phone_hash      String?  @db.VarChar(64)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  visitor    visitors?      @relation(fields: [visitor_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lead       partial_leads? @relation(fields: [partial_lead_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  facilities facilities?    @relation(fields: [facility_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([kind, source_ref], map: "touches_kind_source_ref")
+  @@index([visitor_id, occurred_at], map: "idx_touches_visitor")
+  @@index([partial_lead_id, occurred_at], map: "idx_touches_lead")
+  @@index([facility_id, occurred_at(sort: Desc)], map: "idx_touches_facility")
+  @@index([facility_id, phone_hash], map: "idx_touches_phone")
+}
+
+/// MISSION.md s12 — every move-in we tried to report to an ad platform, and
+/// what happened. The audit trail behind cost per move-in, and the source for
+/// "failed conversion reporting" in the operator queue.
+model conversion_reports {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facility_id     String?   @db.Uuid
+  partial_lead_id String?   @db.Uuid
+  tenant_id       String?   @db.Uuid
+  /// meta | google
+  platform        String    @db.VarChar(16)
+  /// Meta event_id / Google order_id — identical on every retry, so nothing double-counts.
+  event_id        String    @db.VarChar(128)
+  /// sent | skipped | failed
+  status          String    @db.VarChar(16)
+  reason          String?   @db.VarChar(64)
+  detail          String?
+  /// gclid | gbraid | wbraid | fbc | none
+  click_id_type   String?   @db.VarChar(16)
+  value           Decimal?  @db.Decimal(10, 2)
+  currency        String    @default("USD") @db.VarChar(3)
+  conversion_at   DateTime? @db.Timestamptz(6)
+  sent_at         DateTime? @db.Timestamptz(6)
+  attempts        Int       @default(0)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  lead       partial_leads? @relation(fields: [partial_lead_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  facilities facilities?    @relation(fields: [facility_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([platform, event_id], map: "conversion_reports_platform_event_id")
+  @@index([status, created_at(sort: Desc)], map: "idx_conversion_reports_status")
+  @@index([facility_id, created_at(sort: Desc)], map: "idx_conversion_reports_facility")
+  @@index([partial_lead_id], map: "idx_conversion_reports_lead")
 }

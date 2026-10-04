@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { useAdminFetch, adminFetch } from "@/hooks/use-admin-fetch";
 import {
   UserPlus,
@@ -15,6 +16,7 @@ import {
   Globe,
   Loader2,
   Send,
+  Route,
 } from "lucide-react";
 
 interface ConsumerLead {
@@ -237,6 +239,15 @@ export default function ConsumerLeadsPage() {
                         )}
                       </div>
                     )}
+
+                    <Link
+                      href={`/admin/consumer-leads/${lead.id}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium"
+                      style={{ color: "var(--color-dark)" }}
+                    >
+                      <Route size={12} aria-hidden />
+                      View journey — every visit, call and report
+                    </Link>
 
                     <div className="flex items-center gap-2">
                       <span className="text-xs" style={{ color: "var(--color-mid-gray)" }}>Update Status:</span>

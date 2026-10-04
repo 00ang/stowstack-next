@@ -2,6 +2,15 @@
 
 > **The headline:** This is how an anonymous ad click becomes a measured move-in tied to spend. The chain is: click → `partial_leads` → call/walk-in → **lead↔tenant match** (the loop-closer) → ROAS. Two caveats to internalize: the `visitor_id`/`source_channel` columns are unwired scaffold (the real key is `session_id`), and walk-ins are **not** auto-matched.
 
+> **Update 2026-10-04 — MISSION.md `s12`.** Three things below are now out of date. (1) The visitor
+> key is the server-set `sa_vid` cookie, recorded in `visitors`, and `partial_leads.visitor_id` is
+> written on every lead route. (2) Every sourced arrival and every inbound call is an append-only row
+> in `touches`; first and latest touch are queries over it (`src/lib/attribution/touch.ts`), so the
+> localStorage params are now only a convenience for the storEDGE embed. (3) A confident lead↔tenant
+> match emits `lead.moved_in`, and `prove.meta-conversion` / `prove.google-conversion` report the
+> move-in to the ad platforms, logging every attempt in `conversion_reports`
+> (`src/lib/attribution/write-back.ts`). The diagrams have not been redrawn yet.
+
 ---
 
 ## 1. The full attribution pipeline (anonymous → tenant)

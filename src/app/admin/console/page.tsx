@@ -13,6 +13,7 @@ import {
   stalledLeadsToAttention,
   occupancyInsightsToAttention,
   revenueToAttention,
+  conversionReportsToAttention,
   relativeTime,
   formatInt,
   type AdminFacility,
@@ -23,6 +24,7 @@ import {
   type AdminLeadsResponse,
   type OccupancyIntelligence,
   type RevenueIntelligence,
+  type ConversionReportsResponse,
 } from "@/lib/console";
 import { ConsoleSection } from "@/components/admin/console/console-section";
 import { ConsolePulse } from "@/components/admin/console/console-pulse";
@@ -32,6 +34,7 @@ import { ConsoleToolkit } from "@/components/admin/console/console-toolkit";
 // Stable param references so useAdminFetch doesn't re-key each render.
 const PENDING_PMS = { status: "pending" } as const;
 const RECENT_LEADS = { limit: "100" } as const;
+const REPORTS_ATTENTION = { status: "attention" } as const;
 
 const ATTENTION_LIMIT = 8;
 
@@ -46,6 +49,7 @@ function PortfolioWorkbench({ facilities }: { facilities: AdminFacility[] }) {
   const alerts = useAdminFetch<CampaignAlertsResponse>("/api/campaign-alerts");
   const pms = useAdminFetch<PmsQueueResponse>("/api/admin-pms-queue", PENDING_PMS);
   const leads = useAdminFetch<AdminLeadsResponse>("/api/admin-leads", RECENT_LEADS);
+  const reports = useAdminFetch<ConversionReportsResponse>("/api/admin-conversion-reports", REPORTS_ATTENTION);
 
   const attention = useMemo(
     () =>
@@ -54,10 +58,11 @@ function PortfolioWorkbench({ facilities }: { facilities: AdminFacility[] }) {
           campaignAlertsToAttention(alerts.data),
           pmsQueueToAttention(pms.data),
           stalledLeadsToAttention(leads.data),
+          conversionReportsToAttention(reports.data),
         ],
         ATTENTION_LIMIT,
       ),
-    [alerts.data, pms.data, leads.data],
+    [alerts.data, pms.data, leads.data, reports.data],
   );
   const counts = useMemo(() => severityCounts(attention), [attention]);
   const metrics = useMemo(
@@ -100,6 +105,8 @@ function FacilityWorkbench({ facilityId, facilityName }: { facilityId: string; f
   const revenue = useAdminFetch<RevenueIntelligence>("/api/revenue-intelligence", facilityParams);
   const alerts = useAdminFetch<CampaignAlertsResponse>("/api/campaign-alerts");
   const pms = useAdminFetch<PmsQueueResponse>("/api/admin-pms-queue", pmsParams);
+  const reportParams = useMemo(() => ({ facilityId, status: "attention" }), [facilityId]);
+  const reports = useAdminFetch<ConversionReportsResponse>("/api/admin-conversion-reports", reportParams);
 
   const attention = useMemo(
     () =>
@@ -109,10 +116,11 @@ function FacilityWorkbench({ facilityId, facilityName }: { facilityId: string; f
           revenueToAttention(revenue.data, facilityName),
           campaignAlertsToAttention(alerts.data, { facilityName }),
           pmsQueueToAttention(pms.data, { facilityName }),
+          conversionReportsToAttention(reports.data, { facilityName }),
         ],
         ATTENTION_LIMIT,
       ),
-    [occupancy.data, revenue.data, alerts.data, pms.data, facilityName],
+    [occupancy.data, revenue.data, alerts.data, pms.data, reports.data, facilityName],
   );
   const counts = useMemo(() => severityCounts(attention), [attention]);
   const metrics = useMemo(

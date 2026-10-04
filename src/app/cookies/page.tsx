@@ -46,8 +46,9 @@ export default function CookiePolicyPage() {
         </p>
         <ul>
           <li>UTM parameters (campaign source, medium, campaign name)</li>
-          <li>Platform click IDs (fbclid for Meta, gclid for Google)</li>
+          <li>Platform click IDs (fbclid for Meta; gclid, gbraid and wbraid for Google; msclkid for Microsoft)</li>
           <li>StorageAds session identifiers for attribution</li>
+          <li>A StorageAds visitor identifier (<code>sa_vid</code>), a random ID kept for up to 400 days so a later reservation can be connected to the ad that started it</li>
         </ul>
         <p>
           This data is used exclusively to measure advertising performance and

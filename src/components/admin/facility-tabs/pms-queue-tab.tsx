@@ -23,6 +23,7 @@ import {
   parseCSVText,
   autoMapColumns,
   mapRows,
+  isOptionalColumn,
 } from "@/lib/pms-column-mapper";
 
 /* ── types ── */
@@ -343,7 +344,7 @@ function CSVProcessor({
   /* Auto-process: try importing with auto-mapped columns */
   const autoProcess = async () => {
     const expected = EXPECTED_COLUMNS[uploadType];
-    const allMapped = expected.every((e) => !!columnMap[e]);
+    const allMapped = expected.every((e) => isOptionalColumn(uploadType, e) || !!columnMap[e]);
     if (!allMapped) {
       setResult({ ok: false, message: "Cannot auto-process: not all columns could be mapped automatically." });
       return;
@@ -401,7 +402,7 @@ function CSVProcessor({
   };
 
   const expected = EXPECTED_COLUMNS[uploadType];
-  const allMapped = expected.every((e) => !!columnMap[e]);
+  const allMapped = expected.every((e) => isOptionalColumn(uploadType, e) || !!columnMap[e]);
 
   return (
     <div className="border-t border-[var(--border-subtle)] bg-[var(--color-light-gray)]/30 p-4 space-y-4">

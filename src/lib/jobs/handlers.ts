@@ -23,6 +23,8 @@ import { textBackMissedCall } from "@/lib/respond/missed-call";
 import { rescueAbandoned } from "@/lib/respond/abandoned";
 import { respondToNewLead, unansweredLeads } from "@/lib/respond/speed-to-lead";
 import { sweepNoShows, sweepReminders1, sweepReminders24 } from "@/lib/respond/tour";
+import { reportMoveInToGoogle, reportMoveInToMeta } from "@/lib/attribution/write-back";
+import { matchCsvMoveIn, type CsvMoveInPayload } from "@/lib/attribution/csv-move-in";
 import {
   detectForFacility,
   detectInventoryForFacility,
@@ -245,6 +247,19 @@ const tourNoShows: JobHandler = async () => ({
   progressDone: (await sweepNoShows()).sent,
 });
 
+/**
+ * MISSION.md s12 — a move-in detected from a CSV rent roll is matched to the
+ * lead that inquired, the same way the V1 tenants API does it inline. A match
+ * emits `lead.moved_in`, and the write-back queues take it from there.
+ * Idempotent: the tenant is found rather than duplicated on a second run.
+ */
+const matchMoveIn: JobHandler = async (ctx) => {
+  const p = (ctx.payload ?? {}) as CsvMoveInPayload;
+  if (!p.facilityId || !p.unit) return { kind: "unknown", reason: "match-move-in job missing facilityId or unit" };
+  const res = await matchCsvMoveIn(p);
+  return { kind: "done", progressDone: res.outcome === "matched" ? 1 : 0 };
+};
+
 export const HANDLERS: Record<string, JobHandler> = {
   "respond.tour-reminders": tourReminders,
   "respond.tour-noshow": tourNoShows,
@@ -257,4 +272,10 @@ export const HANDLERS: Record<string, JobHandler> = {
   "pms.detect-events": detectPmsEvents,
   "pms.detect-inventory": detectInventory,
   "jobs.prune": pruneJobs,
+  // MISSION.md s12 — subscribers to `lead.moved_in`. Retry-safe: each report
+  // carries the same event/order id on every attempt and the platforms drop
+  // the duplicate, so a timeout is retried rather than frozen.
+  "prove.meta-conversion": reportMoveInToMeta,
+  "prove.google-conversion": reportMoveInToGoogle,
+  "prove.match-move-in": matchMoveIn,
 };

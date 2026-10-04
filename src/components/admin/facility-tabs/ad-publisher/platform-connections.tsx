@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Link2,
   Unlink,
@@ -7,7 +8,10 @@ import {
   Clock,
   Plug,
   Shield,
+  Check,
+  Loader2,
 } from "lucide-react";
+import { readWriteBackSettings } from "@/lib/attribution/connection-settings";
 
 /* ── Types ───────────────────────────────────────────────────── */
 
@@ -62,16 +66,126 @@ function isTokenExpiring(conn: PlatformConnection): boolean {
   return expiresAt - Date.now() < sevenDays;
 }
 
+/* ── Move-in reporting (MISSION.md s12) ─────────────────────── */
+
+export type SaveWriteBackSettings = (
+  connectionId: string,
+  settings: Record<string, string>
+) => Promise<Record<string, string>>;
+
+const WRITE_BACK_FIELD_UI: Record<string, { key: string; label: string; placeholder: string; hint: string }[]> = {
+  meta: [
+    {
+      key: "pixelId",
+      label: "Meta pixel ID",
+      placeholder: "e.g. 1234567890123456",
+      hint: "Leave empty to report move-ins to the StorageAds pixel.",
+    },
+  ],
+  google_ads: [
+    {
+      key: "moveInConversionActionId",
+      label: "Move-in conversion action",
+      placeholder: "Conversion action ID",
+      hint: "Required. Create an offline \"Import from clicks\" action in Google Ads and paste its ID.",
+    },
+    {
+      key: "loginCustomerId",
+      label: "Manager account (optional)",
+      placeholder: "123-456-7890",
+      hint: "Only if this account is reached through a manager account.",
+    },
+  ],
+};
+
+function MoveInReportingSettings({
+  conn,
+  save,
+}: {
+  conn: PlatformConnection;
+  save: SaveWriteBackSettings;
+}) {
+  const fields = WRITE_BACK_FIELD_UI[conn.platform];
+  const initial = readWriteBackSettings(conn.platform, conn.metadata);
+  const [values, setValues] = useState<Record<string, string>>(initial);
+  const [saved, setSaved] = useState<Record<string, string>>(initial);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [justSaved, setJustSaved] = useState(false);
+
+  if (!fields) return null;
+  const dirty = fields.some((f) => (values[f.key] ?? "") !== (saved[f.key] ?? ""));
+
+  async function onSave() {
+    setSaving(true);
+    setError(null);
+    setJustSaved(false);
+    try {
+      const payload: Record<string, string> = {};
+      for (const f of fields) payload[f.key] = (values[f.key] ?? "").trim();
+      const next = await save(conn.id, payload);
+      setSaved(next);
+      setValues(next);
+      setJustSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-[var(--border-subtle)] space-y-2">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-mid-gray)]">
+        Move-in reporting
+      </p>
+      {fields.map((f) => (
+        <label key={f.key} className="block">
+          <span className="block text-[11px] font-medium text-[var(--color-dark)]">{f.label}</span>
+          <input
+            value={values[f.key] ?? ""}
+            onChange={(e) => {
+              setValues((v) => ({ ...v, [f.key]: e.target.value }));
+              setJustSaved(false);
+            }}
+            placeholder={f.placeholder}
+            className="mt-1 w-full px-2 py-1.5 text-xs border border-[var(--border-medium)] bg-[var(--color-light)] text-[var(--color-dark)] focus:outline-none focus:border-[var(--color-dark)]"
+          />
+          <span className="block text-[10px] text-[var(--color-mid-gray)] mt-0.5">{f.hint}</span>
+        </label>
+      ))}
+      {error && <p className="text-[11px] text-[var(--color-red)]">{error}</p>}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onSave}
+          disabled={!dirty || saving}
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-[var(--color-dark)] text-[var(--color-light)] disabled:opacity-40"
+        >
+          {saving && <Loader2 size={11} className="animate-spin" aria-hidden />}
+          Save
+        </button>
+        {justSaved && !dirty && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-[var(--color-mid-gray)]">
+            <Check size={11} aria-hidden /> Saved
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function PlatformConnectionsSection({
   platforms,
   connections,
   disconnect,
   disconnecting,
+  saveWriteBackSettings,
 }: {
   platforms: PlatformInfo[];
   connections: PlatformConnection[];
   disconnect: (connectionId: string) => void;
   disconnecting: string | null;
+  saveWriteBackSettings?: SaveWriteBackSettings;
 }) {
   function getConnection(platform: string) {
     return connections.find(
@@ -156,6 +270,9 @@ export function PlatformConnectionsSection({
                           ? "Disconnecting..."
                           : "Disconnect"}
                       </button>
+                      {saveWriteBackSettings && (
+                        <MoveInReportingSettings conn={conn} save={saveWriteBackSettings} />
+                      )}
                     </div>
                   ) : (
                     <div className="mt-3">

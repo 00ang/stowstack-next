@@ -16,6 +16,10 @@ export const EVENT_TYPES = [
   "tenant.delinquent",
   "unit.rate_changed",
   "inventory.available",
+  // MISSION.md s12 — a lead we can trace was matched to a real move-in. Not a
+  // snapshot diff like the rest: emitted by `attemptAndPersistLeadMatch` the
+  // moment the match is persisted. Keyed by tenant, so a move-in reports once.
+  "lead.moved_in",
 ] as const;
 
 export type EventType = (typeof EVENT_TYPES)[number];

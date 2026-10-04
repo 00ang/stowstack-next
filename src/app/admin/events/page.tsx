@@ -31,6 +31,7 @@ const LABEL: Record<string, string> = {
   "tenant.delinquent": "Delinquent",
   "unit.rate_changed": "Rate changed",
   "inventory.available": "Unit available",
+  "lead.moved_in": "Lead moved in",
 };
 
 function ago(iso: string | null): string {
@@ -53,6 +54,9 @@ function summarise(e: EventRow): string {
       return [unit, p.from != null && p.to != null ? `$${p.from} → $${p.to}` : ""].filter(Boolean).join(" · ");
     case "inventory.available":
       return [p.sizeLabel ? String(p.sizeLabel) : "", p.available != null ? `${p.available} free` : ""]
+        .filter(Boolean).join(" · ");
+    case "lead.moved_in":
+      return [p.monthlyRate != null ? `$${p.monthlyRate}/mo` : "", p.matchMethod ? `matched by ${p.matchMethod}` : ""]
         .filter(Boolean).join(" · ");
     default:
       return [unit, typeof p.tenantName === "string" ? p.tenantName : ""].filter(Boolean).join(" · ");

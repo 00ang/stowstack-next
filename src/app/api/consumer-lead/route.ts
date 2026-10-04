@@ -7,6 +7,7 @@ import { isValidEmail, sanitizeString, escapeHtml } from "@/lib/validation";
 import { sendEmail, SENDERS } from "@/lib/email";
 import { respondToNewLeadSafely } from "@/lib/respond/speed-to-lead";
 import { enqueue } from "@/lib/jobs/queue";
+import { identifyFromRequest } from "@/lib/attribution/visitor";
 
 /** Clamp optional string fields from untrusted input */
 function clean(val: unknown, max: number): string | null {
@@ -124,6 +125,9 @@ export async function POST(req: NextRequest) {
           tenantKey: updated.facility_id ?? undefined,
         }).catch(() => { /* best effort: the sweep will find it */ });
       }
+      // MISSION.md s12 — tie this browser's touches to the lead. After speed-to-lead
+      // on purpose: the first reply is the urgent part. Never throws.
+      await identifyFromRequest(req, updated.id);
 
       if (source === "audit_tool") {
         notifyAuditLead({ email: cleanEmail, facilityName, location, auditScore });
@@ -181,6 +185,9 @@ export async function POST(req: NextRequest) {
         tenantKey: lead.facility_id ?? undefined,
       }).catch(() => { /* best effort: the sweep will find it */ });
     }
+    // MISSION.md s12 — tie this browser's touches to the lead. After speed-to-lead
+    // on purpose: the first reply is the urgent part. Never throws.
+    await identifyFromRequest(req, lead.id);
 
     if (source === "audit_tool") {
       notifyAuditLead({ email: cleanEmail, facilityName, location, auditScore });
