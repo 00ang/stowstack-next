@@ -321,19 +321,16 @@ model clients {
   deleted_at          DateTime?          @db.Timestamptz(6)
   deleted_by          String?
 
+  /// Opt-in for /api/cron/send-client-reports; off until someone turns a client on.
+  /// Added by migration 20261005_restore_drifted_tables, which the production
+  /// build applies before this schema goes live (scripts/apply-db-migration.mjs).
+  report_enabled      Boolean            @default(false)
+  /// weekly | monthly
+  report_frequency    String             @default("weekly") @db.VarChar(16)
+
   @@index([access_code], map: "idx_clients_access_code")
   @@index([facility_id], map: "idx_clients_facility")
   @@index([deleted_at], map: "idx_clients_deleted_at")
-
-  /// NOTE: migration 20261005_restore_drifted_tables also adds
-  /// `report_enabled BOOLEAN NOT NULL DEFAULT false` and
-  /// `report_frequency VARCHAR(16) NOT NULL DEFAULT 'weekly'` to this table,
-  /// read by raw SQL in /api/cron/send-client-reports. They are deliberately
-  /// NOT declared here until that migration has run in production: Prisma names
-  /// every column of a model in its SELECTs, so declaring a column the database
-  /// does not have yet breaks every `db.clients` query — portal login included.
-  /// Once applied, add them as `report_enabled Boolean @default(false)` and
-  /// `report_frequency String @default("weekly") @db.VarChar(16)`.
 }
 
 // Per-month goal history for the portal results dashboard. `monthly_goal` on
