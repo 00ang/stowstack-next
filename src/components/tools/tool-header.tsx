@@ -18,7 +18,7 @@ export default function ToolHeader({
     <header
       className="sticky top-0 z-50 border-b print:hidden"
       style={{
-        background: "rgba(250,249,245,0.9)",
+        background: "color-mix(in srgb, var(--bg) 90%, transparent)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         borderColor: "var(--border-subtle)",

@@ -181,7 +181,7 @@ export default function FourWayComparison() {
                       </div>
                       <div
                         className="text-[10px] uppercase tracking-wide mt-1 font-medium"
-                        style={{ color: i === 0 ? "rgba(250,249,245,0.7)" : "var(--text-tertiary)" }}
+                        style={{ color: i === 0 ? "color-mix(in srgb, var(--bg) 70%, transparent)" : "var(--text-tertiary)" }}
                       >
                         {col.subtitle}
                       </div>

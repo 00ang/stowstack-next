@@ -355,7 +355,7 @@ function HeroStyles() {
       .hero-trust-chip:hover{transform:translateY(-2px);border-color:var(--text-faint)!important}
       /* Primary CTA: light glint sweeps across on hover + a 1px lift. */
       .hero-cta{position:relative;overflow:hidden}
-      .hero-cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:45%;background:linear-gradient(100deg,transparent 0%,rgba(250,249,245,0.22) 50%,transparent 100%);transform:translateX(-160%) skewX(-18deg);pointer-events:none}
+      .hero-cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:45%;background:linear-gradient(100deg,transparent 0%,color-mix(in srgb, var(--bg) 22%, transparent) 50%,transparent 100%);transform:translateX(-160%) skewX(-18deg);pointer-events:none}
       .hero-cta:hover::after{animation:hero-sheen 0.85s ease}
       .hero-cta:hover{transform:translateY(-1px)}
       .hero-cta:active{transform:translateY(0) scale(0.98)}
@@ -743,7 +743,7 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
               {/* Top bar */}
               <div
                 className="flex items-center justify-between px-3 sm:px-4 py-2.5 border-b"
-                style={{ borderColor: "var(--border-subtle)", background: "rgba(250,249,245,0.6)" }}
+                style={{ borderColor: "var(--border-subtle)", background: "color-mix(in srgb, var(--bg) 60%, transparent)" }}
               >
                 <div className="h-7 w-36 sm:w-48 rounded-md flex items-center gap-2 px-2.5" style={{ background: "var(--border-subtle)" }}>
                   <Search size={11} style={{ color: "var(--text-tertiary)" }} />
