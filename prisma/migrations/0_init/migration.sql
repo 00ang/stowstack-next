@@ -665,7 +665,7 @@ CREATE TABLE "facility_pms_units" (
     "features" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "total_count" INTEGER NOT NULL DEFAULT 0,
     "occupied_count" INTEGER NOT NULL DEFAULT 0,
-    "vacant_count" INTEGER DEFAULT (total_count - occupied_count),
+    "vacant_count" INTEGER GENERATED ALWAYS AS (total_count - occupied_count) STORED,
     "street_rate" DECIMAL(8,2),
     "actual_avg_rate" DECIMAL(8,2),
     "web_rate" DECIMAL(8,2),

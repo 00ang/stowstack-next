@@ -322,8 +322,7 @@ model clients {
   deleted_by          String?
 
   /// Opt-in for /api/cron/send-client-reports; off until someone turns a client on.
-  /// Added by migration 20261005_restore_drifted_tables, which the production
-  /// build applies before this schema goes live (scripts/apply-db-migration.mjs).
+  /// Added by migration 20261005_restore_drifted_tables (applied 2026-10-05).
   report_enabled      Boolean            @default(false)
   /// weekly | monthly
   report_frequency    String             @default("weekly") @db.VarChar(16)
@@ -2262,7 +2261,7 @@ model domain_events {
   occurred_at DateTime @db.Timestamptz(6)
   created_at  DateTime @default(now()) @db.Timestamptz(6)
 
-  @@unique([type, source_key])
+  @@unique([type, source_key], map: "domain_events_type_source_key")
   @@index([facility_id, type, occurred_at], map: "idx_events_facility_type")
   @@index([occurred_at], map: "idx_events_occurred")
   @@index([type, created_at], map: "idx_events_type_created")
