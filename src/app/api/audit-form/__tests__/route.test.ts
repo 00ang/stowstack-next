@@ -1,8 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockRequest } from "@/test/helpers";
 
 vi.mock("@/lib/db", () => ({
-  db: { facilities: { create: vi.fn() } },
+  db: {
+    facilities: { create: vi.fn() },
+    activity_log: { create: vi.fn().mockResolvedValue({}) },
+  },
 }));
 
 vi.mock("@/lib/with-rate-limit", () => ({
@@ -18,7 +21,10 @@ import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { POST } from "../route";
 
-const m = db as unknown as { facilities: { create: ReturnType<typeof vi.fn> } };
+const m = db as unknown as {
+  facilities: { create: ReturnType<typeof vi.fn> };
+  activity_log: { create: ReturnType<typeof vi.fn> };
+};
 const notify = sendEmail as unknown as ReturnType<typeof vi.fn>;
 
 function post(body: unknown) {
@@ -44,6 +50,7 @@ const valid = {
 beforeEach(() => {
   vi.clearAllMocks();
   m.facilities.create.mockResolvedValue({ id: "fac-1" });
+  m.activity_log.create.mockResolvedValue({});
 });
 
 describe("POST /api/audit-form", () => {
@@ -79,6 +86,7 @@ describe("POST /api/audit-form", () => {
     const arg = notify.mock.calls[0][0];
     expect(arg.subject).toContain("Sunset Storage");
     expect(arg.html).toContain("pat@sunsetstorage.com");
+    expect(m.activity_log.create).toHaveBeenCalled();
   });
 
   it("trims the email and tolerates a non-string email", async () => {
@@ -92,5 +100,63 @@ describe("POST /api/audit-form", () => {
     m.facilities.create.mockRejectedValue(new Error("db down"));
     const res = await post(valid);
     expect(res.status).toBe(500);
+  });
+
+  it("stores a homepage popup lead with name + phone and writes activity", async () => {
+    const res = await post({
+      source: "homepage_popup",
+      name: "Pat Owner",
+      phone: "512-555-0123",
+      consent: true,
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.facilityId).toBe("fac-1");
+    expect(m.facilities.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        contact_name: "Pat Owner",
+        contact_phone: "+15125550123",
+        name: "Homepage inquiry",
+        pipeline_status: "submitted",
+        form_notes: "homepage_popup:first_month_free",
+      }),
+    });
+    expect(m.activity_log.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        type: "lead_created",
+        lead_name: "Pat Owner",
+      }),
+    });
+  });
+
+  it("rejects a homepage popup without TCPA consent or a valid phone", async () => {
+    const noConsent = await post({
+      source: "homepage_popup",
+      name: "Pat",
+      phone: "512-555-0123",
+      consent: false,
+    });
+    expect(noConsent.status).toBe(400);
+
+    const badPhone = await post({
+      source: "homepage_popup",
+      name: "Pat",
+      phone: "12",
+      consent: true,
+    });
+    expect(badPhone.status).toBe(400);
+    expect(m.facilities.create).not.toHaveBeenCalled();
+  });
+
+  it("swallows honeypot submissions", async () => {
+    const res = await post({
+      source: "homepage_popup",
+      name: "Bot",
+      phone: "512-555-0123",
+      consent: true,
+      website_url: "https://spam.test",
+    });
+    expect(res.status).toBe(200);
+    expect(m.facilities.create).not.toHaveBeenCalled();
   });
 });

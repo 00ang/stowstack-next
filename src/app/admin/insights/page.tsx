@@ -55,7 +55,7 @@ interface WeeklyVelocity {
 
 interface ActivityEvent {
   id: string;
-  type: "lead_created" | "status_change" | "note_added" | "client_signed";
+  type: string;
   description: string;
   lead_name: string;
   facility: string;

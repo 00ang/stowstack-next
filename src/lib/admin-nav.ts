@@ -15,6 +15,7 @@ import {
   Kanban,
   Layout,
   LayoutDashboard,
+  Library,
   Link2,
   Mail,
   Map as MapIcon,
@@ -33,6 +34,7 @@ import {
   TrendingUp,
   Users,
   TrendingDown,
+  SendHorizontal,
   ListChecks,
   Radio,
 } from "lucide-react";
@@ -92,6 +94,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Video", href: "/admin/studio/video", icon: Film, scoped: true },
       { label: "Media", href: "/admin/studio/media", icon: ImageIcon, scoped: true },
       { label: "Creative Library", href: "/admin/style-references", icon: Layout },
+      { label: "Proven Ads", href: "/admin/studio/proven-ads", icon: Library },
     ],
   },
   {
@@ -117,6 +120,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "ECRI Finder", href: "/admin/intelligence/ecri", icon: TrendingUp, scoped: true },
       { label: "Portfolio", href: "/admin/portfolio", icon: Target },
       { label: "Cost per Move-in", href: "/admin/attribution", icon: TrendingDown },
+      { label: "Move-in Reports", href: "/admin/conversions", icon: SendHorizontal },
       { label: "Reports", href: "/admin/reports", icon: FileText },
     ],
   },

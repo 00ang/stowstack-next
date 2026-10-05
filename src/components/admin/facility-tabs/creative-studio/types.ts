@@ -62,6 +62,7 @@ export interface AdVariation {
   version: number;
   compliance_status: string | null;
   compliance_flags: ComplianceFlag[] | null;
+  source_proven_ad_id?: string | null;
 }
 
 export interface ComplianceFlag {

@@ -20,6 +20,11 @@ interface UseTrackingParamsReturn {
  * Hook to capture and persist tracking parameters.
  * Last-touch attribution — new URL params always overwrite stored values.
  * Fires a visit tracking event on first mount for paid/landing-page traffic.
+ *
+ * The params kept here are a convenience for the storEDGE embed. The durable
+ * history is server-side: each visit beacon becomes a touch row keyed to the
+ * `sa_vid` visitor cookie (MISSION.md s12), so first touch is never lost to an
+ * overwrite or to Safari clearing this storage.
  */
 export function useTrackingParams(
   landingPageId?: string,
@@ -53,6 +58,8 @@ export function useTrackingParams(
         landing_page_id: landingPageId,
         facility_id: facilityId,
         url: typeof window !== 'undefined' ? window.location.href : '',
+        // The server classifies the arrival from url + referrer (MISSION.md s12).
+        referrer: typeof document !== 'undefined' ? document.referrer : '',
       }),
     }).catch(() => {
       // Tracking failure should never break the page

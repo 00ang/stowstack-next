@@ -41,6 +41,11 @@ export function CopyStep({ variations, selectedVariation, onSelectVariation, onS
                     <span className={`text-[10px] px-1.5 py-0.5 rounded ${STATUS_BADGE[v.status] || ''}`}>
                       {v.status}
                     </span>
+                    {v.source_proven_ad_id && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold uppercase bg-[var(--color-dark)] text-[var(--color-light)]">
+                        From proven ad
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs font-semibold text-[var(--color-dark)] mb-1">{c.headline}</p>
                   <p className="text-[11px] text-[var(--color-mid-gray)] line-clamp-2">{c.primaryText}</p>

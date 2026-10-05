@@ -10,6 +10,8 @@ const FOOTER_LINKS: Array<{ label: string; href: string; external?: boolean }> =
   { label: "Blog", href: "/blog" },
   { label: "Insights", href: "/insights" },
   { label: "Demo", href: "/demo" },
+  { label: "Sign up", href: "/signup" },
+  { label: "Contact", href: "/contact" },
   { label: "Book a Call", href: CAL_BOOKING_URL, external: true },
 ];
 
@@ -17,6 +19,7 @@ const LEGAL_LINKS = [
   { label: "Privacy Policy", href: "/privacy" },
   { label: "Terms of Service", href: "/terms" },
   { label: "Data Deletion", href: "/data-deletion" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export default function Footer() {

@@ -303,6 +303,42 @@ Nothing above this line ships to a portfolio account. These are the pieces every
   *Recommendation:* keep it separate behind an API. It already has a public-API task on its roadmap
   and it is the only part of the stack that spends real money on every call. **Log the decision in §7.**
 
+- [ ] `s12` **Visitor, Touch and move-in write-back** — PARTIAL — ⚡SCALE
+  Added 2026-10-04 ahead of the gate, by Angelo's decision (§7). Attribution is a chain of links —
+  click → visit → lead → call → move-in — and until now the first link was a localStorage blob that
+  overwrote itself on every new click and that Safari erased after seven days without a visit.
+  **Built:** `visitors` · `touches` · `conversion_reports` (migration `20261004_visitors_touches`,
+  **not yet applied to production**); the server-set `sa_vid` cookie on `/api/tracking/visit`; a
+  touch per arrival that carries a source, plus one per inbound call; visitor → lead linking on all
+  three lead routes; `lead.moved_in` on the event bus from a confident match; `prove.meta-conversion`
+  (CAPI Purchase, `physical_store`) and `prove.google-conversion` (a real offline click-conversion
+  upload — `/api/google-conversion` only pings the browser pixel from the server, and nothing calls
+  it) on the job queue.
+  *Acceptance, item by item:*
+  - [x] first and latest touch are queries over append-only rows, never overwritten fields —
+        `src/lib/attribution/touch.ts`, tested
+  - [x] gbraid / wbraid / msclkid captured; referrer and full landing URL kept per touch
+  - [x] a bare direct revisit writes no row — one write per sourced arrival, not per pageview
+  - [x] every write-back attempt leaves a `conversion_reports` row: sent, skipped with a reason, or failed
+  - [x] retries cannot double-count — Meta's event_id and Google's order_id are `movein:<tenant id>`
+        on every attempt, and both platforms drop the duplicate
+  - [ ] migrations `20261004_visitors_touches` + `20261004_rent_roll_contact` applied to
+        production — needs explicit approval (CLAUDE.md)
+  - [x] write-back settings in the admin: Publisher → connection card → "Move-in reporting" (Meta
+        pixel; Google move-in conversion action and manager account), validated, merged into
+        connection `metadata` (`PATCH /api/platform-connections`)
+  - [ ] those settings filled in for each live facility — a Google conversion action is required
+        before any Google report can go
+  - [x] **the CSV PMS upload matches leads** — `unit.moved_in` → `prove.match-move-in` finds or creates
+        the tenant and runs the same matching as the V1 API. Needs phone or email in the export
+        (new optional rent-roll columns); without them nothing changes and no tenant row is created
+  - [x] a matched move-in writes `monthly_revenue` and `move_in_date` onto the lead — before this,
+        every matched move-in counted as $0 in cost per move-in
+  - [x] operator surfaces: lead journey (`/admin/consumer-leads/[id]`), Move-in Reports
+        (`/admin/conversions`) with grouped fixes and retry, and the same groups in the Console's
+        Needs-attention feed
+  - [ ] proven end to end on one facility: a real ad click → move-in → a `sent` row on both platforms
+
 ### Phase B — RESPOND
 
 The new revenue and the actual differentiator. Inventory already lands from the PMS, which is the
@@ -392,7 +428,7 @@ Highest value per hour in the plan: these have data layers already. Mostly confi
 - [ ] `c5` Live unit availability with price — PARTIAL — ⚠ freshness depends on `s6`
 - [x] `c9` Google Business Profile built and posting weekly — SHIPPED — six GBP tables
 - [ ] `p1` One dashboard, cost per move-in — PARTIAL — ⚡SCALE — needs `s8`
-- [ ] `p6` Revenue attributed, not leads counted — SPEC — ⚡SCALE
+- [ ] `p6` Revenue attributed, not leads counted — SPEC — ⚡SCALE — data layer is `s12`
 - [ ] `p8` Portfolio roll-up for multi-facility owners — PARTIAL — ⚡SCALE — needs `s8`
 - [ ] `p2` Tracked number and QR on every asset — PARTIAL
 - [ ] `p3` Call recordings — PARTIAL — ⚠ two-party consent states need an announcement
@@ -572,6 +608,24 @@ Append-only. Date, decider, decision. Newest entry wins over prose above.
   field moves to order level. **Blocked on one question to the vendor:** is the 60 req/min limit
   per sub-account or account-wide? If account-wide, D buys nothing and the choice reopens between
   A, B and C. **Nothing should be built against D until that answer exists.**
+- **2026-10-04 · Angelo + Claude** — `s12` built out: operator screens, write-back settings, CSV
+  matching. One judgement call worth knowing: a CSV move-in becomes a `tenants` row **only when the
+  export carries a phone or email**, because that row is what matching links to. NOI, ECRI and churn
+  scoring all read `tenants`, so creating rows for move-ins that can never be matched would change
+  those features for no attribution gain; with contact columns, the new rows are real, recent move-ins
+  (marked `metadata.source = "pms_csv"`). Screens follow the repo's own admin design system, not the
+  mockup direction.
+
+- **2026-10-04 · Angelo + Claude** — `s12` (Visitor, Touch, move-in write-back) added to Phase A
+  **ahead of the gate, by Angelo's decision.** Cost per move-in by channel is "the one number
+  underneath all of it" (§1), and `p1`, `p6` and `p8` all read from this layer, so it is spine, not
+  feature. Write-back sends **automatically** on a single confident match — the existing `matched`
+  status, one candidate at ≥0.85; an ambiguous match reports nothing until a person resolves it.
+  Found on the way, not fixed here: the Google Ads publisher (`/api/publish-ad`, OAuth callback)
+  still calls API **v17**, which Google has sunset; the new upload uses v25 behind
+  `GOOGLE_ADS_API_VERSION`. The OAuth callbacks now *merge* connection metadata instead of replacing
+  it, so operator settings survive a reconnect.
+
 - **2026-09-05 · Claude** — `r3` and `r8` done. Both are "inbound signal → fast text", both ride on
   machinery that already existed. **`r8` nearly became a duplicate system:** a 361-line email
   recovery cron was already running, and the honest fix was to add the SMS leg beside it rather than

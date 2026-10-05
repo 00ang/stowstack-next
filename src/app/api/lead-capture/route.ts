@@ -5,6 +5,7 @@ import { SENDERS, sendEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isValidEmail, sanitizeString } from "@/lib/validation";
 import { fireMetaCapi } from "@/lib/meta-capi";
+import { identifyFromRequest } from "@/lib/attribution/visitor";
 import { respondToNewLeadSafely, scheduleSpeedCheck } from "@/lib/respond/speed-to-lead";
 import { enqueue } from "@/lib/jobs/queue";
 
@@ -183,6 +184,9 @@ export async function POST(req: NextRequest) {
         tenantKey: facilityId || undefined,
       }).catch(() => { /* best effort: the sweep will find it */ });
     }
+    // MISSION.md s12 — tie this browser's touches to the lead. After speed-to-lead
+    // on purpose: the first reply is the urgent part. Never throws.
+    await identifyFromRequest(req, lead.id);
 
     if (facilityId) {
       db.activity_log

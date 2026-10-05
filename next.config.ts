@@ -103,7 +103,9 @@ const nextConfig: NextConfig = {
   },
 
   async redirects() {
-    return [];
+    return [
+      { source: "/audit", destination: "/audit-tool", permanent: false },
+    ];
   },
 
   async rewrites() {

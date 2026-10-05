@@ -57,9 +57,14 @@ model ad_variations {
   funnel_config           Json?
   funnel_metrics          Json?
   funnel_id               String?                   @db.Uuid
+  /// Set when the draft was adapted from a Proven Ads library entry. Keeps the
+  /// lineage queryable ("which proven ads actually get duplicated") without
+  /// trusting a field buried in content_json.
+  source_proven_ad_id     String?                   @db.Uuid
   creative_briefs         creative_briefs?          @relation(fields: [brief_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   facilities              facilities                @relation(fields: [facility_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   funnels                 funnels?                  @relation(fields: [funnel_id], references: [id], onUpdate: NoAction)
+  proven_ad               proven_ads?               @relation(fields: [source_proven_ad_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   drip_sequence_templates drip_sequence_templates[]
   publish_log             publish_log[]
   creative_performance    creative_performance[]
@@ -68,6 +73,7 @@ model ad_variations {
   @@index([facility_id], map: "idx_variations_facility")
   @@index([funnel_id], map: "idx_variations_funnel")
   @@index([status], map: "idx_variations_status")
+  @@index([source_proven_ad_id], map: "idx_variations_proven_source")
 }
 
 model api_keys {
@@ -517,6 +523,8 @@ model facilities {
   deleted_by                   String?
 
   facility_tours               facility_tours[]
+  touches                      touches[]
+  conversion_reports           conversion_reports[]
   @@index([access_code], map: "idx_facilities_access_code")
   @@index([contact_email], map: "idx_facilities_contact_email")
   @@index([organization_id], map: "idx_facilities_organization")
@@ -612,6 +620,9 @@ model facility_pms_rent_roll {
   size_label        String?
   tenant_name       String?
   account           String?
+  /// Optional (MISSION.md s12) — when the export carries them, a CSV move-in can be matched to its lead.
+  phone             String?    @db.VarChar(30)
+  email             String?    @db.VarChar(254)
   rental_start      DateTime?  @db.Date
   paid_thru         DateTime?  @db.Date
   rent_rate         Decimal?   @db.Decimal(8, 2)
@@ -1170,6 +1181,9 @@ model partial_leads {
   matched_tenant        tenants?               @relation("LeadTenantMatch", fields: [matched_tenant_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   status_events         lead_status_events[]
   tours                 facility_tours[]
+  visitors              visitors[]
+  touches               touches[]
+  conversion_reports    conversion_reports[]
 
   @@index([created_at(sort: Desc)], map: "idx_partial_leads_created")
   @@index([email], map: "idx_partial_leads_email")
@@ -2441,4 +2455,202 @@ model facility_tours {
   @@index([facility_id, scheduled_at(sort: Desc)], map: "idx_tours_facility")
   @@index([contact_phone], map: "idx_tours_phone")
   @@index([lead_id], map: "idx_tours_lead")
+}
+
+/// MISSION.md s12 — one browser, keyed by the first-party `sa_vid` cookie that
+/// `/api/tracking/visit` sets from the server (so Safari's 7-day cap on
+/// script-written storage does not apply). Becomes known when the same browser
+/// submits a phone or email; several visitors (devices) can resolve to one lead.
+model visitors {
+  /// The cookie value. Matches `partial_leads.visitor_id`.
+  id              String    @id @db.VarChar(64)
+  partial_lead_id String?   @db.Uuid
+  first_seen_at   DateTime  @default(now()) @db.Timestamptz(6)
+  last_seen_at    DateTime  @default(now()) @db.Timestamptz(6)
+  identified_at   DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  lead    partial_leads? @relation(fields: [partial_lead_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  touches touches[]
+
+  @@index([partial_lead_id], map: "idx_visitors_lead")
+}
+
+/// MISSION.md s12 — one arrival that carries a source, or one inbound call.
+/// Append-only: first and latest touch are queries over these rows
+/// (`src/lib/attribution/touch.ts`), never fields that get overwritten.
+/// A bare direct revisit writes no row — it cannot change any attribution model.
+model touches {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  visitor_id      String?  @db.VarChar(64)
+  /// Set for call touches at write time and for web touches once the visitor is identified.
+  partial_lead_id String?  @db.Uuid
+  facility_id     String?  @db.Uuid
+  landing_page_id String?  @db.Uuid
+  /// visit | call
+  kind            String   @db.VarChar(16)
+  /// paid_search | paid_social | paid_other | organic_search | organic_social | email | referral | direct | call
+  channel         String   @db.VarChar(32)
+  /// google | meta | tiktok | microsoft | the utm_source | the referring host
+  source          String?  @db.VarChar(64)
+  /// External identity (a Twilio CallSid); unique per kind so a redelivered webhook records once.
+  source_ref      String?  @db.VarChar(128)
+  occurred_at     DateTime @default(now()) @db.Timestamptz(6)
+  url             String?  @db.VarChar(2000)
+  referrer        String?  @db.VarChar(2000)
+  utm_source      String?  @db.VarChar(200)
+  utm_medium      String?  @db.VarChar(200)
+  utm_campaign    String?  @db.VarChar(200)
+  utm_content     String?  @db.VarChar(200)
+  utm_term        String?  @db.VarChar(200)
+  gclid           String?  @db.VarChar(512)
+  gbraid          String?  @db.VarChar(512)
+  wbraid          String?  @db.VarChar(512)
+  fbclid          String?  @db.VarChar(512)
+  fbc             String?  @db.VarChar(512)
+  fbp             String?  @db.VarChar(128)
+  ttclid          String?  @db.VarChar(512)
+  msclkid         String?  @db.VarChar(512)
+  /// sha256 of the caller's last ten digits (call touches only).
+  phone_hash      String?  @db.VarChar(64)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  visitor    visitors?      @relation(fields: [visitor_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  lead       partial_leads? @relation(fields: [partial_lead_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  facilities facilities?    @relation(fields: [facility_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([kind, source_ref], map: "touches_kind_source_ref")
+  @@index([visitor_id, occurred_at], map: "idx_touches_visitor")
+  @@index([partial_lead_id, occurred_at], map: "idx_touches_lead")
+  @@index([facility_id, occurred_at(sort: Desc)], map: "idx_touches_facility")
+  @@index([facility_id, phone_hash], map: "idx_touches_phone")
+}
+
+/// MISSION.md s12 — every move-in we tried to report to an ad platform, and
+/// what happened. The audit trail behind cost per move-in, and the source for
+/// "failed conversion reporting" in the operator queue.
+model conversion_reports {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facility_id     String?   @db.Uuid
+  partial_lead_id String?   @db.Uuid
+  tenant_id       String?   @db.Uuid
+  /// meta | google
+  platform        String    @db.VarChar(16)
+  /// Meta event_id / Google order_id — identical on every retry, so nothing double-counts.
+  event_id        String    @db.VarChar(128)
+  /// sent | skipped | failed
+  status          String    @db.VarChar(16)
+  reason          String?   @db.VarChar(64)
+  detail          String?
+  /// gclid | gbraid | wbraid | fbc | none
+  click_id_type   String?   @db.VarChar(16)
+  value           Decimal?  @db.Decimal(10, 2)
+  currency        String    @default("USD") @db.VarChar(3)
+  conversion_at   DateTime? @db.Timestamptz(6)
+  sent_at         DateTime? @db.Timestamptz(6)
+  attempts        Int       @default(0)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  lead       partial_leads? @relation(fields: [partial_lead_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  facilities facilities?    @relation(fields: [facility_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([platform, event_id], map: "conversion_reports_platform_event_id")
+  @@index([status, created_at(sort: Desc)], map: "idx_conversion_reports_status")
+  @@index([facility_id, created_at(sort: Desc)], map: "idx_conversion_reports_facility")
+  @@index([partial_lead_id], map: "idx_conversion_reports_lead")
+}
+
+/// Proven Ads library — a self-storage ad observed in the wild, tracked over
+/// time so the days it has been running can be computed.
+///
+/// One row per (source, source_ad_id). Rows from automated adapters are
+/// refreshed by the `proven-ads.refresh` job; rows from the manual/CSV path
+/// are verified by a person ("still running" / "ended"). `started_at`,
+/// `last_seen_at`, `ended_at` and `active` are the facts; days running and the
+/// proven flag are derived from them at read time (`src/lib/proven-ads/
+/// days-running.ts`) rather than stored, so they can never go stale.
+///
+/// Only text, metadata and *references* to creative (snapshot URLs) are stored.
+/// Images and video are never copied — the duplicate flow regenerates creative.
+model proven_ads {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// meta_ad_library_api | manual | csv_import (adapter id)
+  source              String    @db.VarChar(32)
+  /// External identity (Meta Ad Library id). Manual rows get a generated one.
+  source_ad_id        String    @db.VarChar(128)
+  /// meta | google | tiktok
+  platform            String    @db.VarChar(16)
+  /// facebook | instagram | messenger | audience_network | search | youtube …
+  publisher_platforms String[]  @default([])
+  advertiser_name     String    @db.VarChar(200)
+  advertiser_page_id  String?   @db.VarChar(64)
+  advertiser_url      String?   @db.VarChar(2000)
+  /// image | video | carousel | text | unknown
+  format              String    @default("unknown") @db.VarChar(16)
+  headline            String?   @db.VarChar(500)
+  primary_text        String?
+  description         String?   @db.VarChar(1000)
+  cta                 String?   @db.VarChar(64)
+  landing_url         String?   @db.VarChar(2000)
+  /// Where the ad can be viewed at the source (Ad Library render URL). A
+  /// reference, not a copy.
+  snapshot_url        String?   @db.VarChar(2000)
+  /// [{ kind: image|video, url }] — source-hosted references only.
+  media_refs          Json?
+  country             String?   @db.VarChar(2)
+  /// US state / region code where known (manual rows); Meta API rows carry the
+  /// reached country only.
+  state               String?   @db.VarChar(8)
+  city                String?   @db.VarChar(120)
+  /// first_month_free | dollar_move_in | percent_off | free_truck | no_offer | other
+  offer_type          String?   @db.VarChar(32)
+  /// climate_controlled | drive_up | vehicle | business | general
+  unit_type           String?   @db.VarChar(32)
+  /// social_proof | convenience | urgency | lifestyle | price | other
+  angle               String?   @db.VarChar(32)
+  /// When the advertiser started delivery (Meta `ad_delivery_start_time`, or
+  /// the "Started running on" date an admin reads off the Ad Library page).
+  started_at          DateTime  @db.Date
+  first_seen_at       DateTime  @default(now()) @db.Timestamptz(6)
+  last_seen_at        DateTime  @default(now()) @db.Timestamptz(6)
+  ended_at            DateTime? @db.Timestamptz(6)
+  active              Boolean   @default(true)
+  /// Full adapter payload, kept for re-classification without a refetch.
+  raw                 Json?
+  notes               String?
+  /// 'system' for adapter rows, otherwise the admin who entered it.
+  created_by          String?   @db.VarChar(120)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  ad_variations ad_variations[]
+
+  @@unique([source, source_ad_id], map: "proven_ads_source_ad")
+  @@index([platform, active], map: "idx_proven_ads_platform_active")
+  @@index([started_at], map: "idx_proven_ads_started")
+  @@index([state], map: "idx_proven_ads_state")
+  @@index([offer_type], map: "idx_proven_ads_offer")
+  @@index([last_seen_at], map: "idx_proven_ads_last_seen")
+}
+
+/// A configured discovery search for one adapter — e.g. "self storage" in
+/// GB/IE on the Meta Ad Library API. Data, not code, so a new market or
+/// keyword is an admin action rather than a deploy. The refresh job iterates
+/// the enabled rows.
+model proven_ad_searches {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adapter      String    @db.VarChar(32)
+  label        String    @db.VarChar(120)
+  /// Adapter-specific: { searchTerms, countries, pageIds, platforms }
+  config       Json      @default("{}")
+  enabled      Boolean   @default(true)
+  last_run_at  DateTime? @db.Timestamptz(6)
+  /// { fetched, upserted, pages, error } from the last run
+  last_result  Json?
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([adapter, enabled], map: "idx_proven_ad_searches_adapter")
 }

@@ -14,7 +14,8 @@ import {
 interface ActivityEntry {
   id: string;
   timestamp: string;
-  type: "leads" | "campaigns" | "billing" | "system";
+  type: string;
+  category: "leads" | "campaigns" | "billing" | "system";
   description: string;
   actor: string;
   detail: string;
@@ -169,8 +170,9 @@ export default function ActivityPage() {
       ) : allEntries.length > 0 ? (
         <div className="space-y-2">
           {allEntries.map((entry) => {
-            const color = TYPE_COLORS[entry.type] || "var(--color-mid-gray)";
-            const Icon = TYPE_ICONS[entry.type] || Activity;
+            const bucket = entry.category || entry.type;
+            const color = TYPE_COLORS[bucket] || "var(--color-mid-gray)";
+            const Icon = TYPE_ICONS[bucket] || Activity;
             return (
               <div
                 key={entry.id}

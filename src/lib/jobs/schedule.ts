@@ -71,6 +71,12 @@ export const RECURRING: Recurring[] = [
   // Retention. Completed jobs are worth keeping for a week of debugging.
   { queue: "jobs.prune", everyMs: BACKSTOP_MS },
 
+  // Proven Ads. Meta's archive is a daily-scale change, not a minute-scale
+  // one. Twice a day keeps start/last-seen honest without spending the
+  // worker's budget on a source that barely moves. A multiple of the backstop
+  // clock, so it shares the 00 and 12 UTC wakes rather than adding its own.
+  { queue: "proven-ads.refresh", everyMs: 2 * BACKSTOP_MS, maxAttempts: 3 },
+
   // RESPOND r8 (abandoned rescue) has no backstop, deliberately: its window
   // closes two hours after the form was touched, so a sweep every six hours
   // would find nothing it is still allowed to send.

@@ -117,7 +117,9 @@ export async function GET(request: NextRequest) {
         token_expires_at = ${tokenExpiresAt}::timestamptz,
         account_id = COALESCE(${defaultCustomer}, platform_connections.account_id),
         account_name = COALESCE(${defaultCustomer ? `Account ${defaultCustomer}` : null}, platform_connections.account_name),
-        metadata = ${JSON.stringify({ customers })}::jsonb,
+        -- Merge, not replace: operator settings (moveInConversionActionId,
+        -- loginCustomerId — MISSION.md s12) must survive a reconnect.
+        metadata = COALESCE(platform_connections.metadata, '{}'::jsonb) || ${JSON.stringify({ customers })}::jsonb,
         updated_at = NOW()
     `;
 

@@ -10,6 +10,7 @@ import {
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { signOAuthState } from "@/lib/oauth-state";
+import { parseWriteBackSettings, readWriteBackSettings } from "@/lib/attribution/connection-settings";
 
 function getOAuthUrl(platform: string, facilityId: string): string | null {
   const baseUrl =
@@ -163,3 +164,50 @@ export async function DELETE(req: NextRequest) {
     return errorResponse("Failed to disconnect", 500, origin);
   }
 }
+
+/**
+ * PATCH — move-in reporting settings on one connection (MISSION.md s12):
+ * `{ connectionId, settings: { pixelId? | moveInConversionActionId? | loginCustomerId? } }`.
+ * Merged into `metadata`; a field sent empty is removed. Only those keys can be
+ * written here, so OAuth data in `metadata` is out of reach of this endpoint.
+ */
+export async function PATCH(req: NextRequest) {
+  const limited = await applyRateLimit(req, RATE_LIMIT_TIERS.AUTHENTICATED, "platform-connections");
+  if (limited) return limited;
+  const origin = getOrigin(req);
+
+  try {
+    const body = await req.json().catch(() => null);
+    const { connectionId, settings } = (body || {}) as { connectionId?: string; settings?: unknown };
+    if (!connectionId) return errorResponse("connectionId required", 400, origin);
+
+    const existing = await db.platform_connections.findUnique({
+      where: { id: connectionId },
+      select: { facility_id: true, platform: true },
+    });
+    if (!existing) return errorResponse("Connection not found", 404, origin);
+
+    const denied = await requireFacilityAccess(req, existing.facility_id);
+    if (denied) return denied;
+
+    const parsed = parseWriteBackSettings(existing.platform, settings);
+    if (!parsed.ok) return errorResponse(parsed.error, 400, origin);
+
+    const rows = await db.$queryRaw<{ metadata: unknown }[]>`
+      UPDATE platform_connections
+      SET metadata = (COALESCE(metadata, '{}'::jsonb) - ${parsed.unset}::text[]) || ${JSON.stringify(parsed.set)}::jsonb,
+          updated_at = NOW()
+      WHERE id = ${connectionId}::uuid
+      RETURNING metadata
+    `;
+
+    return jsonResponse(
+      { success: true, settings: readWriteBackSettings(existing.platform, rows[0]?.metadata) },
+      200,
+      origin,
+    );
+  } catch {
+    return errorResponse("Failed to save settings", 500, origin);
+  }
+}
+

@@ -9,6 +9,8 @@
  * tested (`src/lib/__tests__/console.test.ts`) — no React, no fetch, no colors.
  */
 
+import { groupForAttention, groupTitle, type ReportLike } from "@/lib/attribution/reports";
+
 // ---------------------------------------------------------------------------
 // Shared types
 // ---------------------------------------------------------------------------
@@ -20,7 +22,8 @@ export type AttentionSource =
   | "pms"
   | "lead"
   | "occupancy"
-  | "revenue";
+  | "revenue"
+  | "reporting";
 
 /** A normalized row in the Needs-Attention feed. */
 export interface AttentionItem {
@@ -482,6 +485,42 @@ export function revenueToAttention(
 
 // ---------------------------------------------------------------------------
 // Ranking
+/** `/api/admin-conversion-reports?status=attention` — move-in reports (MISSION.md s12). */
+export interface ConversionReportsResponse {
+  counts: Record<string, number>;
+  reports: ReportLike[];
+}
+
+/**
+ * Move-ins we could not report to Meta or Google, grouped by what would fix
+ * them. One row per facility + platform + cause, because one fix (set the
+ * conversion action, reconnect the account) clears every report behind it.
+ * A correct "nothing to report" (no Google click on record) is not work and
+ * never appears here.
+ */
+export function conversionReportsToAttention(
+  resp: ConversionReportsResponse | null | undefined,
+  opts: ScopeOpts = {},
+): AttentionItem[] {
+  const groups = groupForAttention(resp?.reports ?? []);
+  const out: AttentionItem[] = [];
+  for (const g of groups) {
+    if (opts.facilityName && !sameFacility(g.facilityName, opts.facilityName)) continue;
+    out.push({
+      id: `reporting:${g.key}`,
+      severity: "warning",
+      source: "reporting",
+      facilityName: g.facilityName,
+      title: groupTitle(g),
+      detail: g.cause,
+      href: "/admin/conversions",
+      actionLabel: g.status === "failed" ? "Retry" : "Fix",
+      at: g.latest,
+    });
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 
 /**

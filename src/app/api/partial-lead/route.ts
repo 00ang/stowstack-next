@@ -5,6 +5,7 @@ import { jsonResponse, errorResponse, getOrigin, corsResponse, requireAdminKey }
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { scheduleRescue } from "@/lib/respond/abandoned";
+import { identifyFromRequest } from "@/lib/attribution/visitor";
 
 function hashIp(ip: string | null): string | null {
   if (!ip) return null;
@@ -260,6 +261,10 @@ export async function POST(req: NextRequest) {
       await scheduleRescue({ id: row.id, createdAt: row.created_at, facilityId: facilityId || null })
         .catch(() => { /* best effort: rescue is a nicety, not a promise */ });
     }
+
+    // MISSION.md s12 — link the visitor once the browser has given us a way to
+    // reach them; an anonymous partial is not yet a person. Never throws.
+    if (row?.id && (email || phone)) await identifyFromRequest(req, row.id);
     return jsonResponse({ success: true, id: row?.id, score: row?.lead_score }, 200, origin);
   } catch {
     return errorResponse("Failed to save partial lead", 500, origin);

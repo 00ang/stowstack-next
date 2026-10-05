@@ -204,6 +204,7 @@ export async function POST(request: NextRequest) {
                 email: t.email,
                 phone: t.phone,
                 move_in_date: t.moveInDate,
+                monthly_rate: t.monthlyRate ?? null,
               },
               { changedBy: `api_key:${apiKey.id}` },
             );

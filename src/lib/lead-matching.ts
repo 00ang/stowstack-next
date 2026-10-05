@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 import { markLeadAsMatchedTenant } from "@/lib/lead-events";
+import { emit } from "@/lib/events/bus";
 
 type DbExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -57,6 +58,8 @@ interface TenantInput {
   email?: string | null;
   phone?: string | null;
   move_in_date?: Date | string | null;
+  /** Carried onto the `lead.moved_in` event for the operator view; the write-back reloads it. */
+  monthly_rate?: number | string | null;
 }
 
 /**
@@ -261,9 +264,74 @@ export async function attemptAndPersistLeadMatch(
     }
   }
 
+  // MISSION.md s12 — cost per move-in sums `monthly_revenue` on moved-in leads,
+  // and nothing wrote it on a match, so every matched move-in counted as $0.
+  // Fill it (and the move-in date) from the tenant, without overwriting a value
+  // an operator already set by hand.
+  if (linked && result.bestCandidate && (tenant.monthly_rate != null || tenant.move_in_date)) {
+    const rate = tenant.monthly_rate == null || tenant.monthly_rate === "" ? null : Number(tenant.monthly_rate);
+    const moveIn = tenant.move_in_date ? new Date(tenant.move_in_date) : null;
+    try {
+      await client.$executeRaw`
+        UPDATE partial_leads
+        SET monthly_revenue = COALESCE(monthly_revenue, ${rate != null && Number.isFinite(rate) && rate > 0 ? rate : null}),
+            move_in_date    = COALESCE(move_in_date, ${moveIn && !Number.isNaN(moveIn.getTime()) ? moveIn.toISOString().slice(0, 10) : null}::date),
+            updated_at      = NOW()
+        WHERE id = ${result.bestCandidate.partial_lead_id}::uuid
+      `;
+    } catch (err) {
+      console.error("[lead-matching] revenue backfill failed:", err instanceof Error ? err.message : err);
+    }
+  }
+
+  // MISSION.md s12 — a confident match is a move-in we can trace, so tell the
+  // ad platforms (the subscribers to `lead.moved_in` do the reporting). Only
+  // "matched" gets here: an ambiguous match reports nothing until a person
+  // resolves it. Emitted after the link through the shared client; if a caller
+  // ever runs this inside a transaction, move the emit to after the commit.
+  if (linked && result.bestCandidate) {
+    try {
+      await emitLeadMovedIn(tenant, result.bestCandidate, result.matchMethod, result.confidence);
+    } catch (err) {
+      console.error("[lead-matching] lead.moved_in emit failed:", err instanceof Error ? err.message : err);
+    }
+  }
+
   return {
     ...result,
     attemptId: rows[0].id,
     linked,
   };
 }
+
+async function emitLeadMovedIn(
+  tenant: TenantInput,
+  candidate: LeadCandidate,
+  matchMethod: MatchMethod,
+  confidence: number,
+): Promise<void> {
+  const moveIn = tenant.move_in_date ? new Date(tenant.move_in_date) : null;
+  const occurredAt = moveIn && !Number.isNaN(moveIn.getTime()) ? moveIn : new Date();
+  await emit(
+    [
+      {
+        type: "lead.moved_in",
+        // The fact is "this tenant moved in". Re-importing the same tenant, or
+        // re-running the match, emits nothing new — so nothing reports twice.
+        sourceKey: `tenant:${tenant.id}`,
+        occurredAt: occurredAt.toISOString(),
+        payload: {
+          facilityId: tenant.facility_id,
+          leadId: candidate.partial_lead_id,
+          tenantId: tenant.id,
+          moveInDate: moveIn && !Number.isNaN(moveIn.getTime()) ? moveIn.toISOString().slice(0, 10) : null,
+          monthlyRate: tenant.monthly_rate == null || tenant.monthly_rate === "" ? null : Number(tenant.monthly_rate),
+          matchMethod,
+          confidence,
+        },
+      },
+    ],
+    tenant.facility_id,
+  );
+}
+

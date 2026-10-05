@@ -18,6 +18,7 @@ import {
   UPLOAD_TYPES,
   EXPECTED_COLUMNS,
   autoMapColumns,
+  isOptionalColumn,
 } from "@/lib/pms-column-mapper";
 
 /* ── main upload component ── */
@@ -171,7 +172,8 @@ export function UploadTab({
   };
 
   const expected = EXPECTED_COLUMNS[uploadType];
-  const allMapped = expected.every((e) => !!columnMap[e]);
+  // Optional columns (phone/email on a rent roll) never block an import.
+  const allMapped = expected.every((e) => isOptionalColumn(uploadType, e) || !!columnMap[e]);
 
   return (
     <div className="space-y-6">
@@ -277,6 +279,9 @@ export function UploadTab({
               <div key={exp} className="flex items-center gap-3">
                 <span className="text-xs text-[var(--color-body-text)] w-36 shrink-0 font-mono">
                   {exp}
+                  {isOptionalColumn(uploadType, exp) && (
+                    <span className="ml-1 font-sans text-[10px] text-[var(--color-mid-gray)]">optional</span>
+                  )}
                 </span>
                 <ChevronRight className="w-3 h-3 text-[var(--color-mid-gray)] shrink-0" />
                 <select
@@ -295,6 +300,8 @@ export function UploadTab({
                 </select>
                 {columnMap[exp] ? (
                   <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+                ) : isOptionalColumn(uploadType, exp) ? (
+                  <span className="w-4 h-4 shrink-0" aria-hidden />
                 ) : (
                   <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" />
                 )}
@@ -368,7 +375,7 @@ export function UploadTab({
           </button>
           {!allMapped && (
             <span className="text-xs text-yellow-400">
-              Map all columns before importing
+              Map all required columns before importing
             </span>
           )}
         </div>

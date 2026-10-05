@@ -125,7 +125,9 @@ export async function GET(request: NextRequest) {
         account_name = COALESCE(${accountName}, platform_connections.account_name),
         page_id = COALESCE(${pageId}, platform_connections.page_id),
         page_name = COALESCE(${pageName}, platform_connections.page_name),
-        metadata = ${metadata}::jsonb,
+        -- Merge, not replace: operator settings (pixelId — MISSION.md s12)
+        -- must survive a reconnect.
+        metadata = COALESCE(platform_connections.metadata, '{}'::jsonb) || ${metadata}::jsonb,
         updated_at = NOW()
     `;
 

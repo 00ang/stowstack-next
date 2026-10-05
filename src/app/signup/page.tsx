@@ -6,57 +6,52 @@ import Link from "next/link";
 import { Check, Eye, EyeOff } from "lucide-react";
 
 type Plan = "launch" | "growth" | "portfolio";
-type BillingCycle = "monthly" | "annual";
 
 interface PlanInfo {
   id: Plan;
   name: string;
-  monthlyPrice: number;
-  annualPrice: number;
+  monthlyPrice: number | null;
   description: string;
   features: string[];
 }
 
+// Prices and facility caps come from src/lib/stripe.ts / /pricing. Do not
+// invent annual discounts here. The API ignores billing cycle.
 const PLANS: PlanInfo[] = [
   {
     id: "launch",
     name: "Launch",
-    monthlyPrice: 499,
-    annualPrice: 399,
-    description: "For independent operators with 1-5 facilities",
+    monthlyPrice: 750,
+    description: "One facility. Paid ads that fill units.",
     features: [
-      "Up to 10 facilities",
-      "Google & Meta ad management",
-      "Monthly performance reports",
-      "Email support",
+      "1 facility",
+      "Meta ad campaigns",
+      "2 ad-specific landing pages",
+      "Monthly performance report",
     ],
   },
   {
     id: "growth",
     name: "Growth",
-    monthlyPrice: 999,
-    annualPrice: 799,
-    description: "For growing operators scaling their portfolio",
+    monthlyPrice: 1500,
+    description: "The full system for operators who want every door working.",
     features: [
-      "Up to 50 facilities",
-      "All Launch features",
-      "A/B testing on what fills units",
-      "Priority support",
-      "Custom landing pages",
+      "Up to 3 facilities",
+      "Meta and Google campaigns",
+      "5 ad-specific landing pages",
+      "Retargeting and video creative",
     ],
   },
   {
     id: "portfolio",
     name: "Portfolio",
-    monthlyPrice: 1499,
-    annualPrice: 1199,
-    description: "Full-service marketing for large operators",
+    monthlyPrice: null,
+    description: "Custom pricing for 5+ facilities.",
     features: [
       "Unlimited facilities",
-      "All Growth features",
-      "White-label reports",
-      "Dedicated account manager",
-      "API access",
+      "Everything in Growth",
+      "Dedicated strategist",
+      "Volume discount on per-facility rates",
     ],
   },
 ];
@@ -99,7 +94,6 @@ export default function SignupPage() {
     const p = searchParams.get("plan");
     return p === "launch" || p === "growth" || p === "portfolio" ? p : "launch";
   });
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [companyName, setCompanyName] = useState("");
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
@@ -219,78 +213,11 @@ export default function SignupPage() {
           </p>
         </div>
 
-        {/* Billing toggle */}
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <span
-            className="text-sm font-medium"
-            style={{
-              fontFamily: "var(--font-heading)",
-              color:
-                billingCycle === "monthly"
-                  ? "var(--color-dark)"
-                  : "var(--color-body-text)",
-            }}
-          >
-            Monthly
-          </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={billingCycle === "annual"}
-            aria-label="Toggle annual billing"
-            onClick={() =>
-              setBillingCycle((c) =>
-                c === "monthly" ? "annual" : "monthly"
-              )
-            }
-            className="relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
-            style={{
-              backgroundColor:
-                billingCycle === "annual"
-                  ? "var(--color-gold)"
-                  : "var(--color-light-gray)",
-              outlineColor: "var(--color-gold)",
-            }}
-          >
-            <span
-              className="pointer-events-none block h-5 w-5 rounded-full shadow-sm transition-transform"
-              style={{
-                backgroundColor: "var(--color-light)",
-                transform:
-                  billingCycle === "annual"
-                    ? "translateX(22px)"
-                    : "translateX(4px)",
-              }}
-            />
-          </button>
-          <span
-            className="text-sm font-medium"
-            style={{
-              fontFamily: "var(--font-heading)",
-              color:
-                billingCycle === "annual"
-                  ? "var(--color-dark)"
-                  : "var(--color-body-text)",
-            }}
-          >
-            Annual
-            <span
-              className="ml-1 text-xs"
-              style={{ color: "var(--color-green)" }}
-            >
-              Save 20%
-            </span>
-          </span>
-        </div>
-
         {/* Plan cards */}
         <div className="mb-8 grid gap-4 sm:grid-cols-3">
           {PLANS.map((plan) => {
             const isSelected = selectedPlan === plan.id;
-            const price =
-              billingCycle === "monthly"
-                ? plan.monthlyPrice
-                : plan.annualPrice;
+            const price = plan.monthlyPrice;
             return (
               <button
                 key={plan.id}
@@ -333,17 +260,19 @@ export default function SignupPage() {
                       color: "var(--color-dark)",
                     }}
                   >
-                    ${price}
+                    {price == null ? "Custom" : `$${price.toLocaleString()}`}
                   </span>
-                  <span
-                    className="text-sm"
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      color: "var(--color-body-text)",
-                    }}
-                  >
-                    /mo
-                  </span>
+                  {price != null && (
+                    <span
+                      className="text-sm"
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        color: "var(--color-body-text)",
+                      }}
+                    >
+                      /mo per facility
+                    </span>
+                  )}
                 </div>
                 <p
                   className="mb-3 text-sm leading-relaxed"
