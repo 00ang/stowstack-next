@@ -15,6 +15,7 @@ import {
   Kanban,
   Layout,
   LayoutDashboard,
+  Library,
   Link2,
   Mail,
   Map as MapIcon,
@@ -93,6 +94,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Video", href: "/admin/studio/video", icon: Film, scoped: true },
       { label: "Media", href: "/admin/studio/media", icon: ImageIcon, scoped: true },
       { label: "Creative Library", href: "/admin/style-references", icon: Layout },
+      { label: "Proven Ads", href: "/admin/studio/proven-ads", icon: Library },
     ],
   },
   {

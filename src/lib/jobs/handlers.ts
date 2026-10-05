@@ -31,6 +31,7 @@ import {
   facilitiesWithHistory,
   facilitiesWithUnitMix,
 } from "@/lib/events/detect";
+import { refreshProvenAds } from "@/lib/proven-ads/refresh";
 
 /**
  * Resumability proof. Counts to `payload.to` in chunks, yielding whenever the
@@ -278,4 +279,7 @@ export const HANDLERS: Record<string, JobHandler> = {
   "prove.meta-conversion": reportMoveInToMeta,
   "prove.google-conversion": reportMoveInToGoogle,
   "prove.match-move-in": matchMoveIn,
+  // Proven Ads library: re-check configured Meta Ad Library searches and
+  // retire automated rows we have not seen in two weeks.
+  "proven-ads.refresh": refreshProvenAds,
 };
