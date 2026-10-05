@@ -170,7 +170,7 @@ export default function AboutPage() {
         <div
           className="mt-16 rounded-lg p-8 text-center"
           style={{
-            background: "rgba(181,139,63,0.06)",
+            background: "rgba(68,99,134,0.06)",
             border: "1px solid var(--color-gold)",
           }}
         >

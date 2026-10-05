@@ -106,7 +106,7 @@ function LoginGate({ onAuthenticated }: { onAuthenticated: (key: string) => void
       <div className="w-full max-w-[340px] p-8" style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: '6px' }}>
         <div className="mb-8 text-center">
           <h1 className="mb-1" style={{ fontFamily: mono, fontSize: '15px', fontWeight: 700, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-            storage<span style={{ color: 'var(--brand-gold)' }}>ads</span>
+            storage<span style={{ color: 'var(--brand-ads)' }}>ads</span>
           </h1>
           <p style={{ fontFamily: mono, fontSize: '12px', fontWeight: 300, color: '#A3A3A3', letterSpacing: '0.02em' }}>admin</p>
         </div>
@@ -253,7 +253,7 @@ function Sidebar({
           className={`transition-opacity ${collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}
           style={{ fontFamily: 'var(--font)', fontSize: '14px', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ink)', textDecoration: 'none' }}
         >
-          storage<span style={{ color: 'var(--brand-gold)' }}>ads</span>
+          storage<span style={{ color: 'var(--brand-ads)' }}>ads</span>
         </Link>
         {collapsed && (
           <Link

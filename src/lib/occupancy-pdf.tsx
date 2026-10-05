@@ -40,11 +40,11 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20,
     borderBottomWidth: 2,
-    borderBottomColor: "#B58B3F",
+    borderBottomColor: "#446386",
     paddingBottom: 12,
   },
   logo: { fontSize: 18, fontFamily: "Helvetica-Bold" },
-  logoAds: { color: "#B58B3F" },
+  logoAds: { color: "#446386" },
   subtitle: { fontSize: 11, color: "#6a6560", marginTop: 4 },
   meta: { fontSize: 9, color: "#b0aea5", marginTop: 2 },
   sectionTitle: {

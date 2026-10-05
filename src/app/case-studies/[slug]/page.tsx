@@ -135,7 +135,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
         {/* CTA */}
         <div
           className="rounded-xl p-8 text-center"
-          style={{ backgroundColor: "var(--color-gold-light)", border: "1px solid rgba(181,139,63,0.2)" }}
+          style={{ backgroundColor: "var(--color-gold-light)", border: "1px solid rgba(68,99,134,0.2)" }}
         >
           <h3 className="text-xl font-medium mb-2" style={{ fontFamily: "var(--font-heading)", color: "var(--color-dark)" }}>
             Get results like {study.facilityName.split(" ")[0]}

@@ -39,7 +39,7 @@ export function AgingTab({ data }: { data: PmsData }) {
 
   const bucketData = [
     { label: "0-30 days", value: buckets.b0_30, color: "var(--color-green)" },
-    { label: "31-60 days", value: buckets.b31_60, color: "#F59E0B" },
+    { label: "31-60 days", value: buckets.b31_60, color: "#AB5505" },
     { label: "61-90 days", value: buckets.b61_90, color: "#F97316" },
     { label: "91-120 days", value: buckets.b91_120, color: "#EF4444" },
     { label: "120+ days", value: buckets.b120_plus, color: "#DC2626" },

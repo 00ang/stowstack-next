@@ -41,7 +41,7 @@ function layout(body: string): string {
 <!-- Logo -->
 <tr><td style="padding-bottom:32px;">
 <span style="font-size:20px;font-weight:600;letter-spacing:-0.02em;text-decoration:none;">
-<span style="color:#141413;">storage</span><span style="color:#B58B3F;">ads</span>
+<span style="color:#141413;">storage</span><span style="color:#446386;">ads</span>
 </span>
 </td></tr>
 
@@ -65,7 +65,7 @@ StorageAds. Marketing that fills units.<br />
 
 function ctaButton(text: string, href: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0;">
-<tr><td style="background-color:#B58B3F;border-radius:8px;">
+<tr><td style="background-color:#141413;border-radius:8px;">
 <a href="${href}" style="display:inline-block;padding:12px 28px;color:#faf9f5;font-size:15px;font-weight:500;text-decoration:none;">
 ${text}
 </a>
@@ -90,7 +90,7 @@ function followUp(data: DripEmailData): DripEmailResult {
   const scoreSection =
     data.auditScore != null
       ? `<p style="margin:20px 0;">
-<span style="font-size:36px;font-weight:600;color:#B58B3F;">${data.auditScore}</span>
+<span style="font-size:36px;font-weight:600;color:#446386;">${data.auditScore}</span>
 <span style="font-size:15px;color:#6a6560;">&nbsp;/ 100</span>
 </p>
 <p style="margin:0 0 8px;color:#141413;font-size:15px;">

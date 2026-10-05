@@ -16,7 +16,7 @@ The system is **light only**, Anthropic-inspired warm palette. Tokens live in `s
 
 ## Hard rules
 
-- **Sienna gold is BANNED everywhere except the logo `ads` lockup.** No `#B58B3F`, `--color-gold`, `--color-gold-hover`, `--color-gold-on-light`, `--color-gold-light`, or near variants in CTAs, links, metrics, charts, or generated assets. The legacy `--color-gold*` tokens still exist in globals.css but must not be referenced in new code. Only `--brand-gold` in the two-tone logo lockup ("storage" in surface text color, "ads" in `var(--brand-gold)`) is allowed.
+- **Sienna gold is BANNED everywhere, the logo included.** No `#B58B3F`, `--color-gold`, `--color-gold-hover`, `--color-gold-on-light`, `--color-gold-light`, or near variants in CTAs, links, metrics, charts, generated assets, or the logo. The legacy `--color-gold*` tokens still exist in globals.css but must not be referenced in new code. The two-tone logo lockup is "storage" in surface text color, "ads" in `var(--brand-ads)` (slate blue; `var(--brand-slate)` on hardcoded light grounds).
 - **No accent color on CTAs.** CTAs are contrast-based: `--color-dark` (#141413) on light, `--color-light` (#faf9f5) on dark.
 - **Never pure #000 / #fff** and **never raw Tailwind default grays** — use brand tokens.
 - **Never italic.** Manrope has no true italics; globals.css forces `em/i/cite/.italic` to `font-style: normal`. The `Display` component's `italic` prop is accepted but ignored. Use weight changes for emphasis.

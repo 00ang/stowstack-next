@@ -39,7 +39,6 @@ export type PaletteId =
   | "petrol"
   | "blueprint"
   | "eames"
-  | "amber"
   | "green"
   | "bw";
 
@@ -50,12 +49,11 @@ export const PALETTES: {
   swatches: [string, string, string];
 }[] = [
   { id: "paper",     label: "Paper / Ink",    sub: "Cream broadsheet, brick accent",  swatches: ["#f2ede3", "#1c1a16", "#c0452b"] },
-  { id: "oxblood",   label: "Oxblood & Oat",  sub: "Burgundy, oat, goldenrod",        swatches: ["#2a0e0d", "#ebe1cc", "#f0b93d"] },
-  { id: "petrol",    label: "Petrol Navy",    sub: "Deep petrol, bone, mustard",      swatches: ["#0d2336", "#e8e2d1", "#ffb840"] },
+  { id: "oxblood",   label: "Oxblood & Oat",  sub: "Burgundy, oat, peach",            swatches: ["#2a0e0d", "#ebe1cc", "#FAC08A"] },
+  { id: "petrol",    label: "Petrol Navy",    sub: "Deep petrol, bone, lichen",       swatches: ["#0d2336", "#e8e2d1", "#C9E098"] },
   { id: "blueprint", label: "Blueprint",      sub: "Architect navy, chalk, safety",   swatches: ["#0e2440", "#e8eef0", "#ff7a2a"] },
   { id: "eames",     label: "Eames Olive",    sub: "Warm olive, cream, rust",         swatches: ["#4a4a2a", "#f0ead5", "#e85a1e"] },
-  { id: "amber",     label: "Amber Phosphor", sub: "VT220 terminal",                  swatches: ["#0c0906", "#ffb000", "#ff4a1a"] },
-  { id: "green",     label: "Green Phosphor", sub: "VT100 CRT green",                 swatches: ["#040a05", "#33ff66", "#ffcc33"] },
+  { id: "green",     label: "Green Phosphor", sub: "VT100 CRT green",                 swatches: ["#040a05", "#33ff66", "#FAC08A"] },
   { id: "bw",        label: "Black & White",  sub: "High-contrast monochrome",        swatches: ["#ffffff", "#000000", "#5e5e5e"] },
 ];
 

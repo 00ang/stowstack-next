@@ -35,22 +35,22 @@ const TYPE_CONFIG: Record<
   ab_test_winner: {
     icon: Trophy,
     color: "var(--color-gold)",
-    bg: "rgba(181, 139, 63, 0.1)",
+    bg: "rgba(68, 99, 134, 0.1)",
   },
   campaign_alert: {
     icon: TrendingUp,
     color: "var(--color-gold)",
-    bg: "rgba(181, 139, 63, 0.1)",
+    bg: "rgba(68, 99, 134, 0.1)",
   },
   team_invite: {
     icon: UserPlus,
     color: "var(--color-gold)",
-    bg: "rgba(181, 139, 63, 0.1)",
+    bg: "rgba(68, 99, 134, 0.1)",
   },
   trial_ending: {
     icon: Clock,
     color: "var(--color-gold)",
-    bg: "rgba(181, 139, 63, 0.1)",
+    bg: "rgba(68, 99, 134, 0.1)",
   },
 };
 
@@ -256,7 +256,7 @@ export function NotificationBell() {
                         className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--color-light-gray)]/50"
                         style={{
                           backgroundColor: isUnread
-                            ? "rgba(181, 139, 63, 0.03)"
+                            ? "rgba(68, 99, 134, 0.03)"
                             : undefined,
                         }}
                       >

@@ -2497,8 +2497,7 @@ export default function Hero() {
             >
               <span className="text-lg sm:text-xl font-semibold" style={{ color: "var(--color-dark)", fontFamily: "var(--serif)", letterSpacing: "-0.03em" }}>{typedText}</span>
               {/* Cursor: was var(--color-gold); CLAUDE.md bans sienna gold
-                  everywhere except the logo "ads" letters (var(--brand-gold)).
-                  Charcoal matches the editorial monochrome palette. */}
+                  everywhere. Charcoal matches the editorial monochrome palette. */}
               <span className="inline-block w-0.5 h-5 ml-0.5 align-middle rounded-full" style={{ background: "var(--color-dark)", animation: "hero-pulse 1s ease-in-out infinite" }} />
             </div>
 

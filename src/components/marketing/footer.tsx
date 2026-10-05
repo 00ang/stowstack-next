@@ -35,7 +35,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <p className="text-lg mb-2" style={{ fontFamily: "var(--font-heading)", fontWeight: 700, letterSpacing: "-0.5px" }}>
-              <span style={{ color: "var(--color-dark)" }}>storage</span><span style={{ color: "var(--brand-gold)" }}>ads</span>
+              <span style={{ color: "var(--color-dark)" }}>storage</span><span style={{ color: "var(--brand-ads)" }}>ads</span>
             </p>
             <p
               className="text-sm"

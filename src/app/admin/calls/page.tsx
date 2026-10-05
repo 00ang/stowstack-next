@@ -32,7 +32,7 @@ interface CallLog {
 const STATUS_CONFIG: Record<string, { color: string; icon: typeof Phone; label: string }> = {
   completed: { color: "#22C55E", icon: PhoneCall, label: "Completed" },
   missed: { color: "#EF4444", icon: PhoneMissed, label: "Missed" },
-  voicemail: { color: "#EAB308", icon: Voicemail, label: "Voicemail" },
+  voicemail: { color: "#AB5505", icon: Voicemail, label: "Voicemail" },
 };
 
 function formatDuration(seconds: number): string {
@@ -91,7 +91,7 @@ export default function CallsPage() {
     ? [
         { label: "Total Calls", value: stats.total_calls.toLocaleString(), icon: Phone, color: "var(--color-gold)" },
         { label: "Completed", value: stats.completed.toLocaleString(), icon: PhoneCall, color: "#22C55E" },
-        { label: "Avg Duration", value: formatDuration(stats.avg_duration), icon: Clock, color: "#EAB308" },
+        { label: "Avg Duration", value: formatDuration(stats.avg_duration), icon: Clock, color: "#AB5505" },
         { label: "Missed %", value: `${stats.missed_pct.toFixed(1)}%`, icon: PhoneOff, color: "#EF4444" },
       ]
     : [];

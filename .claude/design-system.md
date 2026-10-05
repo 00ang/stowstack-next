@@ -17,7 +17,7 @@ The `--color-*` tokens are **palette-aware aliases**, not fixed hexes — they r
 ## Accent — Charcoal-on-light / Light-on-dark (no primary color accent)
 
 - CTAs use `--color-dark` on light surfaces and `--color-light` on dark surfaces — contrast-based, not color-based.
-- **Sienna gold (`#B58B3F`) is banned everywhere EXCEPT the logo `ads` lockup**, where `--brand-gold` is the only legal use (see Logo below). Do not use `--color-gold`, `--color-gold-hover`, `--color-gold-on-light`, `--color-gold-light`, or any near variant anywhere else — CTAs, links, metrics, charts, generated assets, etc. The older `--color-gold*` tokens still exist in `globals.css` for legacy compatibility but must not be referenced in new code. The A24/Kubrick editorial feel comes from typography and negative space, not a color accent.
+- **Sienna gold (`#B58B3F`) is banned everywhere, the logo included** (the logo `ads` is now slate blue via `--brand-ads`; see Logo below). Do not use `--color-gold`, `--color-gold-hover`, `--color-gold-on-light`, `--color-gold-light`, or any near variant anywhere else — CTAs, links, metrics, charts, generated assets, etc. The older `--color-gold*` tokens still exist in `globals.css` for legacy compatibility but must not be referenced in new code. The A24/Kubrick editorial feel comes from typography and negative space, not a color accent.
 
 **Secondary accents** (also palette-aware aliases): `--color-blue` (→ `var(--hue-a)`, default `#1f5a6b` deep teal — Google/informational), `--color-green` (→ `var(--hue-c)`, default `#4a6b2e` olive — success/growth) — use sparingly for categorical distinctions (chart series, informational callouts), never as a primary CTA color.
 **Error only:** `--color-red` (→ `var(--accent)`, default `#c0452b` brick) — NEVER for CTAs or decorative use
@@ -41,7 +41,7 @@ The `--color-*` tokens are **palette-aware aliases**, not fixed hexes — they r
 
 ## Logo
 
-`storageads` (`storageads/attr` in the marketing nav). Manrope 700, lowercase, no icon. **Two-tone color split is brand-mandatory** — "storage" renders in the surface text color (palette-aware: `--text-accent` / `--color-dark` / `#1A1A1A`), "ads" always renders in `var(--brand-gold)` (`#B58B3F`, the original StorageAds sienna gold). `--brand-gold` is defined in `:root` outside any palette scope so the gold survives palette swaps — it is a brand-locked exception to the otherwise palette-driven color system. Used in marketing nav, footer, admin sidebar, and admin login.
+`storageads` (`storageads/attr` in the marketing nav). Manrope 700, lowercase, no icon. **Two-tone color split is brand-mandatory** — "storage" renders in the surface text color (palette-aware: `--text-accent` / `--color-dark` / `#1A1A1A`), "ads" always renders in `var(--brand-ads)`. That is one 212° blue at two luminance steps, defined in `:root` outside the palette blocks: `--brand-slate` `#446386` on light grounds (paper, bw, admin; 5.3:1 on paper cream) and `--brand-sky` `#8EC1FF` on the dark palettes (oxblood, petrol, blueprint, eames, amber, green), switched by one rule in `globals.css`. `.admin-theme` pins it to slate because the admin ground is always cream. Surfaces with a hardcoded light ground (e.g. the ideas gate) use `var(--brand-slate)` directly. Replaced the original sienna gold `#B58B3F` in Oct 2026; do not restore it. Used in marketing nav, footer, tool header, contact, cost-of-inaction, ideas gate, admin sidebar, and admin login.
 
 ## Charts
 
@@ -57,6 +57,7 @@ Admin charts use **recharts**. Color convention: dark=Meta, blue=Google, green=r
 - Never use Tailwind default grays — only brand tokens
 - Never use gradients, stock photos, or AI images
 - Icons: lucide-react only (see above) — no other icon libraries
-- Sienna gold only in the logo `ads` lockup via `--brand-gold` — banned everywhere else (supersedes any older gold references in `globals.css`)
+- Sienna gold is banned everywhere, the logo included — the logo `ads` uses `--brand-ads` (supersedes any older gold references in `globals.css`)
+- No gold-reading color anywhere (sienna, goldenrod, mustard, amber, Tailwind `amber-*`/`yellow-*` hexes): not in palettes, admin status colors, emails, PDFs, OG images or icons. The warm/caution slot is burnt orange — `--hue-b` `#AB5505` on paper (Tailwind orange/amber/yellow classes remap to it); inline caution hexes use `#AB5505`; email CTAs are charcoal `#141413`; brand tints use slate `rgba(68,99,134,…)`
 - Chart colors: dark=Meta, blue=Google, green=retargeting (recharts)
 - All emails from *@storageads.com

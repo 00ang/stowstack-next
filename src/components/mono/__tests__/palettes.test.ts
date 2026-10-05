@@ -13,18 +13,21 @@ describe("PALETTES registry", () => {
     expect(bw?.swatches[1]).toBe("#000000");
   });
 
-  it("keeps the original seven palettes intact (no regression)", () => {
+  it("keeps the original palettes intact (no regression)", () => {
     for (const id of [
       "paper",
       "oxblood",
       "petrol",
       "blueprint",
       "eames",
-      "amber",
       "green",
     ]) {
       expect(PALETTES.some((p) => p.id === id)).toBe(true);
     }
+  });
+
+  it("drops the all-amber Amber Phosphor palette (gold is banned)", () => {
+    expect(PALETTES.some((p) => (p.id as string) === "amber")).toBe(false);
   });
 
   it("has unique ids and exactly three valid hex swatches per palette", () => {

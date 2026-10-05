@@ -44,7 +44,7 @@ export default function ToolHeader({
                 color: "var(--color-dark)",
               }}
             >
-              storage<span style={{ color: "var(--brand-gold)" }}>ads</span>
+              storage<span style={{ color: "var(--brand-ads)" }}>ads</span>
             </span>
           </Link>
         </div>

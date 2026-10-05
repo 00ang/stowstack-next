@@ -78,7 +78,7 @@ function KpiCard({ icon: Icon, label, value, prefix = "", suffix = "", change, i
   return (
     <div className="rounded-lg p-4 sm:p-5" style={{
       background: isAccent ? "var(--accent-glow)" : "var(--bg-elevated)",
-      border: isAccent ? "1px solid rgba(181,139,63,0.3)" : "1px solid var(--border-subtle)",
+      border: isAccent ? "1px solid rgba(68,99,134,0.3)" : "1px solid var(--border-subtle)",
     }}>
       <div className="flex items-center justify-between mb-3">
         <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "var(--bg-surface)" }}>
@@ -121,7 +121,7 @@ export default function DemoDashboardClient() {
 
   const statusStyles: Record<string, { color: string; label: string }> = {
     new: { color: "var(--accent)", label: "New Lead" },
-    contacted: { color: "rgba(245,158,11,0.8)", label: "Contacted" },
+    contacted: { color: "rgba(171,85,5,0.8)", label: "Contacted" },
     tour: { color: "rgba(168,85,247,0.8)", label: "Tour Booked" },
     moved_in: { color: "rgba(34,197,94,0.8)", label: "Moved In" },
   };

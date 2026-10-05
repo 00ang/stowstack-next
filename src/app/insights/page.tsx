@@ -392,7 +392,7 @@ export default function InsightsPage() {
         <div
           className="mt-12 rounded-lg p-8 text-center"
           style={{
-            background: "rgba(181,139,63,0.06)",
+            background: "rgba(68,99,134,0.06)",
             border: "1px solid var(--color-gold)",
           }}
         >

@@ -40,7 +40,7 @@ export function toolOgImage({
           position: "relative",
         }}
       >
-        {/* Sanctioned gold accent bar */}
+        {/* Slate accent bar (matches the logo "ads") */}
         <div
           style={{
             position: "absolute",
@@ -48,7 +48,7 @@ export function toolOgImage({
             left: 0,
             right: 0,
             height: "6px",
-            backgroundColor: "#B58B3F",
+            backgroundColor: "#446386",
           }}
         />
 
@@ -102,7 +102,7 @@ export function toolOgImage({
         >
           <div style={{ display: "flex", fontSize: 34, fontWeight: 700, letterSpacing: "-1px" }}>
             <div style={{ display: "flex", color: "#141413" }}>storage</div>
-            <div style={{ display: "flex", color: "#B58B3F" }}>ads</div>
+            <div style={{ display: "flex", color: "#446386" }}>ads</div>
           </div>
           <div style={{ display: "flex", fontSize: 22, color: "#8a887f" }}>
             storageads.com/tools

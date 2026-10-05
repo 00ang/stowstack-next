@@ -473,7 +473,7 @@ export function DataDeletionClient() {
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
                   style={{
-                    backgroundColor: "rgba(181,139,63,0.15)",
+                    backgroundColor: "rgba(68,99,134,0.15)",
                     color: "var(--accent)",
                   }}
                 >
@@ -603,7 +603,7 @@ export function DataDeletionClient() {
                         ? "#22C55E"
                         : statusResult.status === "acknowledged"
                           ? "var(--accent)"
-                          : "#F59E0B",
+                          : "#AB5505",
                   }}
                 >
                   {statusResult.status}

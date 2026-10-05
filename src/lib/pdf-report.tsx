@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
     borderBottomWidth: 2,
-    borderBottomColor: "#B58B3F",
+    borderBottomColor: "#446386",
     paddingBottom: 12,
   },
   logo: {
@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
   logoAds: {
-    color: "#B58B3F",
+    color: "#446386",
   },
   subtitle: {
     fontSize: 11,

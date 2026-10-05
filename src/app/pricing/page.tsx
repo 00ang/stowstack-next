@@ -511,7 +511,7 @@ export default function PricingPage() {
                 className="rounded-lg p-6"
                 style={{
                   background: item.isHighlighted
-                    ? "rgba(181,139,63,0.06)"
+                    ? "rgba(68,99,134,0.06)"
                     : "transparent",
                   border: item.isHighlighted
                     ? "1px solid var(--color-gold)"
@@ -603,7 +603,7 @@ export default function PricingPage() {
             <div
               className="rounded-lg p-6"
               style={{
-                background: "rgba(181,139,63,0.06)",
+                background: "rgba(68,99,134,0.06)",
                 border: "1px solid var(--color-gold)",
               }}
             >

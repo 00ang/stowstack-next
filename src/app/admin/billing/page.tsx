@@ -86,7 +86,7 @@ type TabKey = (typeof TABS)[number]["key"];
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   paid: { bg: "rgba(34,197,94,0.1)", text: "#22C55E" },
-  pending: { bg: "rgba(234,179,8,0.1)", text: "#EAB308" },
+  pending: { bg: "rgba(171,85,5,0.1)", text: "#AB5505" },
   overdue: { bg: "rgba(239,68,68,0.1)", text: "#EF4444" },
   active: { bg: "rgba(34,197,94,0.1)", text: "#22C55E" },
   inactive: { bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
@@ -192,7 +192,7 @@ function OverviewTab() {
   const kpis = [
     { label: "MRR", value: `$${data.mrr.toLocaleString()}`, icon: DollarSign, color: "#22C55E" },
     { label: "ARR", value: `$${data.arr.toLocaleString()}`, icon: TrendingUp, color: "var(--color-gold)" },
-    { label: "Avg Contract Value", value: `$${data.avg_contract_value.toLocaleString()}`, icon: CreditCard, color: "#EAB308" },
+    { label: "Avg Contract Value", value: `$${data.avg_contract_value.toLocaleString()}`, icon: CreditCard, color: "#AB5505" },
     { label: "Renewal Rate", value: `${data.renewal_rate.toFixed(1)}%`, icon: Calendar, color: "#8B5CF6" },
   ];
 
@@ -232,7 +232,7 @@ function OverviewTab() {
                 contentStyle={{ backgroundColor: "var(--color-light-gray)", border: "1px solid var(--border-medium)", borderRadius: "8px", color: "var(--color-dark)" }}
                 formatter={(value) => [`$${Number(value).toLocaleString()}`, "Revenue"]}
               />
-              <Area type="monotone" dataKey="revenue" stroke="var(--color-gold)" fill="rgba(181,139,63,0.1)" strokeWidth={2} />
+              <Area type="monotone" dataKey="revenue" stroke="var(--color-gold)" fill="rgba(68,99,134,0.1)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveChart>
         </div>

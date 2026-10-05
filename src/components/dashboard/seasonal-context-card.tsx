@@ -63,12 +63,12 @@ export function SeasonalContextCard() {
       className="rounded-xl p-4 mb-4 flex items-start gap-3"
       style={{
         backgroundColor: 'var(--color-gold-light)',
-        border: '1px solid rgba(181, 139, 63, 0.15)',
+        border: '1px solid rgba(68, 99, 134, 0.15)',
       }}
     >
       <div
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-        style={{ backgroundColor: 'rgba(181, 139, 63, 0.15)' }}
+        style={{ backgroundColor: 'rgba(68, 99, 134, 0.15)' }}
       >
         <Icon className="h-4 w-4" style={{ color: 'var(--color-gold)' }} />
       </div>

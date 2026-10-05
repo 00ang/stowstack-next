@@ -32,7 +32,7 @@ const TYPE_FILTERS = [
 const TYPE_COLORS: Record<string, string> = {
   leads: "#22C55E",
   campaigns: "var(--color-gold)",
-  billing: "#EAB308",
+  billing: "#AB5505",
   system: "var(--color-mid-gray)",
 };
 

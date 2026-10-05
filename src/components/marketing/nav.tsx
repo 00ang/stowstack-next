@@ -326,7 +326,7 @@ export default function Nav() {
                   color: MONO.textAccent,
                 }}
               >
-                storage<span style={{ color: "var(--brand-gold)" }}>ads</span>
+                storage<span style={{ color: "var(--brand-ads)" }}>ads</span>
                 <span style={{ color: MONO.textFaint, fontWeight: 400 }}>/attr</span>
               </span>
             </Link>

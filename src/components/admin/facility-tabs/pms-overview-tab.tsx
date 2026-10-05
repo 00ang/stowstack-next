@@ -39,7 +39,7 @@ export function OverviewTab({ data }: { data: PmsData }) {
       label: "Gross Potential",
       value: fmtCurrency(s?.gross_potential),
       icon: TrendingUp,
-      color: "#F59E0B",
+      color: "#AB5505",
     },
     {
       label: "Actual Revenue",
@@ -54,7 +54,7 @@ export function OverviewTab({ data }: { data: PmsData }) {
       color:
         s?.delinquency_pct && Number(s.delinquency_pct) > 10
           ? "#EF4444"
-          : "#F59E0B",
+          : "#AB5505",
     },
   ];
 
@@ -131,7 +131,7 @@ export function OverviewTab({ data }: { data: PmsData }) {
                         pct >= 90
                           ? "var(--color-green)"
                           : pct >= 75
-                            ? "#F59E0B"
+                            ? "#AB5505"
                             : "#EF4444",
                       minHeight: "4px",
                     }}

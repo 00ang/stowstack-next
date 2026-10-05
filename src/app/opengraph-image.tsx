@@ -27,7 +27,7 @@ export default function OGImage() {
             left: 0,
             right: 0,
             height: "4px",
-            background: "#B58B3F",
+            background: "#446386",
           }}
         />
 
@@ -69,7 +69,7 @@ export default function OGImage() {
             width: "80px",
             height: "4px",
             borderRadius: "2px",
-            backgroundColor: "#B58B3F",
+            backgroundColor: "#446386",
           }}
         />
       </div>

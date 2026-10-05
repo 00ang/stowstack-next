@@ -175,7 +175,7 @@ function DeletionRequestsSection() {
 
   const statusColor = (status: string) => {
     switch (status) {
-      case "pending": return "#F59E0B";
+      case "pending": return "#AB5505";
       case "acknowledged": return "#3B82F6";
       case "completed": return "#22C55E";
       default: return "#6E6E73";
@@ -201,7 +201,7 @@ function DeletionRequestsSection() {
         <div className="space-y-3">
           {/* Summary */}
           <div className="flex gap-4 text-xs mb-2">
-            <span style={{ color: "#F59E0B" }}>{pending.length} pending</span>
+            <span style={{ color: "#AB5505" }}>{pending.length} pending</span>
             <span style={{ color: "#3B82F6" }}>{acknowledged.length} acknowledged</span>
             <span style={{ color: "#22C55E" }}>{completed.length} completed</span>
           </div>

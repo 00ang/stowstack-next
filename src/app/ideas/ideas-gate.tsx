@@ -98,7 +98,7 @@ export default function IdeasGate() {
               color: "#141413",
             }}
           >
-            storage<span style={{ color: "var(--brand-gold)" }}>ads</span>
+            storage<span style={{ color: "var(--brand-slate)" }}>ads</span>
           </h1>
           <p
             style={{
