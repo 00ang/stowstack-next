@@ -15,7 +15,7 @@ graph TB
     end
     subgraph PathB["Path B · Queue (async, portal/public)"]
         B1["POST /api/pms-upload<br/>→ pms_reports (status=uploaded)"]
-        B2["cron process-pms-uploads (hourly)<br/>fetch → classify → ingest"]
+        B2["job pms.process-upload<br/>(queued by the upload · 6h backstop)<br/>fetch → classify → ingest"]
         B1 --> B2
     end
     subgraph PathC["Path C · storedge-import (manual JSON)"]
@@ -49,7 +49,7 @@ sequenceDiagram
     participant U as Client / portal
     participant Up as POST /api/pms-upload
     participant Q as pms_reports
-    participant Cron as cron process-pms-uploads (hourly)
+    participant Cron as job pms.process-upload (queued by upload)
     participant Blob as file_url
     participant T as facility_pms_*
 
@@ -165,7 +165,7 @@ Items the cron can't auto-classify land in `/admin/pms-queue` for manual handlin
 |-------|------|
 | Admin tab (Path A) | `src/components/admin/facility-tabs/pms-upload-tab.tsx` → `/api/pms-data` |
 | Queue feeder (Path B) | `src/app/api/pms-upload/route.ts` |
-| Processing cron | `src/app/api/cron/process-pms-uploads/route.ts` |
+| Processing (queue job + manual cron route) | `src/lib/pms-uploads.ts` · `src/app/api/cron/process-pms-uploads/route.ts` |
 | Column mapping | `src/lib/pms-column-mapper.ts` |
 | Manual JSON import (Path C) | `src/app/api/storedge-import/route.ts` |
 | Read APIs | `src/app/api/pms-data/route.ts`, `facility-pms/route.ts` |

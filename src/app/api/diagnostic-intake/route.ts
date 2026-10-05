@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { scheduleDiagnosticRetry } from "@/lib/diagnostic-retry";
 import {
   jsonResponse,
   errorResponse,
@@ -316,6 +317,11 @@ export async function POST(req: NextRequest) {
         }),
       },
     });
+
+    // The net under the fire-and-forget generation below: a check for when this
+    // submission would count as stuck. A no-op if the audit arrived by then.
+    await scheduleDiagnosticRetry(facility.id)
+      .catch((err) => console.error("[diagnostic-intake] scheduling retry failed:", err));
 
     // Send notification email (fire-and-forget).
     void sendEmail({

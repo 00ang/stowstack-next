@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { put } from "@vercel/blob";
 import { db } from "@/lib/db";
+import { AFTER_PORTAL_UPLOAD_MS, scheduleReportProcessing } from "@/lib/pms-uploads";
 import {
   jsonResponse,
   errorResponse,
@@ -192,6 +193,12 @@ export async function POST(req: NextRequest) {
         status: "uploaded",
       },
     });
+
+    // The net under the inline parse below: if this request dies part-way, or
+    // the file is not a CSV, the queue picks the report up once the inline path
+    // has had its chance. A no-op for a report that path already finished.
+    await scheduleReportProcessing(report.id, { facilityId, delayMs: AFTER_PORTAL_UPLOAD_MS })
+      .catch((err) => console.error("[portal-upload] scheduling processing failed:", err));
 
     // Mark facility as having PMS data
     await db.facilities.update({

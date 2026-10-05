@@ -55,6 +55,14 @@ export const RECURRING: Recurring[] = [
   { queue: "pms.detect-inventory", everyMs: BACKSTOP_MS },
   { queue: "pms.detect-events", everyMs: BACKSTOP_MS },
 
+  // Uploads queue their own processing (scheduleReportProcessing). This drains
+  // anything left `uploaded` — what the hourly process-pms-uploads cron did.
+  { queue: "pms.process-upload", everyMs: BACKSTOP_MS },
+
+  // Each diagnostic intake queues its own stuck-check (scheduleDiagnosticRetry).
+  // This retries anything older — what the hourly retry-diagnostic-audits did.
+  { queue: "audits.retry-diagnostic", everyMs: BACKSTOP_MS },
+
   // Each hold schedules its own expiry. Availability already ignores expired
   // holds, so this was only ever bookkeeping for the operator view.
   { queue: "holds.expire", everyMs: BACKSTOP_MS },

@@ -32,6 +32,8 @@ import {
   facilitiesWithUnitMix,
 } from "@/lib/events/detect";
 import { refreshProvenAds } from "@/lib/proven-ads/refresh";
+import { PROCESS_BATCH, processUploadedReport, processUploadedReports } from "@/lib/pms-uploads";
+import { SWEEP_AFTER_MINUTES, retryStuckDiagnostics } from "@/lib/diagnostic-retry";
 
 /**
  * Resumability proof. Counts to `payload.to` in chunks, yielding whenever the
@@ -116,6 +118,49 @@ const detectInventory: JobHandler = async (ctx) => {
       }
     }
   }
+};
+
+/**
+ * Process an uploaded PMS report (M7). With a `reportId`, that one — queued by
+ * the upload itself. Without, the oldest waiting reports: the six-hourly
+ * backstop that replaced the hourly `/api/cron/process-pms-uploads`.
+ *
+ * Retry-safe: a report that was already processed is no longer `uploaded`, and
+ * the import underneath replaces its snapshot rather than appending to it.
+ */
+const processUpload: JobHandler = async (ctx) => {
+  const by = "queue:pms.process-upload";
+  const reportId = (ctx.payload as { reportId?: string } | null)?.reportId;
+  if (reportId) {
+    return { kind: "done", progressDone: (await processUploadedReport(reportId, by)) ? 1 : 0 };
+  }
+
+  // Each report leaves `uploaded` as it is handled, so the table is the cursor.
+  let handled = Number((ctx.cursor as { handled?: number } | null)?.handled ?? 0);
+  for (;;) {
+    const batch = await processUploadedReports(by);
+    handled += batch.length;
+    if (batch.length < PROCESS_BATCH) return { kind: "done", progressDone: handled };
+    if (ctx.shouldYield()) return { kind: "more", cursor: { handled }, progressDone: handled };
+  }
+};
+
+/**
+ * Rescue a diagnostic whose audit never generated. With a `facilityId`, the
+ * check its intake queued; a failed retry throws so the queue backs off and
+ * tries again, and each attempt re-checks whether the audit has since arrived.
+ * Without, the six-hourly sweep that replaced the hourly cron — limited to
+ * submissions older than the per-facility retries, so the two never overlap.
+ */
+const retryDiagnostic: JobHandler = async (ctx) => {
+  const facilityId = (ctx.payload as { facilityId?: string } | null)?.facilityId;
+  if (facilityId) {
+    const res = await retryStuckDiagnostics({ facilityId });
+    if (res.failed.length > 0) throw new Error(`audit generation failed for facility ${facilityId}`);
+    return { kind: "done", progressDone: res.retried };
+  }
+  const res = await retryStuckDiagnostics({ olderThanMinutes: SWEEP_AFTER_MINUTES });
+  return { kind: "done", progressDone: res.retried };
 };
 
 /**
@@ -294,6 +339,8 @@ export const HANDLERS: Record<string, JobHandler> = {
   "respond.waitlist-notify": waitlistNotify,
   "pms.detect-events": detectPmsEvents,
   "pms.detect-inventory": detectInventory,
+  "pms.process-upload": processUpload,
+  "audits.retry-diagnostic": retryDiagnostic,
   "jobs.prune": pruneJobs,
   // MISSION.md s12 — subscribers to `lead.moved_in`. Retry-safe: each report
   // carries the same event/order id on every attempt and the platforms drop

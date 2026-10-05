@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { scheduleReportProcessing } from "@/lib/pms-uploads";
 import {
   jsonResponse,
   errorResponse,
@@ -120,6 +121,12 @@ export async function PATCH(req: NextRequest) {
         processed_by: true,
       },
     });
+
+    // Put back in the queue: process it now rather than at the next sweep.
+    if (status === "uploaded") {
+      await scheduleReportProcessing(updated.id)
+        .catch((err) => console.error("[admin-pms-queue] scheduling processing failed:", err));
+    }
 
     return jsonResponse({ report: updated, success: true }, 200, origin);
   } catch (err) {
