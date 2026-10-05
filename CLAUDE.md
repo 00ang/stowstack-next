@@ -153,8 +153,8 @@ Occupancy intelligence and market intelligence features should scrape ALL availa
 
 ## Team
 
-- **Blake** — Founder, product direction, sales, owns marketing site + admin UX decisions
-- **Angelo** — Co-founder, built facility overview tools, ad platform integrations, video/image generation. Actively contributing code daily.
+- **Blake** — Founder, product direction, sales
+- **Angelo** — Co-founder. **Owns all design decisions** — anything to do with design (visual design, brand, logo, color, type, UI/UX across the marketing site, admin, portal and partner dashboards) plus all marketing site decisions. Built facility overview tools, ad platform integrations, video/image generation. Actively contributing code daily.
 
 ## Remediation Tasks
 
