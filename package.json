@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/generate-changelog.mjs && prisma generate && node scripts/apply-db-migration.mjs && next build",
+    "build": "node scripts/generate-changelog.mjs && prisma generate && node scripts/db-sync.mjs && next build",
     "changelog": "node scripts/generate-changelog.mjs",
     "start": "next start",
     "lint": "eslint",
