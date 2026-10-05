@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { jsonResponse, errorResponse, getOrigin, corsResponse, requireAdminKey } from "@/lib/api-helpers";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
+import { isValidUuid } from "@/lib/validation";
 
 export async function OPTIONS(req: NextRequest) {
   return corsResponse(getOrigin(req));
@@ -25,15 +26,23 @@ export async function GET(req: NextRequest) {
     if (!landingPageId) {
       return errorResponse("Missing landingPageId", 400, origin);
     }
+    if (!isValidUuid(landingPageId)) {
+      return errorResponse("Invalid landingPageId", 400, origin);
+    }
 
     const conditions: Prisma.Sql[] = [
       Prisma.sql`landing_page_id = ${landingPageId}::uuid`,
     ];
+    // ::date casts: a bound string is text, and `date >= text` has no operator.
+    const isDay = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d);
+    if ((startDate && !isDay(startDate)) || (endDate && !isDay(endDate))) {
+      return errorResponse("startDate and endDate must be YYYY-MM-DD", 400, origin);
+    }
     if (startDate) {
-      conditions.push(Prisma.sql`period_date >= ${startDate}`);
+      conditions.push(Prisma.sql`period_date >= ${startDate}::date`);
     }
     if (endDate) {
-      conditions.push(Prisma.sql`period_date <= ${endDate}`);
+      conditions.push(Prisma.sql`period_date <= ${endDate}::date`);
     }
     const whereClause = Prisma.join(conditions, " AND ");
 
@@ -53,7 +62,7 @@ export async function GET(req: NextRequest) {
          AVG(CASE WHEN time_on_page > 0 THEN time_on_page END)::int AS avg_time,
          COUNT(*) FILTER (WHERE event_type = 'click')::int AS total_clicks
        FROM page_interactions
-       WHERE landing_page_id = ${landingPageId}::uuid AND created_at >= ${today}
+       WHERE landing_page_id = ${landingPageId}::uuid AND created_at >= ${today}::date
     `;
 
     const clicks = await db.$queryRaw`

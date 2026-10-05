@@ -324,6 +324,16 @@ model clients {
   @@index([access_code], map: "idx_clients_access_code")
   @@index([facility_id], map: "idx_clients_facility")
   @@index([deleted_at], map: "idx_clients_deleted_at")
+
+  /// NOTE: migration 20261005_restore_drifted_tables also adds
+  /// `report_enabled BOOLEAN NOT NULL DEFAULT false` and
+  /// `report_frequency VARCHAR(16) NOT NULL DEFAULT 'weekly'` to this table,
+  /// read by raw SQL in /api/cron/send-client-reports. They are deliberately
+  /// NOT declared here until that migration has run in production: Prisma names
+  /// every column of a model in its SELECTs, so declaring a column the database
+  /// does not have yet breaks every `db.clients` query — portal login included.
+  /// Once applied, add them as `report_enabled Boolean @default(false)` and
+  /// `report_frequency String @default("weekly") @db.VarChar(16)`.
 }
 
 // Per-month goal history for the portal results dashboard. `monthly_goal` on
@@ -2653,4 +2663,80 @@ model proven_ad_searches {
   updated_at   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
 
   @@index([adapter, enabled], map: "idx_proven_ad_searches_adapter")
+}
+
+// ── Restored drift (2026-10-05) ────────────────────────────────────────────
+// Three tables the code has written to and read from since June, which were
+// never in this schema and never existed in production — every write failed.
+// Created by prisma/migrations/20261005_restore_drifted_tables. All three are
+// used only through raw SQL; the models are here so the schema stops lying and
+// a future `migrate dev` does not try to drop them.
+
+/// Campaign alerts raised by /api/cron/check-campaign-alerts, shown on the
+/// client portal home (/api/alert-history). One alert per client per type per
+/// 24 hours — the cron checks before it inserts.
+model alert_history {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  client_id       String    @db.Uuid
+  facility_id     String?   @db.Uuid
+  /// no_campaigns | cpl_spike | roas_drop | lead_drought | movein_drop | milestone_roas
+  alert_type      String    @db.VarChar(64)
+  /// critical | warning | info
+  severity        String    @db.VarChar(16)
+  title           String
+  detail          String?
+  metric          Float?
+  threshold       Float?
+  acknowledged    Boolean   @default(false)
+  acknowledged_by String?
+  acknowledged_at DateTime? @db.Timestamptz(6)
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([client_id, alert_type, created_at(sort: Desc)], map: "idx_alert_history_client_type")
+  @@index([client_id, acknowledged], map: "idx_alert_history_client_ack")
+}
+
+/// Raw landing-page interaction events (/lp/[slug] → /api/page-interactions).
+/// Append-only and pruned at 30 days by /api/cron/aggregate-page-stats, which
+/// rolls each day up into page_interaction_stats first. No foreign keys on
+/// purpose: an analytics beacon must not fail because a page was deleted.
+model page_interactions {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  landing_page_id String   @db.Uuid
+  facility_id     String?  @db.Uuid
+  session_id      String
+  /// click | scroll | section_view | form_focus | cta_hover | page_load
+  event_type      String   @db.VarChar(32)
+  element_id      String?
+  element_text    String?
+  section_index   Int?
+  x_pct           Float?
+  y_pct           Float?
+  scroll_depth    Int?
+  viewport_width  Int?
+  viewport_height Int?
+  /// Seconds.
+  time_on_page    Int      @default(0)
+  utm_source      String?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([landing_page_id, created_at], map: "idx_page_interactions_page_time")
+  @@index([created_at], map: "idx_page_interactions_created")
+}
+
+/// Daily per-page rollup of page_interactions (heatmap, scroll, CTA clicks).
+model page_interaction_stats {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  landing_page_id  String   @db.Uuid
+  period_date      DateTime @db.Date
+  total_sessions   Int      @default(0)
+  avg_scroll_depth Float    @default(0)
+  avg_time_on_page Float    @default(0)
+  click_zones      Json?
+  section_views    Json?
+  cta_clicks       Json?
+  bounce_rate      Float    @default(0)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([landing_page_id, period_date], map: "page_interaction_stats_page_date_key")
 }
