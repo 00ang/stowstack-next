@@ -9,6 +9,7 @@
  */
 
 import { db } from "@/lib/db";
+import { ringAt } from "./alarm";
 import {
   type JobRow,
   type JobStatus,
@@ -38,8 +39,12 @@ export interface EnqueueInput {
  * ON CONFLICT DO NOTHING rather than an upsert: if the job is already queued or
  * already ran, re-enqueueing must not resurrect it or reset its cursor. The
  * caller gets null and should treat that as "already handled".
+ *
+ * Rings the alarm after the insert commits, never before: the order is what
+ * lets `rearm` promise that no enqueue is lost (see ./alarm).
  */
 export async function enqueue(input: EnqueueInput): Promise<string | null> {
+  const runAfter = input.runAfter ?? new Date();
   const rows = await db.$queryRaw<{ id: string }[]>`
     INSERT INTO jobs (queue, payload, dedupe_key, tenant_key, run_after, max_attempts, progress_total)
     VALUES (
@@ -47,14 +52,32 @@ export async function enqueue(input: EnqueueInput): Promise<string | null> {
       ${JSON.stringify(input.payload ?? {})}::jsonb,
       ${input.dedupeKey ?? null},
       ${input.tenantKey ?? null},
-      ${input.runAfter ?? new Date()},
+      ${runAfter},
       ${input.maxAttempts ?? 5},
       ${input.progressTotal ?? null}
     )
     ON CONFLICT (queue, dedupe_key) DO NOTHING
     RETURNING id
   `;
-  return rows[0]?.id ?? null;
+  const id = rows[0]?.id ?? null;
+  if (id) await ringAt(runAfter);
+  return id;
+}
+
+/**
+ * The earliest moment the worker has anything to do: a pending job coming due,
+ * or a running job's lease running out (the crash path). Null when the queue is
+ * empty. This is what the alarm is set to after every pass.
+ */
+export async function nextDueAt(): Promise<Date | null> {
+  const rows = await db.$queryRaw<{ at: Date | null }[]>`
+    SELECT LEAST(
+      (SELECT min(run_after) FROM jobs WHERE status = 'pending'),
+      (SELECT min(lease_expires_at) FROM jobs WHERE status = 'running')
+    ) AS at
+  `;
+  const at = rows[0]?.at;
+  return at ? new Date(at) : null;
 }
 
 /**

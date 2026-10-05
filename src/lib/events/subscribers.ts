@@ -38,7 +38,7 @@ export const SUBSCRIBERS: Record<EventType, string[]> = {
 
   // RESPOND r9 sold-out waitlist · CONVERT c6 back-in-stock alerts. The unit
   // sells itself before it is vacant a day — which only works if this fires
-  // within minutes, so it is the strongest argument for the one-minute worker.
+  // within minutes, which is why detection is triggered by the upload itself.
   "inventory.available": ["respond.waitlist-notify"],
 
   // PROVE s12 — tell the ad platforms a click became a move-in, so they bid on

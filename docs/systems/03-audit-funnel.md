@@ -26,7 +26,7 @@ flowchart TD
     PERSIST --> EMAILS["📧 Resend:<br/>operator 'diagnostic ready'<br/>Blake 'audit generated'"]
 
     %% Reliability net
-    RETRY["⏰ cron retry-diagnostic-audits<br/>hourly :30 — rescues stuck rows<br/>(diagnostic_submitted, no slug, >10min)"] -.->|re-triggers| GEN
+    RETRY["⏰ job audits.retry-diagnostic<br/>queued by intake for +11 min — rescues stuck rows<br/>(diagnostic_submitted, no slug, >10min)"] -.->|re-triggers| GEN
 
     %% Shared destination
     EMAILS --> VIEW["👀 Operator opens /audit/[slug]"]
@@ -96,7 +96,7 @@ sequenceDiagram
     Gen->>Blake: 📧 "Audit Generated"
 ```
 
-> **Why the fire-and-forget + retry cron?** `diagnostic-intake` doesn't `await` the AI generation (it'd block the form response for 10-30s). If that detached call fails, the row sits at `diagnostic_submitted` with no slug. The hourly `retry-diagnostic-audits` cron sweeps those up (>10 min old, max 5/run) — a reliability net for a deliberately unreliable pattern.
+> **Why the fire-and-forget + retry cron?** `diagnostic-intake` doesn't `await` the AI generation (it'd block the form response for 10-30s). If that detached call fails, the row sits at `diagnostic_submitted` with no slug. The intake queues an `audits.retry-diagnostic` job for 11 minutes later, which retries generation if the row is still stuck (backing off and retrying on failure); a six-hourly sweep catches anything older than two hours, max 5/run — a reliability net for a deliberately unreliable pattern. (Until 2026-10 this was an hourly cron.)
 
 ---
 
@@ -168,7 +168,7 @@ No FK to `facilities` — the slug *is* the link. `facilities.shared_audit_slug`
 | AI generation | `src/app/api/audit-generate-diagnostic/route.ts` |
 | Report view | `src/app/audit/[slug]/page.tsx` |
 | Load + alerts | `src/app/api/audit-load/route.ts` |
-| Retry net | `src/app/api/cron/retry-diagnostic-audits/route.ts` |
+| Retry net | `src/lib/diagnostic-retry.ts` (queue) · `src/app/api/cron/retry-diagnostic-audits/route.ts` (manual) |
 | Approve → nurture | `src/app/api/audit-approve/route.ts` |
 | Booking URL | `src/lib/booking.ts` (Cal handle `stowstack`) |
 | Sample fixture | `src/lib/sample-audit.ts` |

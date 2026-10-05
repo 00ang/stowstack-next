@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { jsonResponse, errorResponse, getOrigin, corsResponse } from "@/lib/api-helpers";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isValidUuid } from "@/lib/validation";
 
 const VALID_EVENT_TYPES = ["click", "scroll", "section_view", "form_focus", "cta_hover", "page_load"];
 
@@ -26,7 +27,9 @@ function insertRow(
   timeOnPage: number,
   utmSource: string | null,
 ) {
-  return Prisma.sql`(${landingPageId}, ${facilityId}, ${sessionId}, ${eventType}, ${elementId}, ${elementText}, ${sectionIndex}, ${xPct}, ${yPct}, ${scrollDepth}, ${viewportWidth}, ${viewportHeight}, ${timeOnPage}, ${utmSource})`;
+  // ::uuid casts: Prisma binds strings as text, and Postgres will not put text
+  // into a uuid column without one (42804) — every beacon failed without them.
+  return Prisma.sql`(${landingPageId}::uuid, ${facilityId}::uuid, ${sessionId}, ${eventType}, ${elementId}, ${elementText}, ${sectionIndex}, ${xPct}, ${yPct}, ${scrollDepth}, ${viewportWidth}, ${viewportHeight}, ${timeOnPage}, ${utmSource})`;
 }
 
 export async function POST(req: NextRequest) {
@@ -45,6 +48,9 @@ export async function POST(req: NextRequest) {
     if (!landingPageId || !facilityId) {
       return errorResponse("Missing required fields", 400, origin);
     }
+    if (!isValidUuid(landingPageId) || !isValidUuid(facilityId)) {
+      return errorResponse("Invalid landingPageId or facilityId", 400, origin);
+    }
 
     // Accept heartbeat summary format: { scrollDepth, timeOnPage }
     const scrollDepth = body.scrollDepth;
@@ -53,7 +59,7 @@ export async function POST(req: NextRequest) {
     if ((!Array.isArray(events) || events.length === 0) && (scrollDepth !== undefined || timeOnPage !== undefined)) {
       await db.$executeRaw`
         INSERT INTO page_interactions (landing_page_id, facility_id, session_id, event_type, element_id, element_text, section_index, x_pct, y_pct, scroll_depth, viewport_width, viewport_height, time_on_page, utm_source)
-        VALUES (${landingPageId}, ${facilityId}, ${sessionId || "anonymous"}, ${"scroll"}, ${null}, ${null}, ${null}, ${null}, ${null}, ${scrollDepth ?? 0}, ${body.viewportWidth ?? null}, ${body.viewportHeight ?? null}, ${timeOnPage ?? 0}, ${body.utmSource || null})
+        VALUES (${landingPageId}::uuid, ${facilityId}::uuid, ${sessionId || "anonymous"}, ${"scroll"}, ${null}, ${null}, ${null}, ${null}, ${null}, ${scrollDepth ?? 0}, ${body.viewportWidth ?? null}, ${body.viewportHeight ?? null}, ${timeOnPage ?? 0}, ${body.utmSource || null})
       `;
 
       return jsonResponse({ success: true, recorded: 1, format: "heartbeat" }, 200, origin);

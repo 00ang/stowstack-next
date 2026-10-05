@@ -234,8 +234,42 @@ describe("recurring schedule", () => {
     const { ensureScheduled, RECURRING } = await import("@/lib/jobs/schedule");
     const first = await ensureScheduled(1_000_000);
     const second = await ensureScheduled(1_000_000);
-    expect(first).toBe(RECURRING.length);
+    // This bucket's run and the next one's, per recurring job.
+    expect(first).toBe(RECURRING.length * 2);
     expect(second).toBe(0);
     vi.doUnmock("@/lib/jobs/queue");
+  });
+
+  it("parks the next run at its bucket's start, so the alarm can wake the worker for it", async () => {
+    vi.resetModules();
+    const calls: { queue: string; runAfter?: Date }[] = [];
+    vi.doMock("@/lib/jobs/queue", () => ({
+      enqueue: async (input: { queue: string; runAfter?: Date }) => {
+        calls.push(input);
+        return "id";
+      },
+    }));
+    const { ensureScheduled, RECURRING, bucketOf } = await import("@/lib/jobs/schedule");
+    const now = 1_000_000_000;
+    await ensureScheduled(now);
+    for (const r of RECURRING) {
+      const mine = calls.filter((c) => c.queue === r.queue).map((c) => c.runAfter?.getTime());
+      expect(mine).toEqual([now, (bucketOf(now, r.everyMs) + 1) * r.everyMs]);
+    }
+    vi.doUnmock("@/lib/jobs/queue");
+  });
+
+  // The regression this whole schedule was rewritten to stop: a recurring job on
+  // a minutes clock keeps Neon awake 24/7. Anything that needs minutes-level
+  // timing should be enqueued by the event that creates it, for when it is due.
+  it("nothing recurs often enough to keep the database awake", async () => {
+    const { RECURRING } = await import("@/lib/jobs/schedule");
+    RECURRING.forEach((r) => expect(r.everyMs).toBeGreaterThanOrEqual(60 * 60_000));
+  });
+
+  it("backstops share a clock, so they wake the database once between them", async () => {
+    const { RECURRING } = await import("@/lib/jobs/schedule");
+    const shortest = Math.min(...RECURRING.map((r) => r.everyMs));
+    RECURRING.forEach((r) => expect(r.everyMs % shortest).toBe(0));
   });
 });

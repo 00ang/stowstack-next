@@ -28,10 +28,6 @@ gantt
     section Analytics / scoring
     aggregate-page-stats        :02:00, 20m
     process-synthesis-queue     :12:00, 20m
-
-    section Hourly
-    retry-diagnostic-audits     :crit, 00:30, 15m
-    process-pms-uploads         :crit, 00:00, 15m
 ```
 
 > Weekly + monthly crons don't fit a 24h chart — they're in the tables below. Two crons deliberately share the **4:00 AM** slot (`process-gbp`, `data-retention`).
@@ -52,12 +48,21 @@ gantt
 | `aggregate-page-stats` | `0 2 * * *` | 2:00 AM | Roll up landing-page interaction stats |
 | `process-synthesis-queue` | `0 12 * * *` | 12:00 PM | Run up to 3 pending `synthesis_log` AI syntheses |
 
-### Hourly crons
+### Formerly hourly — now on the job queue (2026-10)
 
-| Path | Cron | Does |
-|------|------|------|
-| `process-pms-uploads` | `0 * * * *` | Classify uploaded PMS CSVs → `facility_pms_rent_roll`/`aging` |
-| `retry-diagnostic-audits` | `30 * * * *` | Rescue facilities stuck at `diagnostic_submitted` (>10 min, no slug) |
+These two woke the database 24 times a day each to find, almost always, nothing.
+Each is now queued by the request that creates its work and run by the job worker
+(`/api/cron/jobs`), with a six-hourly backstop sweep. The routes still exist for
+manual triggering with the cron secret but are no longer in `vercel.json`.
+
+| Was | Queue | Queued by | Backstop |
+|-----|-------|-----------|----------|
+| `process-pms-uploads` (`0 * * * *`) | `pms.process-upload` | `/api/portal-upload` (+5 min, after the inline parse), `/api/pms-upload`, `/api/admin-pms-queue` when set back to `uploaded` | every 6h, oldest 10 at a time |
+| `retry-diagnostic-audits` (`30 * * * *`) | `audits.retry-diagnostic` | `/api/diagnostic-intake` (+11 min; a failed retry backs off and retries) | every 6h, submissions older than 2h, 5 per run |
+
+The worker itself ticks every minute but only touches Postgres when a Redis alarm
+says a job is due (`src/lib/jobs/alarm.ts`), so a quiet system lets Neon scale to
+zero. Recurring work lives in `src/lib/jobs/schedule.ts`, all on one six-hour clock.
 
 ### Weekly / monthly crons
 

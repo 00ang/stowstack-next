@@ -584,13 +584,11 @@ flowchart LR
 
 ## 9. Cron Schedule
 
-All 22 scheduled functions and their downstream effects. (Full table with schedules in [systems/17 §5](systems/17-glossary-reference.md) and [systems/05](systems/05-background-jobs.md).)
+The scheduled functions and their downstream effects (the job worker's own queue is in systems/05). (Full table with schedules in [systems/17 §5](systems/17-glossary-reference.md) and [systems/05](systems/05-background-jobs.md).)
 
 ```mermaid
 flowchart LR
   subgraph sched[Vercel Cron · UTC]
-    S16[hourly :00 process-pms-uploads]
-    S17[hourly :30 retry-diagnostic-audits]
     S1[3:00 AM cleanup-sessions]
     S2[3:30 AM cleanup-organizations]
     S3[Sun 1 AM sync-audiences]
@@ -613,8 +611,6 @@ flowchart LR
     S22[1st 1 PM photo-refresh-prompts]
   end
 
-  S16 --> T13[CSV → facility_pms_* ingest]
-  S17 --> T14[rescue stuck diagnostic audits]
   S1 --> T1[org_sessions TTL cleanup]
   S2 --> T2[soft-deleted orgs purge]
   S3 --> T3[Meta/Google audience sync]

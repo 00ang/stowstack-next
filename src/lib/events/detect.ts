@@ -12,6 +12,7 @@
  */
 
 import { db } from "@/lib/db";
+import { enqueue } from "@/lib/jobs/queue";
 import { emit, type EmitResult } from "./bus";
 import { diffInventory, diffRentRoll, type RentRollRow, type UnitTypeRow } from "./types";
 
@@ -60,8 +61,8 @@ export async function detectForFacility(facilityId: string): Promise<EmitResult>
  * Copy the facility's current unit mix into history, if it has moved.
  *
  * `captured_at` is the facility's own latest unit-data timestamp — not the time
- * we looked — so running this every minute records nothing until an upload
- * actually changes the mix, and re-running is a no-op.
+ * we looked — so running it again records nothing until an upload actually
+ * changes the mix, and re-running is a no-op.
  */
 export async function captureUnitMix(facilityId: string): Promise<number> {
   const rows = await db.$queryRaw<{ id: string }[]>`
@@ -118,4 +119,23 @@ export async function facilitiesWithUnitMix(afterId?: string, limit = 25): Promi
     ORDER BY facility_id ASC LIMIT ${limit}
   `;
   return rows.map((r) => r.facility_id);
+}
+
+/**
+ * PMS data for this facility just changed: detect now, for this facility only.
+ *
+ * Detection only ever finds something after an upload moves the data, so it is
+ * triggered by the upload rather than by a clock. It used to sweep every
+ * facility every two minutes (inventory) and fifteen (rent roll), which kept the
+ * database awake around the clock to find nothing (see src/lib/jobs/alarm.ts).
+ *
+ * Not deduped: two imports a few seconds apart must both be looked at, and a
+ * spare run is cheap because detection is idempotent (events dedupe on their
+ * source key). Best effort by contract — call sites must not fail an import
+ * over it, and the six-hourly sweeps catch anything missed.
+ */
+export async function scheduleDetection(facilityId: string): Promise<void> {
+  for (const queue of ["pms.detect-inventory", "pms.detect-events"]) {
+    await enqueue({ queue, payload: { facilityId }, tenantKey: facilityId });
+  }
 }

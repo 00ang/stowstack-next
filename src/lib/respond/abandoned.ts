@@ -17,6 +17,7 @@
  */
 
 import { db } from "@/lib/db";
+import { enqueue } from "@/lib/jobs/queue";
 import { t, type Language } from "@/lib/messaging/copy";
 import { languagesFor } from "@/lib/messaging/language";
 import { sendMessage } from "@/lib/messaging/send";
@@ -32,6 +33,34 @@ import { normalisePhone } from "@/lib/messaging/types";
  */
 export const RESCUE_AFTER_MINUTES = 10;
 export const RESCUE_BEFORE_MINUTES = 120;
+
+/**
+ * Enqueue the rescue sweep for the moment this lead becomes rescuable.
+ *
+ * Called on every partial-lead write that carries a phone, and deduped per lead,
+ * so the first such write schedules it and the rest are no-ops. The job runs
+ * `rescueAbandoned`, which re-checks everything at fire time — a lead that
+ * finished the form in the meantime is simply not found.
+ *
+ * This replaced a sweep every five minutes, which kept the database awake
+ * around the clock (see src/lib/jobs/alarm.ts). `createdAt` should be the row's
+ * own timestamp: the sweep measures the window in database time, and so does
+ * the claim, so the two agree. The extra minute is for callers that pass a
+ * client clock.
+ */
+export async function scheduleRescue(lead: {
+  id: string;
+  createdAt: Date;
+  facilityId?: string | null;
+}): Promise<void> {
+  const due = new Date(lead.createdAt).getTime() + (RESCUE_AFTER_MINUTES + 1) * 60_000;
+  await enqueue({
+    queue: "respond.abandoned-rescue",
+    dedupeKey: `rescue:${lead.id}`,
+    tenantKey: lead.facilityId ?? undefined,
+    runAfter: new Date(Math.max(due, Date.now())),
+  });
+}
 
 export interface AbandonedLead {
   id: string;

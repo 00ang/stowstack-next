@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdminKey } from "@/lib/api-helpers";
+import { ringAt } from "@/lib/jobs/alarm";
 
 /**
  * Operator window onto the job queue (MISSION.md s1's last acceptance item).
@@ -109,6 +110,8 @@ export async function POST(req: NextRequest) {
     if (rows.length === 0) {
       return NextResponse.json({ error: "No frozen or failed job with that id" }, { status: 404 });
     }
+    // The worker only looks at Postgres when the alarm says so.
+    await ringAt(new Date());
     return NextResponse.json({ ok: true, id: rows[0].id });
   } catch (error) {
     console.error("[admin-jobs] retry failed:", error);

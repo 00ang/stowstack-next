@@ -6,7 +6,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { isValidEmail, sanitizeString } from "@/lib/validation";
 import { fireMetaCapi } from "@/lib/meta-capi";
 import { identifyFromRequest } from "@/lib/attribution/visitor";
-import { respondToNewLeadSafely } from "@/lib/respond/speed-to-lead";
+import { respondToNewLeadSafely, scheduleSpeedCheck } from "@/lib/respond/speed-to-lead";
 import { enqueue } from "@/lib/jobs/queue";
 
 /**
@@ -173,6 +173,8 @@ export async function POST(req: NextRequest) {
 
     // RESPOND r5 — inline, before the fire-and-forget work below, because the
     // first minute is the whole point and the drip/CAPI calls are not urgent.
+    // The check goes first so a request that dies mid-answer is still covered.
+    await scheduleSpeedCheck(lead.id, facilityId || null).catch(() => { /* best effort: the six-hourly sweep will find it */ });
     const speed = await respondToNewLeadSafely(lead.id);
     if (!speed.acked && !speed.alerted) {
       await enqueue({

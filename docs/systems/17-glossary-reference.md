@@ -94,10 +94,11 @@
 
 ## 5. Cron inventory (22 jobs)
 
+`process-pms-uploads` and `retry-diagnostic-audits` were hourly here until 2026-10; both now run on the job queue (see [05 · Background Jobs](05-background-jobs.md)).
+
 | Schedule | Cron | Domain |
 |----------|------|--------|
-| `0 * * * *` | process-pms-uploads | PMS |
-| `30 * * * *` | retry-diagnostic-audits | Audit |
+| `* * * * *` | jobs (worker; touches Postgres only when a job is due) | Queue |
 | `0 2 * * *` | aggregate-page-stats | Analytics |
 | `0 3 * * *` | cleanup-sessions | Maintenance |
 | `30 3 * * *` | cleanup-organizations | Billing |
@@ -117,6 +118,7 @@
 | `0 12 * * 5` | generate-noi-reports | Retention |
 | `0 1 * * 0` | sync-audiences | Ads |
 | `0 10 * * 0` | weekly-synthesis | AI |
+| `0 8 1 * *` | generate-rev-share-payouts | Partners |
 | `0 13 1 * *` | photo-refresh-prompts | GBP |
 
 → [05 · Background Jobs](05-background-jobs.md)

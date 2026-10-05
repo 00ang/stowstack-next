@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { jsonResponse, errorResponse, getOrigin, corsResponse, requireAdminKey } from "@/lib/api-helpers";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
+import { scheduleRescue } from "@/lib/respond/abandoned";
 import { identifyFromRequest } from "@/lib/attribution/visitor";
 
 function hashIp(ip: string | null): string | null {
@@ -200,7 +201,9 @@ export async function POST(req: NextRequest) {
     const nextRecoveryAt = email ? new Date(Date.now() + 60 * 60 * 1000).toISOString() : null;
 
     const emailVal = email || null;
-    const result = await db.$queryRaw<Array<{ id: string; lead_score: number }>>`
+    const result = await db.$queryRaw<
+      Array<{ id: string; lead_score: number; created_at: Date; has_phone: boolean }>
+    >`
       INSERT INTO partial_leads (
         session_id, landing_page_id, facility_id,
         email, phone, name, unit_size,
@@ -246,10 +249,19 @@ export async function POST(req: NextRequest) {
           ELSE partial_leads.recovery_status
         END,
         updated_at = NOW()
-      RETURNING id, lead_score
+      RETURNING id, lead_score, created_at, (phone IS NOT NULL) AS has_phone
     `;
 
     const row = result[0];
+
+    // RESPOND r8. Once a half-filled form has a phone, book the rescue check for
+    // the moment the lead becomes rescuable. Deduped per lead, so every later
+    // keystroke-save is a no-op; the job re-checks whether they finished.
+    if (row?.has_phone) {
+      await scheduleRescue({ id: row.id, createdAt: row.created_at, facilityId: facilityId || null })
+        .catch(() => { /* best effort: rescue is a nicety, not a promise */ });
+    }
+
     // MISSION.md s12 — link the visitor once the browser has given us a way to
     // reach them; an anonymous partial is not yet a person. Never throws.
     if (row?.id && (email || phone)) await identifyFromRequest(req, row.id);

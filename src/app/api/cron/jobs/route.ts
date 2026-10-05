@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCronSecret } from "@/lib/cron-auth";
 import { HANDLERS } from "@/lib/jobs/handlers";
 import { runJobs } from "@/lib/jobs/runner";
-import { queueStats } from "@/lib/jobs/queue";
+import { nextDueAt, queueStats } from "@/lib/jobs/queue";
 import { ensureScheduled } from "@/lib/jobs/schedule";
+import { alarmAt, rearm } from "@/lib/jobs/alarm";
 
 /**
  * The worker (MISSION.md s1).
  *
- * Runs every minute and drains what it can inside its budget. Nothing here
+ * Ticks every minute, but only touches Postgres when the alarm says something
+ * is due (see src/lib/jobs/alarm.ts). Most ticks end after one Redis read, which
+ * is what lets Neon scale to zero between jobs instead of running 24/7.
+ *
+ * When it does wake, it drains what it can inside its budget. Nothing here
  * needs to finish: a job that cannot complete in one pass persists its cursor
  * and the next minute's invocation resumes it.
  *
@@ -31,13 +36,25 @@ async function handle(req: NextRequest) {
   // Read-only inspection: what is queued, running or stuck.
   if (new URL(req.url).searchParams.get("stats") === "1") {
     try {
-      return NextResponse.json({ ok: true, stats: await queueStats() });
+      const at = await alarmAt();
+      return NextResponse.json({
+        ok: true,
+        stats: await queueStats(),
+        alarmAt: at == null ? null : new Date(at).toISOString(),
+      });
     } catch (error) {
       return NextResponse.json(
         { ok: false, error: error instanceof Error ? error.message : String(error) },
         { status: 500 }
       );
     }
+  }
+
+  // Nothing due: answer from Redis and leave the database asleep. Unknown (no
+  // Redis, or never armed) counts as due, so this can only ever skip idle work.
+  const at = await alarmAt();
+  if (at != null && at > Date.now()) {
+    return NextResponse.json({ ok: true, idle: true, alarmAt: new Date(at).toISOString() });
   }
 
   // One id per invocation so a stuck lease traces back to a specific run.
@@ -63,6 +80,11 @@ async function handle(req: NextRequest) {
       { ok: false, workerId, error: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
+  } finally {
+    // Set the alarm for whatever is due next — including work this pass left
+    // behind. If the database is what failed, this backs off to RETRY_MS rather
+    // than failing against it every minute.
+    await rearm(nextDueAt);
   }
 }
 

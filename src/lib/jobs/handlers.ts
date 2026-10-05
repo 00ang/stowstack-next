@@ -22,7 +22,7 @@ import { expireHolds } from "@/lib/respond/hold";
 import { textBackMissedCall } from "@/lib/respond/missed-call";
 import { rescueAbandoned } from "@/lib/respond/abandoned";
 import { respondToNewLead, unansweredLeads } from "@/lib/respond/speed-to-lead";
-import { sweepNoShows, sweepReminders1, sweepReminders24 } from "@/lib/respond/tour";
+import { scheduleLiveTours, sweepNoShows, sweepReminders1, sweepReminders24 } from "@/lib/respond/tour";
 import { reportMoveInToGoogle, reportMoveInToMeta } from "@/lib/attribution/write-back";
 import { matchCsvMoveIn, type CsvMoveInPayload } from "@/lib/attribution/csv-move-in";
 import {
@@ -32,6 +32,8 @@ import {
   facilitiesWithUnitMix,
 } from "@/lib/events/detect";
 import { refreshProvenAds } from "@/lib/proven-ads/refresh";
+import { PROCESS_BATCH, processUploadedReport, processUploadedReports } from "@/lib/pms-uploads";
+import { SWEEP_AFTER_MINUTES, retryStuckDiagnostics } from "@/lib/diagnostic-retry";
 
 /**
  * Resumability proof. Counts to `payload.to` in chunks, yielding whenever the
@@ -65,6 +67,11 @@ const chunkedCounter: JobHandler = async (ctx) => {
  * timeout costs one facility's work rather than all of it.
  */
 const detectPmsEvents: JobHandler = async (ctx) => {
+  // One facility, because an upload for it is why this job exists. The sweep
+  // below is the six-hourly backstop.
+  const one = (ctx.payload as { facilityId?: string } | null)?.facilityId;
+  if (one) return { kind: "done", progressDone: (await detectForFacility(one)).emitted };
+
   let after = (ctx.cursor as { after?: string } | null)?.after;
   let emitted = Number((ctx.cursor as { emitted?: number } | null)?.emitted ?? 0);
 
@@ -86,11 +93,16 @@ const detectPmsEvents: JobHandler = async (ctx) => {
 /**
  * Capture the unit mix and emit `inventory.available` (RESPOND r9 / CONVERT c6).
  *
- * Separate from `pms.detect-events` on purpose: this one is cheap, has no
- * dependency on rent-roll history, and wants to run often — the waitlist only
- * pays off if the notice goes out within minutes of a unit freeing up.
+ * Separate from `pms.detect-events` on purpose: this one is cheap and has no
+ * dependency on rent-roll history. The waitlist only pays off if the notice goes
+ * out within minutes of a unit freeing up, which is why every PMS write path
+ * enqueues it for its facility (`scheduleDetection`) instead of waiting on a
+ * clock.
  */
 const detectInventory: JobHandler = async (ctx) => {
+  const one = (ctx.payload as { facilityId?: string } | null)?.facilityId;
+  if (one) return { kind: "done", progressDone: (await detectInventoryForFacility(one)).emitted };
+
   let after = (ctx.cursor as { after?: string } | null)?.after;
   let emitted = Number((ctx.cursor as { emitted?: number } | null)?.emitted ?? 0);
 
@@ -106,6 +118,49 @@ const detectInventory: JobHandler = async (ctx) => {
       }
     }
   }
+};
+
+/**
+ * Process an uploaded PMS report (M7). With a `reportId`, that one — queued by
+ * the upload itself. Without, the oldest waiting reports: the six-hourly
+ * backstop that replaced the hourly `/api/cron/process-pms-uploads`.
+ *
+ * Retry-safe: a report that was already processed is no longer `uploaded`, and
+ * the import underneath replaces its snapshot rather than appending to it.
+ */
+const processUpload: JobHandler = async (ctx) => {
+  const by = "queue:pms.process-upload";
+  const reportId = (ctx.payload as { reportId?: string } | null)?.reportId;
+  if (reportId) {
+    return { kind: "done", progressDone: (await processUploadedReport(reportId, by)) ? 1 : 0 };
+  }
+
+  // Each report leaves `uploaded` as it is handled, so the table is the cursor.
+  let handled = Number((ctx.cursor as { handled?: number } | null)?.handled ?? 0);
+  for (;;) {
+    const batch = await processUploadedReports(by);
+    handled += batch.length;
+    if (batch.length < PROCESS_BATCH) return { kind: "done", progressDone: handled };
+    if (ctx.shouldYield()) return { kind: "more", cursor: { handled }, progressDone: handled };
+  }
+};
+
+/**
+ * Rescue a diagnostic whose audit never generated. With a `facilityId`, the
+ * check its intake queued; a failed retry throws so the queue backs off and
+ * tries again, and each attempt re-checks whether the audit has since arrived.
+ * Without, the six-hourly sweep that replaced the hourly cron — limited to
+ * submissions older than the per-facility retries, so the two never overlap.
+ */
+const retryDiagnostic: JobHandler = async (ctx) => {
+  const facilityId = (ctx.payload as { facilityId?: string } | null)?.facilityId;
+  if (facilityId) {
+    const res = await retryStuckDiagnostics({ facilityId });
+    if (res.failed.length > 0) throw new Error(`audit generation failed for facility ${facilityId}`);
+    return { kind: "done", progressDone: res.retried };
+  }
+  const res = await retryStuckDiagnostics({ olderThanMinutes: SWEEP_AFTER_MINUTES });
+  return { kind: "done", progressDone: res.retried };
 };
 
 /**
@@ -191,9 +246,10 @@ const missedCallTextBack: JobHandler = async (ctx) => {
 /**
  * RESPOND r8 — text somebody who abandoned a rental part-way through.
  *
- * Runs often because the value is entirely in the speed; the existing daily
- * email sequence in `/api/cron/process-recovery` owns everything after two
- * hours and is untouched by this.
+ * The value is entirely in the speed, so each partial lead schedules this for
+ * the minute its window opens (`scheduleRescue`); the existing daily email
+ * sequence in `/api/cron/process-recovery` owns everything after two hours and
+ * is untouched by this.
  */
 const abandonedRescue: JobHandler = async () => ({
   kind: "done",
@@ -206,7 +262,8 @@ const abandonedRescue: JobHandler = async () => ({
  * Two jobs in one: a `leadId` payload retries one specific lead whose inline
  * send failed, and no payload sweeps for leads that were never answered at all
  * — which catches the case the inline path cannot, a submit request that died
- * between writing the lead and answering it.
+ * between writing the lead and answering it. The sweep runs two minutes after
+ * each lead lands (`scheduleSpeedCheck`) and every six hours as a backstop.
  */
 const speedToLead: JobHandler = async (ctx) => {
   const leadId = (ctx.payload as { leadId?: string } | null)?.leadId;
@@ -249,6 +306,15 @@ const tourNoShows: JobHandler = async () => ({
 });
 
 /**
+ * Backstop for the jobs a booking schedules for itself. Re-deriving them is a
+ * no-op for tours that already have them, so this only ever fills gaps.
+ */
+const tourSchedule: JobHandler = async () => ({
+  kind: "done",
+  progressDone: await scheduleLiveTours(),
+});
+
+/**
  * MISSION.md s12 — a move-in detected from a CSV rent roll is matched to the
  * lead that inquired, the same way the V1 tenants API does it inline. A match
  * emits `lead.moved_in`, and the write-back queues take it from there.
@@ -264,6 +330,7 @@ const matchMoveIn: JobHandler = async (ctx) => {
 export const HANDLERS: Record<string, JobHandler> = {
   "respond.tour-reminders": tourReminders,
   "respond.tour-noshow": tourNoShows,
+  "respond.tour-schedule": tourSchedule,
   "respond.speed-to-lead": speedToLead,
   "demo.chunked": chunkedCounter,
   "respond.abandoned-rescue": abandonedRescue,
@@ -272,6 +339,8 @@ export const HANDLERS: Record<string, JobHandler> = {
   "respond.waitlist-notify": waitlistNotify,
   "pms.detect-events": detectPmsEvents,
   "pms.detect-inventory": detectInventory,
+  "pms.process-upload": processUpload,
+  "audits.retry-diagnostic": retryDiagnostic,
   "jobs.prune": pruneJobs,
   // MISSION.md s12 — subscribers to `lead.moved_in`. Retry-safe: each report
   // carries the same event/order id on every attempt and the platforms drop

@@ -5,7 +5,7 @@ import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidEmail, sanitizeString, escapeHtml } from "@/lib/validation";
 import { sendEmail, SENDERS } from "@/lib/email";
-import { respondToNewLeadSafely } from "@/lib/respond/speed-to-lead";
+import { respondToNewLeadSafely, scheduleSpeedCheck } from "@/lib/respond/speed-to-lead";
 import { enqueue } from "@/lib/jobs/queue";
 import { identifyFromRequest } from "@/lib/attribution/visitor";
 
@@ -114,6 +114,7 @@ export async function POST(req: NextRequest) {
       // whole value of this is being inside the first one. `…Safely` swallows
       // its own failures: the customer is waiting on this response and a
       // messaging fault is ours to log, not theirs to see.
+      await scheduleSpeedCheck(updated.id, updated.facility_id).catch(() => { /* best effort: the six-hourly sweep will find it */ });
       const speed = await respondToNewLeadSafely(updated.id);
       if (!speed.acked && !speed.alerted) {
         // Durable fallback for a transient vendor failure. Dedupe keys inside
@@ -174,6 +175,7 @@ export async function POST(req: NextRequest) {
     // whole value of this is being inside the first one. `…Safely` swallows
     // its own failures: the customer is waiting on this response and a
     // messaging fault is ours to log, not theirs to see.
+    await scheduleSpeedCheck(lead.id, lead.facility_id).catch(() => { /* best effort: the six-hourly sweep will find it */ });
     const speed = await respondToNewLeadSafely(lead.id);
     if (!speed.acked && !speed.alerted) {
       // Durable fallback for a transient vendor failure. Dedupe keys inside

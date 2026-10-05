@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
+import { scheduleReportProcessing } from "@/lib/pms-uploads";
 import {
   jsonResponse,
   errorResponse,
@@ -84,6 +85,10 @@ export async function POST(req: NextRequest) {
         report_data: reportData,
       },
     });
+
+    // Lands `uploaded`; the queue triages it for the admin review queue.
+    await scheduleReportProcessing(report.id, { facilityId: facility.id })
+      .catch((err) => console.error("[pms-upload] scheduling processing failed:", err));
 
     await db.facilities.update({
       where: { id: facility.id },

@@ -17,11 +17,9 @@ const RETENTION_POLICIES = [
     retentionDays: 30,
     dateField: "created_at",
   },
-  {
-    table: "betapad_notes",
-    retentionDays: 90,
-    dateField: "created_at",
-  },
+  // betapad_notes was removed 2026-10-05: the table no longer exists (it was in
+  // the June baseline but never in schema.prisma, and nothing reads or writes
+  // it), so this step failed every night.
 ] as const;
 
 const BATCH_SIZE = 1000;
