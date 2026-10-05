@@ -666,6 +666,12 @@ export default function PricingPage() {
             >
               Get a Free Facility Audit
             </Link>
+            <Link
+              href="/signup"
+              className="btn-secondary inline-block text-center"
+            >
+              Start a 14-day trial
+            </Link>
           </div>
         </div>
       </section>
