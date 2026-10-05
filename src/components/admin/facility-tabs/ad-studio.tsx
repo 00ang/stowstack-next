@@ -71,7 +71,15 @@ export default function AdStudio({ facilityId, adminKey, facilityName }: {
           (v: AdVariation) => v.platform === 'meta_feed' && v.status !== 'rejected'
         )
         setVariations(metaVariations)
-        if (metaVariations.length) setSelectedVariation(metaVariations[0])
+        const wanted =
+          typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get('variation')
+            : null
+        const fromProven = wanted
+          ? metaVariations.find((v: AdVariation) => v.id === wanted)
+          : null
+        if (fromProven) setSelectedVariation(fromProven)
+        else if (metaVariations.length) setSelectedVariation(metaVariations[0])
       }
       if (assetData.assets) {
         const photos = assetData.assets.filter((a: Asset) => a.type === 'photo')

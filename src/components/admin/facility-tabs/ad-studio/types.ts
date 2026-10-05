@@ -55,6 +55,7 @@ export interface AdVariation {
   version: number
   funnel_config?: FunnelConfig | null
   funnel_metrics?: Record<string, unknown> | null
+  source_proven_ad_id?: string | null
 }
 
 export interface Asset {

@@ -186,6 +186,18 @@ export async function POST(req: NextRequest) {
       token: emailVerifyToken,
     }).catch((err) => console.error("[signup] verification email failed:", err));
 
+    db.activity_log
+      .create({
+        data: {
+          type: "signup",
+          lead_name: contactName.trim(),
+          facility_name: companyName.trim(),
+          detail: `Self-serve signup: ${companyName.trim()} (${selectedPlan})`,
+          meta: { orgId: org.id, plan: selectedPlan, email: email.toLowerCase() },
+        },
+      })
+      .catch((err) => console.error("[activity_log] Fire-and-forget failed:", err));
+
     // Create session
     const token = await createSession(userId, req);
 

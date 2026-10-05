@@ -19,6 +19,7 @@ const PAGE_LINKS = [
   { label: "About", href: "/about" },
   { label: "Blog", href: "/blog" },
   { label: "Insights", href: "/insights" },
+  { label: "Sign up", href: "/signup" },
 ];
 
 const ALL_DESKTOP_LINKS = [...SECTION_LINKS, ...PAGE_LINKS];

@@ -57,9 +57,14 @@ model ad_variations {
   funnel_config           Json?
   funnel_metrics          Json?
   funnel_id               String?                   @db.Uuid
+  /// Set when the draft was adapted from a Proven Ads library entry. Keeps the
+  /// lineage queryable ("which proven ads actually get duplicated") without
+  /// trusting a field buried in content_json.
+  source_proven_ad_id     String?                   @db.Uuid
   creative_briefs         creative_briefs?          @relation(fields: [brief_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   facilities              facilities                @relation(fields: [facility_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   funnels                 funnels?                  @relation(fields: [funnel_id], references: [id], onUpdate: NoAction)
+  proven_ad               proven_ads?               @relation(fields: [source_proven_ad_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   drip_sequence_templates drip_sequence_templates[]
   publish_log             publish_log[]
   creative_performance    creative_performance[]
@@ -68,6 +73,7 @@ model ad_variations {
   @@index([facility_id], map: "idx_variations_facility")
   @@index([funnel_id], map: "idx_variations_funnel")
   @@index([status], map: "idx_variations_status")
+  @@index([source_proven_ad_id], map: "idx_variations_proven_source")
 }
 
 model api_keys {
@@ -2554,4 +2560,97 @@ model conversion_reports {
   @@index([status, created_at(sort: Desc)], map: "idx_conversion_reports_status")
   @@index([facility_id, created_at(sort: Desc)], map: "idx_conversion_reports_facility")
   @@index([partial_lead_id], map: "idx_conversion_reports_lead")
+}
+
+/// Proven Ads library — a self-storage ad observed in the wild, tracked over
+/// time so the days it has been running can be computed.
+///
+/// One row per (source, source_ad_id). Rows from automated adapters are
+/// refreshed by the `proven-ads.refresh` job; rows from the manual/CSV path
+/// are verified by a person ("still running" / "ended"). `started_at`,
+/// `last_seen_at`, `ended_at` and `active` are the facts; days running and the
+/// proven flag are derived from them at read time (`src/lib/proven-ads/
+/// days-running.ts`) rather than stored, so they can never go stale.
+///
+/// Only text, metadata and *references* to creative (snapshot URLs) are stored.
+/// Images and video are never copied — the duplicate flow regenerates creative.
+model proven_ads {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// meta_ad_library_api | manual | csv_import (adapter id)
+  source              String    @db.VarChar(32)
+  /// External identity (Meta Ad Library id). Manual rows get a generated one.
+  source_ad_id        String    @db.VarChar(128)
+  /// meta | google | tiktok
+  platform            String    @db.VarChar(16)
+  /// facebook | instagram | messenger | audience_network | search | youtube …
+  publisher_platforms String[]  @default([])
+  advertiser_name     String    @db.VarChar(200)
+  advertiser_page_id  String?   @db.VarChar(64)
+  advertiser_url      String?   @db.VarChar(2000)
+  /// image | video | carousel | text | unknown
+  format              String    @default("unknown") @db.VarChar(16)
+  headline            String?   @db.VarChar(500)
+  primary_text        String?
+  description         String?   @db.VarChar(1000)
+  cta                 String?   @db.VarChar(64)
+  landing_url         String?   @db.VarChar(2000)
+  /// Where the ad can be viewed at the source (Ad Library render URL). A
+  /// reference, not a copy.
+  snapshot_url        String?   @db.VarChar(2000)
+  /// [{ kind: image|video, url }] — source-hosted references only.
+  media_refs          Json?
+  country             String?   @db.VarChar(2)
+  /// US state / region code where known (manual rows); Meta API rows carry the
+  /// reached country only.
+  state               String?   @db.VarChar(8)
+  city                String?   @db.VarChar(120)
+  /// first_month_free | dollar_move_in | percent_off | free_truck | no_offer | other
+  offer_type          String?   @db.VarChar(32)
+  /// climate_controlled | drive_up | vehicle | business | general
+  unit_type           String?   @db.VarChar(32)
+  /// social_proof | convenience | urgency | lifestyle | price | other
+  angle               String?   @db.VarChar(32)
+  /// When the advertiser started delivery (Meta `ad_delivery_start_time`, or
+  /// the "Started running on" date an admin reads off the Ad Library page).
+  started_at          DateTime  @db.Date
+  first_seen_at       DateTime  @default(now()) @db.Timestamptz(6)
+  last_seen_at        DateTime  @default(now()) @db.Timestamptz(6)
+  ended_at            DateTime? @db.Timestamptz(6)
+  active              Boolean   @default(true)
+  /// Full adapter payload, kept for re-classification without a refetch.
+  raw                 Json?
+  notes               String?
+  /// 'system' for adapter rows, otherwise the admin who entered it.
+  created_by          String?   @db.VarChar(120)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  ad_variations ad_variations[]
+
+  @@unique([source, source_ad_id], map: "proven_ads_source_ad")
+  @@index([platform, active], map: "idx_proven_ads_platform_active")
+  @@index([started_at], map: "idx_proven_ads_started")
+  @@index([state], map: "idx_proven_ads_state")
+  @@index([offer_type], map: "idx_proven_ads_offer")
+  @@index([last_seen_at], map: "idx_proven_ads_last_seen")
+}
+
+/// A configured discovery search for one adapter — e.g. "self storage" in
+/// GB/IE on the Meta Ad Library API. Data, not code, so a new market or
+/// keyword is an admin action rather than a deploy. The refresh job iterates
+/// the enabled rows.
+model proven_ad_searches {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adapter      String    @db.VarChar(32)
+  label        String    @db.VarChar(120)
+  /// Adapter-specific: { searchTerms, countries, pageIds, platforms }
+  config       Json      @default("{}")
+  enabled      Boolean   @default(true)
+  last_run_at  DateTime? @db.Timestamptz(6)
+  /// { fetched, upserted, pages, error } from the last run
+  last_result  Json?
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([adapter, enabled], map: "idx_proven_ad_searches_adapter")
 }

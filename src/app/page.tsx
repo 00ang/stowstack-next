@@ -45,6 +45,10 @@ const StickyMobileCTA = dynamic(
   () => import("@/components/marketing/sticky-mobile-cta"),
   { ssr: false },
 );
+const HomepageLeadPopup = dynamic(
+  () => import("@/components/marketing/homepage-lead-popup"),
+  { ssr: false },
+);
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Homepage IA — Product-first SaaS conversion sequence (consolidated)
@@ -212,6 +216,7 @@ export default function HomePage() {
       {/* Mobile-only sticky CTA. Hides itself when the audit form (§08)
           enters the viewport so it doesn't sit on top of the form fields. */}
       <StickyMobileCTA />
+      <HomepageLeadPopup />
     </>
   );
 }
