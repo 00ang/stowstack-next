@@ -129,6 +129,18 @@ describe("diagnostic audit retry", () => {
     expect(cutoff).toBeLessThanOrEqual(before - SWEEP_AFTER_MINUTES * 60_000 + 1_000);
   });
 
+  it("never auto-retries a submission older than the cap — that prospect gets a person, not a weeks-late email", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    // @ts-expect-error — db is a vi mock
+    mockDb.facilities = { findMany };
+    const { retryStuckDiagnostics, AUTO_RETRY_MAX_HOURS } = await import("@/lib/diagnostic-retry");
+    const before = Date.now();
+    await retryStuckDiagnostics();
+    const floor = findMany.mock.calls[0][0].where.created_at.gt.getTime();
+    expect(floor).toBeGreaterThanOrEqual(before - AUTO_RETRY_MAX_HOURS * 3_600_000 - 1_000);
+    expect(floor).toBeLessThanOrEqual(Date.now() - AUTO_RETRY_MAX_HOURS * 3_600_000 + 1_000);
+  });
+
   it("an intake's check is booked for just after it would count as stuck", async () => {
     vi.resetModules();
     const enqueued: { runAfter?: Date; dedupeKey?: string }[] = [];

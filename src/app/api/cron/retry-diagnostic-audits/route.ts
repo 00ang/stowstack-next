@@ -10,7 +10,7 @@ export const maxDuration = 30;
  * Manual trigger only — no longer scheduled in `vercel.json`.
  *
  * Finds facilities stuck at diagnostic_submitted with no shared_audit_slug for
- * > 10 minutes and retriggers audit generation. Hourly, this woke the database
+ * > 10 minutes (and < 48 hours) and retriggers audit generation. Hourly, this woke the database
  * 24 times a day to find nothing; each intake now queues its own check and the
  * job worker runs a six-hourly sweep (see `@/lib/diagnostic-retry`). Kept so a
  * backlog can be cleared by hand with the cron secret.

@@ -16,6 +16,7 @@
 
 import { db } from "@/lib/db";
 import { enqueue } from "@/lib/jobs/queue";
+import { selfBaseUrl } from "@/lib/self-url";
 
 /** A submission with no audit after this long is stuck. */
 export const STUCK_AFTER_MINUTES = 10;
@@ -29,6 +30,14 @@ export const SWEEP_AFTER_MINUTES = 120;
 
 /** Per sweep — what the hourly cron took, to avoid overwhelming the API. */
 export const SWEEP_LIMIT = 5;
+
+/**
+ * Past this, a stuck submission is left for a person (the Generate Audit button
+ * in /admin/audits) rather than retried automatically. A successful generation
+ * emails the prospect "your diagnostic is ready", and that email arriving days
+ * or weeks after they asked is worse than a founder following up by hand.
+ */
+export const AUTO_RETRY_MAX_HOURS = 48;
 
 export interface RetryResult {
   stuck: number;
@@ -57,17 +66,16 @@ export async function retryStuckDiagnostics(opts: {
     return result;
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL
-    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-    || "http://localhost:3000";
+  const appUrl = selfBaseUrl();
 
   const olderThan = new Date(Date.now() - (opts.olderThanMinutes ?? STUCK_AFTER_MINUTES) * 60_000);
+  const newerThan = new Date(Date.now() - AUTO_RETRY_MAX_HOURS * 60 * 60_000);
   const stuck = await db.facilities.findMany({
     where: {
       ...(opts.facilityId ? { id: opts.facilityId } : {}),
       pipeline_status: "diagnostic_submitted",
       shared_audit_slug: null,
-      created_at: { lt: olderThan },
+      created_at: { lt: olderThan, gt: newerThan },
     },
     select: { id: true, notes: true },
     take: opts.limit ?? SWEEP_LIMIT,

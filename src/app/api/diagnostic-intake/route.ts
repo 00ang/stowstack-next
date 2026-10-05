@@ -1,6 +1,7 @@
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { db } from "@/lib/db";
 import { scheduleDiagnosticRetry } from "@/lib/diagnostic-retry";
+import { selfBaseUrl } from "@/lib/self-url";
 import {
   jsonResponse,
   errorResponse,
@@ -12,8 +13,10 @@ import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidEmail, escapeHtml } from "@/lib/validation";
 
-// DB write + notification email + internal audit trigger
-export const maxDuration = 30;
+// DB write + notification email + internal audit trigger. 120, not 30: the
+// audit trigger runs in after() and waits for generation (up to its own 120s)
+// so a failure is logged, not lost. The response itself still returns at once.
+export const maxDuration = 120;
 
 /**
  * Maps form responses (question-answer pairs) to DiagnosticInput format
@@ -363,11 +366,13 @@ export async function POST(req: NextRequest) {
         console.error("[diagnostic-intake] Activity log write failed:", err instanceof Error ? err.message : err);
       });
 
-    // Auto-trigger audit generation (fire-and-forget)
+    // Auto-trigger audit generation, after the response so the prospect is not
+    // kept waiting on the AI. after() rather than a floating fetch: a promise
+    // left running when a serverless response returns can be frozen mid-flight.
+    // And the outcome is logged — this call 401'd silently for weeks.
     const adminSecret = process.env.ADMIN_SECRET;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-      || "http://localhost:3000";
+    // Not VERCEL_URL: it sits behind deployment protection and 401s (see self-url).
+    const appUrl = selfBaseUrl();
 
     if (adminSecret && process.env.ANTHROPIC_API_KEY) {
       const diagnosticJson = mapResponsesToDiagnosticInput(
@@ -375,18 +380,25 @@ export async function POST(req: NextRequest) {
         responses || {}
       );
 
-      fetch(`${appUrl}/api/audit-generate-diagnostic`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Admin-Key": adminSecret,
-        },
-        body: JSON.stringify({
-          diagnosticJson,
-          facilityId: facility.id,
-        }),
-      }).catch((err) => {
-        console.error("Auto-audit generation trigger failed:", err);
+      after(async () => {
+        try {
+          const res = await fetch(`${appUrl}/api/audit-generate-diagnostic`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Admin-Key": adminSecret,
+            },
+            body: JSON.stringify({
+              diagnosticJson,
+              facilityId: facility.id,
+            }),
+          });
+          if (!res.ok) {
+            console.error(`[diagnostic-intake] Auto-audit generation returned ${res.status} for facility ${facility.id}; the queued retry will try again`);
+          }
+        } catch (err) {
+          console.error("[diagnostic-intake] Auto-audit generation trigger failed:", err);
+        }
       });
     }
 
