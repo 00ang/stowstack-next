@@ -97,6 +97,7 @@ async function sendWelcomeEmail(
             <div style="padding: 28px 24px; border: 1px solid #e8e6dc; border-top: 0; border-radius: 0 0 12px 12px; background: #ffffff;">
               <p style="color: #6a6560; font-size: 15px; margin: 0 0 16px;">Hi ${name || "there"},</p>
               <p style="color: #6a6560; font-size: 15px; margin: 0 0 20px;">Your StorageAds portal for <strong>${facilityName || "your facility"}</strong> is set up and ready. You can log in to track campaigns, view reports, and message our team.</p>
+              <p style="color: #6a6560; font-size: 15px; margin: 0 0 20px;">Your facility tools are in there too, under <strong>Facility Tools</strong>: make ads, build landing pages, and manage your Google listing. Same login, nothing extra to set up.</p>
               <div style="text-align: center; margin: 24px 0;">
                 <a href="${portalUrl}/portal" style="display: inline-block; background: #141413; color: #faf9f5; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-size: 15px; font-weight: 600;">
                   Open Your Portal

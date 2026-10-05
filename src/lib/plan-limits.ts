@@ -26,8 +26,43 @@ export function getPlanLimits(plan: string | null | undefined): PlanLimit {
 export type OrgGate = {
   ok: boolean;
   reason?: string;
-  code?: "over_limit" | "subscription_inactive" | "trial_expired" | "not_found";
+  code?: "over_limit" | "subscription_inactive" | "trial_expired" | "not_found" | "plan_required";
 };
+
+/** AI video generation is a top-plan feature. */
+export const VIDEO_PLANS: readonly PlanKey[] = ["portfolio"];
+
+/**
+ * Pure: may this org (a facility's owning org) generate AI video? The plan must
+ * be a video plan, and a lapsed one (canceled, past due, expired trial) loses
+ * it. Portfolio is custom-priced and sales-managed, so an org that never went
+ * through Stripe checkout ("incomplete") still counts — the plan is the grant.
+ * A facility with no org has no plan, so no video. Admins are not gated.
+ */
+export function orgAllowsVideo(
+  org: { plan: string | null; subscription_status: string | null; trial_ends_at: Date | null } | null | undefined
+): boolean {
+  if (!org?.plan || !VIDEO_PLANS.includes(org.plan as PlanKey)) return false;
+  if (org.subscription_status === "canceled" || org.subscription_status === "past_due") return false;
+  if (org.subscription_status === "trialing" && org.trial_ends_at && org.trial_ends_at < new Date()) return false;
+  return true;
+}
+
+/** Gate for owner (non-admin) video generation on a facility. */
+export async function canGenerateVideo(facilityId: string): Promise<OrgGate> {
+  const facility = await db.facilities.findUnique({
+    where: { id: facilityId },
+    select: {
+      organizations: { select: { plan: true, subscription_status: true, trial_ends_at: true } },
+    },
+  });
+  if (orgAllowsVideo(facility?.organizations)) return { ok: true };
+  return {
+    ok: false,
+    code: "plan_required",
+    reason: `Video generation is included with the ${PLANS.portfolio.name} plan.`,
+  };
+}
 
 /**
  * Check whether an org's subscription_status allows write operations.

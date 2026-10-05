@@ -1,3 +1,5 @@
+// @vitest-environment node
+// (happy-dom strips the forbidden cookie/origin/host request headers these cases need.)
 import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
 import { isCsrfExempt } from "@/proxy";
@@ -64,8 +66,8 @@ describe("isCsrfExempt — portal login footgun guard", () => {
     expect(isCsrfExempt(req("/api/2fa"))).toBe(true);
     expect(isCsrfExempt(req("/api/verify-email"))).toBe(true);
     expect(isCsrfExempt(req("/api/meta-capi"))).toBe(true);
-    expect(isCsrfExempt(req("/api/manage/unlock"))).toBe(true);
     expect(isCsrfExempt(req("/api/manage/scratch"))).toBe(true);
+    expect(isCsrfExempt(req("/api/manage/facility"))).toBe(true);
   });
 
   it("exempts public anonymous tracking beacons", () => {
@@ -78,6 +80,32 @@ describe("isCsrfExempt — portal login footgun guard", () => {
     // Regression: facility-auth.ts documents x-manage-token as CSRF-exempt;
     // before this it wasn't, so every owner facility-tab mutation 403'd.
     expect(isCsrfExempt(req("/api/facility-context", { "x-manage-token": "t" }))).toBe(true);
+  });
+
+  describe("facility tools (manage cookie)", () => {
+    // Regression: the tools authenticate with the httpOnly sa_manage cookie,
+    // which page JS can't read, so they send no x-manage-token and no
+    // double-submit token. Every owner save/generate/publish 403'd here.
+    const withCookie = (headers: Record<string, string> = {}) =>
+      req("/api/facility-creatives", { cookie: "sa_manage=sm_x.y", ...headers });
+
+    it("exempts a same-origin request carrying the manage cookie", () => {
+      expect(isCsrfExempt(withCookie({ origin: "https://storageads.com", host: "storageads.com" }))).toBe(true);
+    });
+
+    it("does NOT exempt the cookie from another site", () => {
+      expect(isCsrfExempt(withCookie({ origin: "https://evil.example", host: "storageads.com" }))).toBe(false);
+    });
+
+    it("does NOT exempt the cookie with no Origin", () => {
+      expect(isCsrfExempt(withCookie({ host: "storageads.com" }))).toBe(false);
+    });
+
+    it("does NOT exempt a same-origin request without the cookie", () => {
+      expect(
+        isCsrfExempt(req("/api/facility-creatives", { origin: "https://storageads.com", host: "storageads.com" })),
+      ).toBe(false);
+    });
   });
 
   it("does NOT exempt prefix lookalikes", () => {

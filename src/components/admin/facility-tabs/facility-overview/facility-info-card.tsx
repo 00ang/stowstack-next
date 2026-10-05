@@ -15,6 +15,7 @@ import {
   Building2,
 } from "lucide-react"
 import { StarRating } from "./shared-ui"
+import { authHeaders } from "@/lib/facility-auth"
 import {
   OCCUPANCY_OPTIONS,
   BIGGEST_ISSUE_OPTIONS,
@@ -48,13 +49,19 @@ export function FacilityInfoCard({
   async function saveFacilityEdits() {
     setSaving(true)
     try {
-      const res = await fetch("/api/admin-facilities", {
+      // Owners (facility tools, empty adminKey) save through their own route,
+      // which can't touch notes or pipeline status.
+      const res = await fetch(adminKey ? "/api/admin-facilities" : "/api/manage/facility", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "X-Admin-Key": adminKey,
+          ...authHeaders(adminKey),
         },
-        body: JSON.stringify({ id: facility.id, ...editFields }),
+        body: JSON.stringify({
+          id: facility.id,
+          ...editFields,
+          notes: adminKey ? editFields.notes : undefined,
+        }),
       })
       const data = await res.json()
       if (data.facility) {
@@ -237,7 +244,8 @@ export function FacilityInfoCard({
               </select>
             </div>
 
-            {/* Notes — full width */}
+            {/* Notes — full width; staff-only (holds internal notes) */}
+            {adminKey && (
             <div className="sm:col-span-3">
               <textarea
                 value={editFields.notes}
@@ -249,6 +257,7 @@ export function FacilityInfoCard({
                 className="w-full px-3 py-2 bg-[var(--color-light)] border border-[var(--border-subtle)] rounded-lg text-sm text-[var(--color-dark)] placeholder:text-[var(--color-mid-gray)] focus:outline-none focus:border-[var(--color-gold)]/50 transition-colors resize-none"
               />
             </div>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 text-sm pt-4">

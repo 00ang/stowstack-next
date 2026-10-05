@@ -9,7 +9,9 @@ import {
   corsResponse,
   requireManageOrAdmin,
   requireFacilityAccess,
+  isAdminCredential,
 } from "@/lib/api-helpers";
+import { canGenerateVideo } from "@/lib/plan-limits";
 import { getBrandContextForVideo } from "@/lib/brand-doctrine";
 import { getStyleDirectives } from "@/lib/style-references";
 import { applyRateLimit } from "@/lib/with-rate-limit";
@@ -494,6 +496,13 @@ export async function POST(req: NextRequest) {
 
     const denied = await requireFacilityAccess(req, facilityId);
     if (denied) return denied;
+
+    // Owners get video on the top plan only (every generation is a paid FAL
+    // job); admins are never gated.
+    if (!(await isAdminCredential(req))) {
+      const gate = await canGenerateVideo(facilityId);
+      if (!gate.ok) return errorResponse(gate.reason ?? "Video generation is not on your plan", 403, origin);
+    }
 
     const template = VIDEO_TEMPLATES[templateId];
     if (!template) return errorResponse("Invalid template", 400, origin);

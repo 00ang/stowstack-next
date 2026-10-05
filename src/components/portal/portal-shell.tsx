@@ -415,6 +415,9 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = useCallback(() => {
     clearPortalSession();
+    // The portal login also opened the facility tools (httpOnly cookie, so
+    // only the server can drop it). Best-effort: sign-out proceeds regardless.
+    fetch("/api/manage/logout", { method: "POST" }).catch(() => {});
     setSession(null);
     setClient(null);
   }, []);

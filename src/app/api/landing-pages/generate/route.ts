@@ -6,7 +6,7 @@ import {
   errorResponse,
   getOrigin,
   corsResponse,
-  isAdminRequest,
+  requireFacilityAccess,
 } from "@/lib/api-helpers";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
@@ -342,7 +342,6 @@ export async function POST(req: NextRequest) {
   );
   if (limited) return limited;
   const origin = getOrigin(req);
-  if (!isAdminRequest(req)) return errorResponse("Unauthorized", 401, origin);
 
   try {
     const body = await req.json();
@@ -356,13 +355,17 @@ export async function POST(req: NextRequest) {
     if (!facilityId)
       return errorResponse("facilityId is required", 400, origin);
 
+    const denied = await requireFacilityAccess(req, facilityId);
+    if (denied) return denied;
+
     const intel = await gatherFacilityIntel(facilityId);
     if (!intel) return errorResponse("Facility not found", 404, origin);
 
     let adCopy: string | null = null;
     if (adVariationId) {
-      const variation = await db.ad_variations.findUnique({
-        where: { id: adVariationId },
+      // Scoped to this facility: an owner may only message-match its own ads.
+      const variation = await db.ad_variations.findFirst({
+        where: { id: adVariationId, facility_id: facilityId },
         select: { content_json: true },
       });
       if (variation?.content_json) {

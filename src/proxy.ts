@@ -71,6 +71,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/(.*)",
   "/portal(.*)",
   "/partner(.*)",
+  "/manage(.*)",
   "/admin(.*)",
 ]);
 
@@ -144,9 +145,9 @@ export function isCsrfExempt(req: NextRequest): boolean {
   // enforces verifyCsrfOrigin() itself. Route internals are Angelo's domain —
   // only this exemption lives on our side.
   if (path === "/api/meta-capi") return true;
-  // Owner-tools manage session: unlock/scratch mint the httpOnly cookie and
-  // self-enforce verifyCsrfOrigin(); the other /api/manage/* endpoints are
-  // authenticated by that cookie/x-manage-token via requireFacilityAccess.
+  // Owner-tools manage session: scratch (invite signup) and facility (owner
+  // profile edit) self-enforce verifyCsrfOrigin(); session is a read and
+  // logout only clears the cookie.
   if (path.startsWith("/api/manage/")) return true;
   if (req.headers.get("x-admin-key")) return true;
   if (req.headers.get("authorization")?.startsWith("Bearer ")) return true;
@@ -155,7 +156,27 @@ export function isCsrfExempt(req: NextRequest): boolean {
   // src/lib/manage-session.ts (not imported here: that module pulls node
   // `crypto` into the middleware bundle).
   if (req.headers.get("x-manage-token")) return true;
+  // Facility tools (/portal/tools, /partner/tools) authenticate with the
+  // httpOnly manage cookie, which page JS can't read, so they can't send
+  // x-manage-token or a double-submit token: without this every save /
+  // generate / publish in the owner tools 403'd here. The cookie is
+  // SameSite=Lax (a cross-site POST never carries it) and we also require a
+  // same-origin Origin; the route still verifies the token itself
+  // (requireFacilityAccess). Name must match COOKIE_NAME in manage-session.ts.
+  if (req.cookies.get("sa_manage")?.value && isSameOriginRequest(req)) return true;
   return false;
+}
+
+/** The browser-set Origin names this host. Absent Origin is NOT same-origin. */
+function isSameOriginRequest(req: NextRequest): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return false;
+  try {
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host;
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
 }
 
 export default async function proxy(request: NextRequest) {

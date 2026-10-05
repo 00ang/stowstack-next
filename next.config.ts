@@ -105,6 +105,8 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/audit", destination: "/audit-tool", permanent: false },
+      // The facility tools moved into the client portal.
+      { source: "/manage/dashboard", destination: "/portal/tools", permanent: false },
     ];
   },
 

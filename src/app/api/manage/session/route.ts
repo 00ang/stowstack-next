@@ -6,14 +6,17 @@ import {
   corsResponse,
 } from "@/lib/api-helpers";
 import { getManageScope } from "@/lib/manage-session";
+import { orgAllowsVideo } from "@/lib/plan-limits";
 import { db } from "@/lib/db";
 
 /**
  * GET /api/manage/session
  *
  * Returns the facility(ies) the current manage session is scoped to, for the
- * owner shell to render. Auth is the manage token itself (cookie or
- * x-manage-token header) — no facilityId param, because the scope defines it.
+ * facility tools to render, with what each facility's plan unlocks
+ * (videoEnabled). Auth is the manage token itself (cookie or x-manage-token
+ * header) — no facilityId param, because the scope defines it. `notes` is not
+ * returned: it holds staff notes and the raw audit intake.
  */
 
 export async function OPTIONS(req: NextRequest) {
@@ -41,17 +44,19 @@ export async function GET(req: NextRequest) {
       occupancy_range: true,
       total_units: true,
       biggest_issue: true,
-      notes: true,
       google_rating: true,
       review_count: true,
       google_phone: true,
       google_maps_url: true,
+      organizations: { select: { plan: true, subscription_status: true, trial_ends_at: true } },
     },
+    orderBy: { name: "asc" },
   });
 
-  const normalized = facilities.map((f) => ({
+  const normalized = facilities.map(({ organizations, ...f }) => ({
     ...f,
     google_rating: f.google_rating != null ? Number(f.google_rating) : null,
+    videoEnabled: orgAllowsVideo(organizations),
   }));
 
   return jsonResponse(
