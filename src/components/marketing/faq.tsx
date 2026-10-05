@@ -1,80 +1,100 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Plus, Minus } from "lucide-react";
 import { SectionHeader, SectionMeta } from "@/components/mono/section-header";
 import { useInView } from "./use-in-view";
 import Cite from "./cite";
 import { RevealText } from "./motion";
+import { HOMEPAGE_FAQS } from "@/lib/public-faq/homepage-faqs";
 
 /**
  * Homepage FAQ. The questions are phrased the way an operator would
  * actually ask them, not the way a marketing team would headline them.
- * Detailed billing / contract / ROI questions live on /pricing — these
- * are the eight things a curious operator wants answered before they
- * book a call.
+ * Detailed billing / contract questions live on /pricing. The ask box
+ * answers from the same public pages.
  */
 
-type FaqEntry = {
-  q: string;
-  a: string;
-  /** Optional source ids appended at the end of the answer as superscript footnotes. */
-  cite?: number[];
+const FAQS = HOMEPAGE_FAQS;
+
+type AskSource = { title: string; href: string };
+
+type AskState = {
+  status: "idle" | "loading" | "done" | "error";
+  answer: string;
+  sources: AskSource[];
+  refused: boolean;
 };
 
-const FAQS: FaqEntry[] = [
-  {
-    q: "We're not running any ads right now.",
-    a: "Most independent operators aren't. The system is built for that starting point. Market mapping, ads, landing pages, and follow-up all deploy from zero in the first week.",
-  },
-  {
-    q: "What does the system include?",
-    a: "Market intelligence. Ad creation and publishing to Meta and Google. Dedicated landing pages with storEDGE rental embedded. Retargeting. A/B testing scored by move-in outcome. Reservation-to-move-in conversion. Revenue intelligence. Organic capture. One dashboard.",
-  },
-  {
-    q: "Do we need marketing experience to run it?",
-    a: "No. The system builds campaigns from your facility data and puts them live, then handles targeting, bidding, and creative rotation. You approve and watch the numbers.",
-  },
-  {
-    q: "How fast is it live?",
-    a: "Ads are live in the first week. Move-ins start in weeks two through three as the campaigns gather data and retargeting kicks in. By month three you have a real baseline.",
-  },
-  {
-    q: "How does the AI Creative Studio work?",
-    a: "It generates ad copy, headlines, and landing page variants from your facility data: unit types, pricing, location, competitive positioning. You review and publish. New creative on demand without a retainer.",
-  },
-  {
-    q: "We already get plenty of walk-ins and Google traffic.",
-    a: "Good. That puts you ahead of most independents. The catch is Google's local algorithm weights proximity and review recency over brand size, which is the one place independents can outrank REIT locations. If you're not actively managing Google Business Profile, reviews, and retargeting the visitors you already get, you're sitting on the lever that costs the REITs $250M a year to operate at scale. The audit shows you which side of that gap you're on.",
-    cite: [6],
-  },
-  {
-    q: "We're in Texas (or Florida, or a Sun Belt metro). The market is rough.",
-    a: "It is. San Antonio added roughly 656,000 square feet of new supply in 2026. Houston added 430,000. National supply growth is still slowing to 1.5% a year through 2027, but the oversupplied metros are absorbing first. You can't make new supply disappear. You can control how your facility prices against competitors, how fast you respond to leads, how your reviews read, and how the page performs at 11pm on a Sunday. That's the lever, and it's what the system runs.",
-    cite: [10],
-  },
-  {
-    q: "California passed SB 709. Should we worry about ECRI legislation?",
-    a: "If you're in California, yes: SB 709 caps annual existing-customer rate increases at the lower of 5% + CPI or 10% as of January 2026. Twenty-four states introduced storage pricing bills in 2025. The NYC Department of Consumer and Worker Protection has an active case against Extra Space over the bait-and-switch ECRI playbook. The era of low introductory rate plus aggressive ECRI is closing. Operators who can't run real demand generation get squeezed first. The system is built so new-customer acquisition is your durable lever, not pricing tactics regulators are killing.",
-    cite: [7, 8],
-  },
-  {
-    q: "We only have one facility. Is this for us?",
-    a: "Yes. One facility is the primary use case. The Portfolio plan covers operators with five or more.",
-  },
-  {
-    q: "How does the storEDGE integration work?",
-    a: "Landing pages embed the storEDGE reservation widget. The renter books on your branded page, and the reservation lands in storEDGE the same as a walk-in. Rates, availability, and payments stay in your existing system.",
-  },
-  {
-    q: "What if it doesn't work?",
-    a: "If move-ins haven't improved by the end of month three, month four is free. You carry no risk for a quarter that didn't fill units.",
-  },
-];
+const IDLE_ASK: AskState = {
+  status: "idle",
+  answer: "",
+  sources: [],
+  refused: false,
+};
+
+function readCsrfToken(): string | null {
+  const match = document.cookie.match(/(?:^|; )__csrf_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
 export default function FAQ() {
   const { ref, isVisible } = useInView();
   const [open, setOpen] = useState<number | null>(0);
+  const [question, setQuestion] = useState("");
+  const [ask, setAsk] = useState<AskState>(IDLE_ASK);
+
+  async function onAsk(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const honeypot = new FormData(form).get("company_website");
+    const trimmed = question.trim();
+    if (trimmed.length < 3 || ask.status === "loading") return;
+
+    setAsk({ status: "loading", answer: "", sources: [], refused: false });
+    try {
+      const token = readCsrfToken();
+      const res = await fetch("/api/public-faq", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(token ? { "x-csrf-token": token } : {}),
+        },
+        body: JSON.stringify({
+          question: trimmed,
+          company_website: typeof honeypot === "string" ? honeypot : "",
+        }),
+      });
+      const data = (await res.json()) as {
+        answer?: string;
+        sources?: AskSource[];
+        refused?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.answer) {
+        setAsk({
+          status: "error",
+          answer: data.error || "That did not go through. Try again, or email blake@storageads.com.",
+          sources: [],
+          refused: false,
+        });
+        return;
+      }
+      setAsk({
+        status: "done",
+        answer: data.answer,
+        sources: Array.isArray(data.sources) ? data.sources : [],
+        refused: Boolean(data.refused),
+      });
+    } catch {
+      setAsk({
+        status: "error",
+        answer: "That did not go through. Try again, or email blake@storageads.com.",
+        sources: [],
+        refused: false,
+      });
+    }
+  }
 
   return (
     <section
@@ -114,6 +134,115 @@ export default function FAQ() {
             . You&apos;ll get the founder, not a help desk.
           </p>
         </div>
+
+        <form
+          onSubmit={onAsk}
+          className="max-w-3xl mx-auto mb-10"
+          aria-label="Ask a question"
+        >
+          <label
+            htmlFor="faq-ask"
+            className="block text-sm font-semibold mb-2"
+            style={{ color: "var(--color-dark)", fontFamily: "var(--font-heading)" }}
+          >
+            Ask a question
+          </label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              id="faq-ask"
+              name="question"
+              type="text"
+              value={question}
+              maxLength={400}
+              required
+              minLength={3}
+              autoComplete="off"
+              placeholder="How much is it for one facility?"
+              onChange={(event) => setQuestion(event.target.value)}
+              className="w-full"
+              style={{
+                minHeight: 48,
+                padding: "12px 14px",
+                background: "var(--bg)",
+                color: "var(--text)",
+                border: "1px solid var(--line)",
+                fontFamily: "var(--font-body)",
+                fontSize: 16,
+              }}
+            />
+            <button
+              type="submit"
+              disabled={ask.status === "loading" || question.trim().length < 3}
+              className="font-semibold"
+              style={{
+                minHeight: 48,
+                minWidth: 96,
+                padding: "12px 18px",
+                background: "var(--text)",
+                color: "var(--bg)",
+                border: "1px solid var(--text)",
+                fontFamily: "var(--font-heading)",
+                cursor: ask.status === "loading" ? "progress" : "pointer",
+                opacity: ask.status === "loading" || question.trim().length < 3 ? 0.55 : 1,
+              }}
+            >
+              {ask.status === "loading" ? "Looking" : "Ask"}
+            </button>
+          </div>
+          <input
+            type="text"
+            name="company_website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            defaultValue=""
+            style={{ position: "absolute", left: "-9999px", height: 0, width: 0, opacity: 0 }}
+          />
+          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
+            Short answers from the public site. If it is not written here, we say so.
+          </p>
+          {ask.status === "loading" && (
+            <p className="mt-4 text-sm" role="status" style={{ color: "var(--text-secondary)" }}>
+              Looking that up.
+            </p>
+          )}
+          {(ask.status === "done" || ask.status === "error") && ask.answer && (
+            <div
+              className="mt-4"
+              role="status"
+              style={{
+                border: "1px solid var(--border-subtle)",
+                background: "var(--bg-alt)",
+                padding: "16px 18px",
+              }}
+            >
+              <p
+                className="text-[15px]"
+                style={{ color: "var(--text)", lineHeight: "var(--leading-normal)" }}
+              >
+                {ask.answer}
+              </p>
+              {ask.sources.length > 0 && (
+                <p className="mt-3 text-sm" style={{ color: "var(--text-secondary)" }}>
+                  From{" "}
+                  {ask.sources.map((source, index) => (
+                    <span key={source.href}>
+                      {index > 0 ? ", " : ""}
+                      <a
+                        href={source.href}
+                        className="underline decoration-1 underline-offset-4"
+                        style={{ color: "var(--color-dark)" }}
+                      >
+                        {source.title}
+                      </a>
+                    </span>
+                  ))}
+                  .
+                </p>
+              )}
+            </div>
+          )}
+        </form>
 
         <div className="max-w-3xl mx-auto">
           {FAQS.map((faq, i) => {
