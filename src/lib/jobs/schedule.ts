@@ -66,6 +66,11 @@ export const RECURRING: Recurring[] = [
   // Retention. The detectors above complete ~800 times a day and each leaves a
   // `done` row; without this the table grows by ~290k rows a year forever.
   { queue: "jobs.prune", everyMs: 6 * 60 * MIN },
+
+  // Proven Ads. Meta's archive is a daily-scale change, not a minute-scale
+  // one. Twice a day keeps start/last-seen honest without spending the
+  // worker's budget on a source that barely moves.
+  { queue: "proven-ads.refresh", everyMs: 12 * 60 * MIN, maxAttempts: 3 },
 ];
 
 /** Bucket a timestamp so every seed inside one interval shares a dedupe key. */
