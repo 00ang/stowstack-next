@@ -82,7 +82,7 @@ All API routes are in `src/app/api/`. The surface is large (~200 route directori
 
 ### Frontend Structure
 
-- **Marketing site** — Homepage at `src/app/page.tsx` with lazy-loaded chapter components in `src/components/marketing/` (~24 component files). Light theme, Manrope font, charcoal-and-cream palette. Charcoal-on-light CTAs (no color accent); the logo's `ads` is slate blue via `--brand-ads` (see Design System). Copy is governed by the voice docs above (`.claude/copy-voice.md` et al.).
+- **Marketing site** — Homepage at `src/app/page.tsx` with lazy-loaded chapter components in `src/components/marketing/` (~24 component files). Light theme, Manrope font, cool-light ground (`#E0E0E5`; paper/cream is optional, not the default). Charcoal-on-light CTAs (no color accent); the logo's `ads` is slate blue via `--brand-ads` (see Design System). Copy is governed by the voice docs above (`.claude/copy-voice.md` et al.).
 - **Admin dashboard** — `src/app/admin/` pages wrapped by `src/components/admin/admin-shell.tsx` (sidebar + login gate). Facility manager at `/admin/facilities` has ~48 files (~123 incl. subdirs) in `src/components/admin/facility-tabs/`, including feature subdirs (`ad-studio/`, `ad-publisher/`, `creative-studio/`, `google-ads-lab/`, `tiktok-creator/`, `occupancy-intelligence/`, `revenue-analytics/`, etc.). The ad-creation/publishing split is partially shipped via those subdirs; further menu reorganization is still on the roadmap.
 - **Client portal** — `src/app/portal/page.tsx` with inline login gate. Onboarding wizard at `/portal/onboarding`. Sub-pages: campaigns, billing, reports, messaging, settings.
 - **Partner dashboard** — `src/app/partner/` pages wrapped by `src/components/partner/partner-shell.tsx` (sidebar + login gate).
@@ -103,7 +103,7 @@ Singleton client at `src/lib/db.ts`. Raw SQL (`$queryRaw`/`$executeRaw`) is used
 
 **Full reference lives in [.claude/design-system.md](.claude/design-system.md). Read it before any visual/UI work.** Quick summary:
 
-- **Palette:** Anthropic-inspired warm tokens in `src/app/globals.css` (exact values in design-system.md). `--color-dark` text, `--color-light` backgrounds. Never pure #000/#fff, never Tailwind default grays.
+- **Palette:** Cool-light default in `src/app/globals.css` (exact values in design-system.md). `--color-dark` text, `--color-light` backgrounds (`#E0E0E5`). Paper/cream is a selectable palette, not the shipped ground. Never pure #000/#fff, never Tailwind default grays.
 - **CTAs:** charcoal-on-light / light-on-dark — contrast-based, no color accent. Secondary accents `--color-blue` / `--color-green` for categorical use only; `--color-red` for errors only.
 - **Gold:** banned everywhere, the logo included. The logo `ads` is slate blue via `--brand-ads` (`#446386` on light grounds, `#8EC1FF` on dark palettes). Legacy `--color-gold*` tokens exist but must not be used in new code.
 - **Type:** Manrope variable font only, no second font, no italic. Numerous legacy font vars alias to `--font-manrope`.

@@ -68,7 +68,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf9f5",
+  themeColor: "#E0E0E5",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -126,7 +126,7 @@ export default function RootLayout({
       appearance={{
         variables: {
           colorPrimary: "#141413",
-          colorBackground: "#faf9f5",
+          colorBackground: "#E0E0E5",
           colorInputBackground: "#ffffff",
           colorText: "#141413",
         },
@@ -134,7 +134,7 @@ export default function RootLayout({
     >
       <html
         lang="en"
-        data-palette="paper"
+        data-palette="cool"
         className={`${jetbrainsMono.variable} ${inter.variable} ${archivo.variable} antialiased`}
       >
         <head>

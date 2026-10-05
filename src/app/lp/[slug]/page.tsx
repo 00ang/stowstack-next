@@ -137,7 +137,7 @@ function HeroSplash({
           aria-hidden
         />
       ) : (
-        <div className="absolute inset-0 bg-[#faf9f5]" aria-hidden />
+        <div className="absolute inset-0 bg-[#E0E0E5]" aria-hidden />
       )}
       <div
         className="absolute inset-0"
@@ -186,7 +186,7 @@ function HeroSplash({
                 className={`sm:hidden inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-[15px] font-semibold transition-colors ${
                   backgroundImage
                     ? "bg-white text-[#141413] hover:bg-white/90"
-                    : "bg-[#141413] text-[#faf9f5] hover:bg-[#141413]/90"
+                    : "bg-[#141413] text-[#E0E0E5] hover:bg-[#141413]/90"
                 }`}
               >
                 <Phone size={16} /> Call to Reserve
@@ -200,7 +200,7 @@ function HeroSplash({
               className={`${!isExternal && telUrl ? "hidden sm:inline-flex" : "inline-flex"} items-center justify-center gap-2 px-7 py-3.5 md:px-8 md:py-4 rounded-full text-[15px] md:text-base font-semibold transition-colors ${
                 backgroundImage
                   ? "bg-white text-[#141413] hover:bg-white/90"
-                  : "bg-[#141413] text-[#faf9f5] hover:bg-[#141413]/90"
+                  : "bg-[#141413] text-[#E0E0E5] hover:bg-[#141413]/90"
               }`}
             >
               {reserveLabel} <ArrowRight size={16} />
@@ -266,7 +266,7 @@ function FeaturesChapter({
   const filtered = items.filter((i) => i.title);
   if (filtered.length === 0) return null;
   return (
-    <section className="bg-[#faf9f5] py-14 md:py-28">
+    <section className="bg-[#E0E0E5] py-14 md:py-28">
       <div className="max-w-5xl mx-auto px-5 md:px-14">
         {headline && (
           <FadeIn>
@@ -330,7 +330,7 @@ function UnitTypesChapter({
       <div className="flex gap-4 md:gap-5 pl-5 md:pl-14 pr-5 overflow-x-auto snap-x snap-mandatory pb-4 -webkit-overflow-scrolling-touch">
         {filtered.map((unit, i) => (
           <FadeIn key={i}>
-            <div className="snap-start shrink-0 w-[75vw] sm:w-[70vw] md:w-[400px] border border-[#141413]/10 rounded-xl p-5 md:p-9 flex flex-col justify-between min-h-[320px] md:min-h-[380px] bg-[#faf9f5]">
+            <div className="snap-start shrink-0 w-[75vw] sm:w-[70vw] md:w-[400px] border border-[#141413]/10 rounded-xl p-5 md:p-9 flex flex-col justify-between min-h-[320px] md:min-h-[380px] bg-[#E0E0E5]">
               <div>
                 <span className="text-[10px] md:text-[11px] tracking-[0.22em] uppercase text-[#6a6560]">
                   {unit.name || `Unit ${i + 1}`}
@@ -383,7 +383,7 @@ function GalleryChapter({
   }, [valid.length]);
   if (valid.length === 0) return null;
   return (
-    <section className="relative h-[50vh] md:h-[75vh] w-full overflow-hidden bg-[#faf9f5]">
+    <section className="relative h-[50vh] md:h-[75vh] w-full overflow-hidden bg-[#E0E0E5]">
       {valid.map((img, i) => (
         <div
           key={i}
@@ -439,7 +439,7 @@ function TestimonialsChapter({
   const filtered = items.filter((t) => t.text);
   if (filtered.length === 0) return null;
   return (
-    <section className="bg-[#faf9f5] py-14 md:py-28 border-t border-[#141413]/8">
+    <section className="bg-[#E0E0E5] py-14 md:py-28 border-t border-[#141413]/8">
       <div className="max-w-4xl mx-auto px-5 md:px-14 space-y-14 md:space-y-28">
         {filtered.map((t, i) => (
           <FadeIn key={i}>
@@ -539,7 +539,7 @@ function LocationChapter({
   if (!address) return null;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
   return (
-    <section className="bg-[#faf9f5] py-14 md:py-28 border-t border-[#141413]/8">
+    <section className="bg-[#E0E0E5] py-14 md:py-28 border-t border-[#141413]/8">
       <div className="max-w-5xl mx-auto px-5 md:px-14 grid md:grid-cols-12 gap-6 md:gap-10">
         <div className="md:col-span-5">
           <FadeIn>
@@ -606,7 +606,7 @@ function CTAChapter({
               href={reserveUrl || "#"}
               target={reserveUrl && reserveUrl.startsWith("http") ? "_blank" : undefined}
               rel={reserveUrl && reserveUrl.startsWith("http") ? "noopener noreferrer" : undefined}
-              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 md:px-8 md:py-4 bg-[#141413] text-[#faf9f5] rounded-full text-[15px] md:text-base font-semibold hover:bg-[#141413]/90 transition-colors"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3.5 md:px-8 md:py-4 bg-[#141413] text-[#E0E0E5] rounded-full text-[15px] md:text-base font-semibold hover:bg-[#141413]/90 transition-colors"
             >
               {reserveLabel} <ArrowRight size={16} />
             </a>
@@ -627,7 +627,7 @@ function CTAChapter({
 
 function PageFooter() {
   return (
-    <footer className="bg-[#faf9f5] border-t border-[#141413]/8 py-10 md:py-12">
+    <footer className="bg-[#E0E0E5] border-t border-[#141413]/8 py-10 md:py-12">
       <div className="max-w-5xl mx-auto px-6 md:px-14 text-center">
         <a
           href="https://storageads.com"
@@ -714,13 +714,13 @@ function ExitIntentPopup({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="flex-1 px-4 py-3 rounded-xl border border-[#141413]/10 text-sm text-[#141413] bg-[#faf9f5] focus:outline-none focus:ring-2 focus:ring-[#141413]/20 focus:border-transparent"
+                  className="flex-1 px-4 py-3 rounded-xl border border-[#141413]/10 text-sm text-[#141413] bg-[#E0E0E5] focus:outline-none focus:ring-2 focus:ring-[#141413]/20 focus:border-transparent"
                   autoFocus
                   required
                 />
                 <button
                   type="submit"
-                  className="px-5 py-3 rounded-xl text-sm font-semibold text-[#faf9f5] bg-[#141413] hover:bg-[#141413]/90 transition-colors"
+                  className="px-5 py-3 rounded-xl text-sm font-semibold text-[#E0E0E5] bg-[#141413] hover:bg-[#141413]/90 transition-colors"
                 >
                   Save My Spot
                 </button>
@@ -946,7 +946,7 @@ export default function LandingPageRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#faf9f5]">
+      <div className="min-h-screen flex items-center justify-center bg-[#E0E0E5]">
         <Loader2 className="w-8 h-8 text-[#141413] animate-spin" />
       </div>
     );
@@ -954,7 +954,7 @@ export default function LandingPageRoute() {
 
   if (error || !page) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#faf9f5] px-5">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#E0E0E5] px-5">
         <h1 className="text-2xl font-semibold text-[#141413] mb-2">
           Page Not Found
         </h1>
@@ -1046,7 +1046,7 @@ export default function LandingPageRoute() {
   const facilityName = (hero.facilityName as string) || undefined;
 
   return (
-    <div className="bg-[#faf9f5]">
+    <div className="bg-[#E0E0E5]">
       <HeroSplash
         backgroundImage={backgroundImage}
         facilityName={facilityName}
