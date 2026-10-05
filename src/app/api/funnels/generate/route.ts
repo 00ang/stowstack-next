@@ -5,8 +5,10 @@ import {
   errorResponse,
   getOrigin,
   corsResponse,
-  requireAdminKey,
+  requireFacilityAccess,
 } from "@/lib/api-helpers";
+import { COOKIE_NAME, HEADER_NAME } from "@/lib/manage-session";
+import { selfBaseUrl } from "@/lib/self-url";
 import { funnelConfigToDripSteps } from "@/lib/drip-sequences";
 import { ARCHETYPE_FUNNELS } from "@/components/admin/facility-tabs/ad-studio/types";
 
@@ -17,21 +19,20 @@ export async function OPTIONS(req: NextRequest) {
 }
 
 /**
- * Internal fetch helper — calls our own API routes with admin key,
- * reusing all existing generation logic (brand doctrine, market intel,
- * style refs, compliance, facility learnings, etc.)
+ * Internal fetch helper — calls our own API routes with the caller's own
+ * credential, reusing all existing generation logic (brand doctrine, market
+ * intel, style refs, compliance, facility learnings, etc.)
  */
 async function internalFetch<T>(
   path: string,
   body: Record<string, unknown>,
-  adminKey: string
+  auth: Record<string, string>
 ): Promise<T> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const res = await fetch(`${baseUrl}${path}`, {
+  const res = await fetch(`${selfBaseUrl()}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Admin-Key": adminKey,
+      ...auth,
     },
     body: JSON.stringify(body),
   });
@@ -47,11 +48,18 @@ async function internalFetch<T>(
 /* ── POST: Generate a complete funnel by orchestrating existing tools ── */
 export async function POST(req: NextRequest) {
   const origin = getOrigin(req);
-  const denied = await requireAdminKey(req);
-  if (denied) return denied;
 
-  // Pass admin key through to internal calls
-  const adminKey = req.headers.get("x-admin-key") || "";
+  // Internal calls carry the caller's own credential: an admin's key, or an
+  // owner's manage token (read from their cookie and sent as the header the
+  // routes also accept), so every step is scoped exactly as if they had
+  // called it themselves.
+  const adminKey = req.headers.get("x-admin-key");
+  const manageToken = req.cookies.get(COOKIE_NAME)?.value || req.headers.get(HEADER_NAME);
+  const auth: Record<string, string> = adminKey
+    ? { "X-Admin-Key": adminKey }
+    : manageToken
+      ? { [HEADER_NAME]: manageToken }
+      : {};
 
   try {
     const body = await req.json();
@@ -68,6 +76,9 @@ export async function POST(req: NextRequest) {
     };
 
     if (!facilityId) return errorResponse("facilityId is required", 400, origin);
+
+    const denied = await requireFacilityAccess(req, facilityId);
+    if (denied) return denied;
 
     const facility = await db.facilities.findUnique({
       where: { id: facilityId },
@@ -115,7 +126,7 @@ export async function POST(req: NextRequest) {
     }>("/api/facility-creatives", {
       facilityId,
       platform: "meta_feed",
-    }, adminKey);
+    }, auth);
 
     // Pick the variation whose angle matches the archetype, or the first one
     const matchingVariation =
@@ -152,7 +163,7 @@ export async function POST(req: NextRequest) {
           aspect: "1:1",
           copyContext,
         },
-        adminKey
+        auth
       );
 
       // Attach image to the variation
@@ -186,7 +197,7 @@ export async function POST(req: NextRequest) {
       funnelStage: "consideration",
       archetypeKey: archetype === "social_proof" ? null : archetype,
       adVariationId: matchingVariation?.id || null,
-    }, adminKey);
+    }, auth);
 
     // Attach landing page to funnel
     if (lpResult?.page) {

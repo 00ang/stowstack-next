@@ -1,9 +1,11 @@
 import crypto from "crypto";
-import type { NextRequest } from "next/server";
+import type { NextRequest, NextResponse } from "next/server";
 
 /**
  * Manage-session: a stateless, signed (HMAC-SHA256) session for the
- * owner-facing facility tools at /manage.
+ * owner-facing facility tools (/portal/tools for clients, /partner/tools for
+ * partner orgs). Clients never log in to it separately: the portal login and
+ * the partner session mint it (see setManageCookie).
  *
  * Unlike the admin key (shared god-mode) or the partner `ss_` DB session,
  * a manage session is scoped to a specific set of facility ids. It carries
@@ -21,7 +23,12 @@ export const HEADER_NAME = "x-manage-token";
 const TOKEN_PREFIX = "sm_";
 const DEFAULT_TTL_DAYS = 14;
 
-export type ManageMode = "code" | "scratch";
+/**
+ * How the session was minted. "portal" = client portal login, "org" = partner
+ * session, "scratch" = invite-code workspace. "code" was the retired
+ * access-code unlock; tokens minted by it stay valid until they expire.
+ */
+export type ManageMode = "code" | "scratch" | "portal" | "org";
 
 export interface ManageScope {
   /** Facility ids this session is allowed to access. */
@@ -163,3 +170,26 @@ export function manageCookieOptions(maxAgeSeconds: number) {
 }
 
 export const MANAGE_TTL_DAYS = DEFAULT_TTL_DAYS;
+
+/**
+ * Mint a manage session for these facilities and set it on the response.
+ * Returns false (and sets nothing) when there are no facilities or no signing
+ * secret, so callers whose main job is something else (a portal login) can
+ * carry on without the tools.
+ */
+export function setManageCookie(
+  res: NextResponse,
+  facilityIds: string[],
+  mode: ManageMode
+): boolean {
+  if (facilityIds.length === 0) return false;
+  const token = createManageToken(facilityIds, mode);
+  if (!token) return false;
+  res.cookies.set(COOKIE_NAME, token, manageCookieOptions(MANAGE_TTL_DAYS * 24 * 60 * 60));
+  return true;
+}
+
+/** Expire the manage session cookie. */
+export function clearManageCookie(res: NextResponse): void {
+  res.cookies.set(COOKIE_NAME, "", manageCookieOptions(0));
+}

@@ -67,6 +67,7 @@ npx prisma generate    # Regenerate Prisma client after schema changes
 2. **Admin key** — `X-Admin-Key` header checked against `ADMIN_SECRET` env var. Used by all `/admin` pages and most `/api/admin-*` routes. Helper: `requireAdminKey()` from `src/lib/api-helpers.ts`. Multiple admins (Blake + Angelo are founders).
 3. **Client portal** — Email + access code login. Access codes are generated when a lead status changes to `client_signed`. Session stored in localStorage. Portal pages at `/portal`.
 4. **Partner/org sessions** — Email + password + org slug login via `POST /api/organizations`. Session tokens (prefixed `ss_`) stored in the **`sessions`** table (Prisma `model sessions`), 30-day expiry (`SESSION_DURATION_DAYS = 30` in `src/lib/session-auth.ts`). Helper: `getSession()` from `src/lib/session-auth.ts`, which uses raw SQL (`$queryRaw`/`$executeRaw`) against that table. Partner pages at `/partner`. Partners = both resellers and referral partners.
+5. **Facility tools session** (rides on 3 and 4) — the portal login and the partner session also mint a signed, facility-scoped `sa_manage` httpOnly cookie (`src/lib/manage-session.ts`) that opens the admin facility tools for owners at `/portal/tools` and `/partner/tools`. Routes check it with `requireFacilityAccess()`. Video generation is Portfolio-plan only for owners. Details: `docs/systems/01-authentication.md` §④½.
 
 ### API Route Patterns
 

@@ -8,6 +8,7 @@ import {
   CreditCard,
   Settings,
   ClipboardCheck,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 
@@ -35,7 +36,7 @@ export interface PortalNavGroup {
   items: PortalNavItem[];
 }
 
-/** Grouped primary navigation: RESULTS / PROPERTY / ACCOUNT. */
+/** Grouped primary navigation: RESULTS / TOOLS / PROPERTY / ACCOUNT. */
 export const PORTAL_NAV_GROUPS: PortalNavGroup[] = [
   {
     label: "Results",
@@ -44,6 +45,12 @@ export const PORTAL_NAV_GROUPS: PortalNavGroup[] = [
       { label: "Campaigns", href: "/portal/campaigns", icon: Megaphone },
       { label: "Reports", href: "/portal/reports", icon: BarChart3 },
     ],
+  },
+  {
+    // The facility tools (ads, landing pages, Google Business, market data…),
+    // opened by the same portal login. See src/components/owner-tools.
+    label: "Tools",
+    items: [{ label: "Facility Tools", href: "/portal/tools", icon: Wrench }],
   },
   {
     label: "Property",
@@ -82,11 +89,11 @@ export const PORTAL_NAV_ITEMS: PortalNavItem[] = PORTAL_NAV_GROUPS.flatMap((g) =
  * (which opens the full grouped drawer). Order matters.
  */
 export const PORTAL_BOTTOM_TABS: PortalNavItem[] = [
-  PORTAL_NAV_GROUPS[0].items[0], // Dashboard
-  PORTAL_NAV_GROUPS[0].items[1], // Campaigns
-  PORTAL_NAV_GROUPS[0].items[2], // Reports
-  PORTAL_NAV_GROUPS[2].items[0], // Messages
-];
+  "/portal",
+  "/portal/campaigns",
+  "/portal/reports",
+  "/portal/messages",
+].map((href) => PORTAL_NAV_ITEMS.find((item) => item.href === href)!);
 
 /** Active-state rule shared by every nav surface: exact for the index, prefix otherwise. */
 export function isNavItemActive(href: string, pathname: string): boolean {

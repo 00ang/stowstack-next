@@ -2,15 +2,18 @@
  * Client-side auth header resolver shared by facility tools.
  *
  * The facility tab components historically sent `X-Admin-Key: <adminKey>`.
- * To let the SAME components run under the owner-facing /manage shell, they
- * now build headers through this helper instead of hardcoding the admin key:
+ * To let the SAME components run as the owner-facing facility tools
+ * (/portal/tools, /partner/tools — src/components/owner-tools), they build
+ * headers through this helper instead of hardcoding the admin key:
  *
  *  - Admin context: a non-empty `adminKey` is passed -> send X-Admin-Key
  *    (identical to previous behavior, so the admin dashboard is unaffected).
- *  - Owner context: the shell passes an empty `adminKey`; we fall back to the
- *    facility-scoped manage token stored client-side and send it as
- *    `x-manage-token` (the header the proxy treats as CSRF-exempt and that
- *    `requireFacilityAccess` validates against the requested facility).
+ *  - Owner context: the shell passes an empty `adminKey` and we send nothing:
+ *    the manage session is an httpOnly cookie that same-origin fetches carry
+ *    on their own, which `requireFacilityAccess` validates against the
+ *    requested facility (proxy.ts lets cookie + same-origin requests past the
+ *    CSRF gate). The localStorage token below is a legacy fallback that the
+ *    current login flows never set.
  *
  * Keeping this in one place is the "auth abstraction" that avoids forking
  * every component for owners.

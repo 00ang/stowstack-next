@@ -50,6 +50,7 @@ graph TB
 | **Admin key** | `x-admin-key` header == `ADMIN_SECRET` | per route handler | `requireAdminKey()` | env var; per-admin keys in `admin_keys` |
 | **Client portal** | email + `access_code` (8 hex chars) | per route handler | `authenticatePortalRequest()` | `localStorage` key `storageads_portal_session` |
 | **Partner/org** | `ss_`-prefixed bearer token | per route handler | `getSession()` | `sessions` table (hash only) |
+| *(Facility tools)* | signed `sm_` token in the httpOnly `sa_manage` cookie, scoped to facility ids | per route handler | `requireFacilityAccess()` | stateless (HMAC, 14 days); minted by the portal login and the partner session — see ④½ |
 | *(Cron)* | `Authorization: Bearer $CRON_SECRET` | per cron handler | `verifyCronSecret()` | env var (fail-closed) |
 | *(V1 API)* | `Authorization: Bearer sk_live_…` | per V1 route | `requireApiAuth()` | `api_keys` table (hash only) |
 
@@ -183,6 +184,22 @@ sequenceDiagram
 
 This is the **only** raw-SQL island in the codebase (`src/lib/session-auth.ts`) — everything else uses Prisma client methods. Only the token *hash* is stored; the raw token lives only on the client.
 
+### ④½ Facility tools session — riding on ③ and ④
+
+Clients and partner orgs use the same facility tools as the admin facility manager (Creative Studio, Ad Generator, Landing Pages, Google Business, market data…), rendered by `src/components/owner-tools/owner-tools.tsx` at **`/portal/tools`** and **`/partner/tools`**. There is no separate login: the session is minted as a side effect of the logins above.
+
+| Minted by | Scope | Mode |
+|-----------|-------|------|
+| Portal login / every portal load (`POST /api/client-data`) | every live facility whose live `clients` row has this email (`clientToolFacilityIds`) | `portal` |
+| `/partner/tools` → `POST /api/org-tools-session` (org_admin / facility_manager only) | every live facility in the org (`orgToolFacilityIds`) | `org` |
+| Invite signup `/manage` → `POST /api/manage/scratch` (also provisions a portal client) | the new facility | `scratch` |
+
+- **Token:** `src/lib/manage-session.ts` — stateless HMAC (`MANAGE_SESSION_SECRET`, falls back to `ADMIN_SECRET`), `sm_` prefix, httpOnly + SameSite=Lax cookie `sa_manage`, 14-day TTL, refreshed on each login/visit. Sign-out in either shell calls `POST /api/manage/logout`.
+- **Checked by:** `requireFacilityAccess(req, facilityId)` (admin key **or** a session scoped to that facility) and `requireManageOrAdmin` for facility-less reads. The tool components get `adminKey=""` and send nothing extra — same-origin fetches carry the cookie.
+- **CSRF:** page JS can't read the cookie, so the proxy exempts requests that carry `sa_manage` **and** a same-origin `Origin` (§2). Without that, every owner mutation 403s at the edge.
+- **Plan gate:** AI video (`POST /api/generate-video`) is Portfolio-only for owners (`canGenerateVideo` / `orgAllowsVideo` in `src/lib/plan-limits.ts` — plan of the facility's org; lapsed plans lose it). Admins are never gated. `GET /api/manage/session` returns `videoEnabled` per facility so the UI shows an upgrade panel instead of the tool.
+- **Owner-only edits:** profile edits go through `PATCH /api/manage/facility` (no `notes`, no pipeline status), never the admin route. `/manage/dashboard` 307s to `/portal/tools`.
+
 ---
 
 ## 4. Cron & V1 — the machine-to-machine auth
@@ -231,6 +248,7 @@ graph TB
 | CSRF mechanics | `src/lib/csrf.ts` |
 | Admin key + helpers | `src/lib/api-helpers.ts` (`requireAdminKey`, `requireAdminAuth`, `safeCompare`) |
 | Partner sessions (raw SQL) | `src/lib/session-auth.ts` |
+| Facility tools session | `src/lib/manage-session.ts`, `src/lib/owner-tools.ts`, `src/components/owner-tools/owner-tools.tsx` |
 | Portal auth | `src/lib/portal-auth.ts`, `src/lib/portal-helpers.tsx` |
 | Cron auth (fail-closed) | `src/lib/cron-auth.ts` |
 | V1 API auth | `src/lib/v1-auth.ts` |

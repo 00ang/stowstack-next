@@ -118,6 +118,17 @@ export function isAdminRequest(req: NextRequest): boolean {
   return false;
 }
 
+/**
+ * True for any admin credential: the shared ADMIN_SECRET or a valid per-admin
+ * `sa_adm_` key. Use it to exempt admins from owner-only gates (plan limits)
+ * on routes that also admit owners via requireFacilityAccess.
+ */
+export async function isAdminCredential(req: NextRequest): Promise<boolean> {
+  if (isAdminRequest(req)) return true;
+  if (!req.headers.get("x-admin-key")?.startsWith("sa_adm_")) return false;
+  return (await requireAdminKey(req)) === null;
+}
+
 export async function requireAdminKey(
   req: NextRequest,
   requiredScope?: string
@@ -157,7 +168,7 @@ export function getOrigin(req: NextRequest): string | null {
 }
 
 /**
- * Facility-scoped authorization for owner-facing /manage tools.
+ * Facility-scoped authorization for the owner-facing facility tools (/portal/tools, /partner/tools).
  *
  * Returns null (authorized) when EITHER:
  *  - the request carries a valid admin key (founders/VAs — full access), OR

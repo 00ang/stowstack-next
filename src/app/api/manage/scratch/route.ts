@@ -8,22 +8,24 @@ import {
   verifyCsrfOrigin,
   safeCompare,
 } from "@/lib/api-helpers";
-import {
-  createManageToken,
-  COOKIE_NAME,
-  manageCookieOptions,
-  MANAGE_TTL_DAYS,
-} from "@/lib/manage-session";
+import { setManageCookie } from "@/lib/manage-session";
+import { provisionPortalAccess } from "@/lib/portal-provisioning";
 import { db } from "@/lib/db";
+import { applyRateLimitStrict } from "@/lib/with-rate-limit";
+import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 
 /**
  * POST /api/manage/scratch
  *
- * Owner entry — "Start from scratch". Gated behind a shared invite code
+ * Owner entry — "Start with an invite". Gated behind a shared invite code
  * (MANAGE_INVITE_CODE) so the paid generation tools aren't wide open. Creates
- * a fresh facility owned by the resulting manage session, set as an httpOnly
- * cookie (the single session transport).
+ * a fresh facility AND a client-portal login for it, so the owner has one
+ * account like every other client: the response carries the portal session
+ * (email + access code) for the page to save, plus the tools cookie, and they
+ * land in /portal/tools. Coming back later is the normal portal login.
  */
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function generateAccessCode(): string {
   // 16 hex-ish chars, uppercase, matches access_code VarChar(16)
@@ -39,6 +41,12 @@ export async function POST(req: NextRequest) {
 
   const csrf = verifyCsrfOrigin(req);
   if (csrf) return csrf;
+
+  // Fail-closed per-IP limit: the invite code is the only gate here (and it
+  // can fall back to ADMIN_SECRET), so guessing must be slow even if Upstash
+  // is down.
+  const limited = await applyRateLimitStrict(req, RATE_LIMIT_TIERS.PUBLIC_WRITE_HOURLY, "manage-scratch");
+  if (limited) return limited;
 
   // Preferred gate is MANAGE_INVITE_CODE. TEMPORARY: fall back to ADMIN_SECRET
   // when it isn't set, so the flow works on environments where MANAGE_INVITE_CODE
@@ -73,10 +81,14 @@ export async function POST(req: NextRequest) {
   const name = typeof body.name === "string" ? body.name.trim() : "";
   const location = typeof body.location === "string" ? body.location.trim() : "";
   const contactEmail =
-    typeof body.contact_email === "string" ? body.contact_email.trim() : null;
+    typeof body.contact_email === "string" ? body.contact_email.trim().toLowerCase() : "";
 
   if (!name || !location) {
     return errorResponse("Facility name and location are required", 400, origin);
+  }
+  // The email is the login: the portal sends sign-in codes to it.
+  if (!EMAIL_RE.test(contactEmail)) {
+    return errorResponse("A valid email is required. It's how you'll sign in.", 400, origin);
   }
 
   // Generate a unique access_code so the owner can return to this facility.
@@ -109,16 +121,17 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const token = createManageToken([facility.id], "scratch");
-  if (!token) {
-    return errorResponse(
-      "Manage sessions are not configured (missing MANAGE_SESSION_SECRET)",
-      500,
-      origin
-    );
-  }
+  const portal = await provisionPortalAccess(facility.id, { sendWelcomeEmail: true });
+  if (!portal.ok) return errorResponse(portal.error, 500, origin);
 
-  const res = jsonResponse({ facility }, 200, origin);
-  res.cookies.set(COOKIE_NAME, token, manageCookieOptions(MANAGE_TTL_DAYS * 24 * 60 * 60));
+  const res = jsonResponse(
+    {
+      facility: { id: facility.id, name: facility.name },
+      portal: { email: portal.email, accessCode: portal.code },
+    },
+    200,
+    origin
+  );
+  setManageCookie(res, [facility.id], "scratch");
   return res;
 }

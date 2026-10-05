@@ -7,6 +7,8 @@ import {
   corsResponse,
 } from "@/lib/api-helpers";
 import { checkRateLimit, resetRateLimit } from "@/lib/rate-limit";
+import { setManageCookie } from "@/lib/manage-session";
+import { clientToolFacilityIds } from "@/lib/owner-tools";
 
 export async function OPTIONS(req: NextRequest) {
   return corsResponse(getOrigin(req));
@@ -107,7 +109,7 @@ export async function POST(req: NextRequest) {
       });
       const accountManager = pickAccountManager(facility?.organizations);
 
-      return jsonResponse(
+      const res = jsonResponse(
         {
           client: {
             facilityId: c.facility_id,
@@ -126,6 +128,17 @@ export async function POST(req: NextRequest) {
         200,
         origin
       );
+
+      // One login: signing in to the portal (and every portal load, which
+      // re-verifies here) also opens the facility tools at /portal/tools, for
+      // every facility this email is a client of. The tools never block the
+      // portal: on any failure the client just has no tools session.
+      try {
+        setManageCookie(res, await clientToolFacilityIds(c.email), "portal");
+      } catch (err) {
+        console.error("[client-data] tools session not minted:", err);
+      }
+      return res;
     }
 
     // Try temporary 4-digit login code first

@@ -1338,12 +1338,21 @@ function ReviewStep({
         >
           Your campaigns will be live within 48 hours.
         </div>
-        <a
-          href="/portal"
-          className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[var(--color-dark)] px-6 py-3 text-sm font-semibold text-[var(--color-light)] transition-colors hover:opacity-90"
-        >
-          Back to Dashboard
-        </a>
+        <p className="mx-auto mt-6 max-w-sm text-sm text-[var(--color-body-text)]">
+          Your facility tools are open now. Make ads, build landing pages, and manage your Google listing while we
+          build.
+        </p>
+        <div className="mt-4 flex flex-col items-center gap-3">
+          <a
+            href="/portal/tools"
+            className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-dark)] px-6 py-3 text-sm font-semibold text-[var(--color-light)] transition-colors hover:opacity-90"
+          >
+            Open Facility Tools
+          </a>
+          <a href="/portal" className="text-sm font-medium text-[var(--color-body-text)] hover:text-[var(--color-dark)]">
+            Back to Dashboard
+          </a>
+        </div>
       </div>
     );
   }

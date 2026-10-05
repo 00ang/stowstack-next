@@ -19,6 +19,7 @@ import {
   Settings,
   Users,
   Webhook,
+  Wrench,
 } from "lucide-react";
 import { haptic } from "@/lib/haptics";
 import { NotificationBell } from "./notification-bell";
@@ -41,6 +42,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Overview", href: "/partner", icon: LayoutDashboard },
   { label: "Facilities", href: "/partner/facilities", icon: Building2 },
+  { label: "Facility Tools", href: "/partner/tools", icon: Wrench },
   { label: "Team", href: "/partner/team", icon: Users },
   { label: "Revenue", href: "/partner/revenue", icon: DollarSign },
   { label: "API Keys", href: "/partner/api-keys", icon: Key },
@@ -556,6 +558,7 @@ function PartnerHeader({
   const ROUTE_TITLES: Record<string, string> = {
     "/partner": "Overview",
     "/partner/facilities": "Facilities",
+    "/partner/tools": "Facility Tools",
     "/partner/team": "Team",
     "/partner/revenue": "Revenue",
     "/partner/api-keys": "API Keys",
@@ -620,6 +623,8 @@ export function PartnerShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    // Facility tools ride an httpOnly cookie only the server can drop.
+    fetch("/api/manage/logout", { method: "POST" }).catch(() => {});
     setSession(null);
     router.replace("/partner");
   }, [router]);
