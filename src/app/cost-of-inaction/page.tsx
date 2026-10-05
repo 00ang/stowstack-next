@@ -52,7 +52,7 @@ export default function CostOfInactionPage() {
             }}
           >
             <span style={{ color: "var(--color-dark)" }}>storage</span>
-            <span style={{ color: "var(--brand-gold)" }}>ads</span>
+            <span style={{ color: "var(--brand-ads)" }}>ads</span>
           </span>
           <span
             className="text-sm ml-2"

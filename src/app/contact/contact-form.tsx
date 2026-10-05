@@ -84,7 +84,7 @@ export default function ContactForm() {
           </Link>
           <span style={{ fontFamily: "var(--font-heading)", fontWeight: 600 }}>
             <span style={{ color: "var(--color-dark)" }}>storage</span>
-            <span style={{ color: "var(--brand-gold)" }}>ads</span>
+            <span style={{ color: "var(--brand-ads)" }}>ads</span>
           </span>
         </div>
       </header>

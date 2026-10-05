@@ -84,7 +84,7 @@ enterprise-grade, AI-powered, world-class, next-generation, holistic
 
 **Pure black / pure white banned in any color references.** Use brand tokens (`--color-dark`, `--color-light`).
 
-If your draft mentions a color, never reference sienna gold (`#B58B3F`, `--color-gold*`) — banned per design system. The only exception is the brand-locked `storage` + gold `ads` logo two-tone, and that's already coded; don't write copy describing it as the brand color.
+If your draft mentions a color, never reference sienna gold (`#B58B3F`, `--color-gold*`) — banned per design system, the logo included. The `storage` + slate-blue `ads` logo two-tone is already coded; don't write copy describing it as the brand color.
 
 ## Step 4 — The Nick Huber test
 
