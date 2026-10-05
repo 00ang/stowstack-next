@@ -1091,7 +1091,7 @@ export async function POST(req: NextRequest) {
           : overallScore >= 60
             ? "#6a9bcc"
             : overallScore >= 40
-              ? "#f59e0b"
+              ? "#AB5505"
               : "#ef4444";
       const summaryExcerpt = escapeHtml((fullAudit.executiveSummary || "").slice(0, 300));
 

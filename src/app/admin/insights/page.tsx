@@ -87,7 +87,7 @@ const EVENT_CONFIG: Record<
   lead_created: { color: "#22C55E", icon: UserPlus },
   status_change: { color: "var(--color-gold)", icon: Activity },
   note_added: { color: "var(--color-mid-gray)", icon: MessageSquare },
-  client_signed: { color: "#EAB308", icon: Award },
+  client_signed: { color: "#AB5505", icon: Award },
 };
 
 function KpiSkeleton() {
@@ -182,7 +182,7 @@ export default function InsightsPage() {
           label: "Avg Days in Pipeline",
           value: `${analytics.avg_days_in_pipeline.toFixed(1)}`,
           icon: Timer,
-          color: "#EAB308",
+          color: "#AB5505",
         },
         {
           label: "Lost Rate",

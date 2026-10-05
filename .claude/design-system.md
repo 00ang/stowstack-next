@@ -58,5 +58,6 @@ Admin charts use **recharts**. Color convention: dark=Meta, blue=Google, green=r
 - Never use gradients, stock photos, or AI images
 - Icons: lucide-react only (see above) — no other icon libraries
 - Sienna gold is banned everywhere, the logo included — the logo `ads` uses `--brand-ads` (supersedes any older gold references in `globals.css`)
+- No gold-reading color anywhere (sienna, goldenrod, mustard, amber, Tailwind `amber-*`/`yellow-*` hexes): not in palettes, admin status colors, emails, PDFs, OG images or icons. The warm/caution slot is burnt orange — `--hue-b` `#AB5505` on paper (Tailwind orange/amber/yellow classes remap to it); inline caution hexes use `#AB5505`; email CTAs are charcoal `#141413`; brand tints use slate `rgba(68,99,134,…)`
 - Chart colors: dark=Meta, blue=Google, green=retargeting (recharts)
 - All emails from *@storageads.com

@@ -199,7 +199,7 @@ export function DualGauge({ physical, economic, size = 200 }: { physical: number
         </linearGradient>
       </defs>
       <text x={cx} y={cy - 16} textAnchor="middle" fill="var(--color-mid-gray)" fontSize="10" fontWeight="500">GAP</text>
-      <text x={cx} y={cy + 8} textAnchor="middle" fill={gap > 5 ? '#ef4444' : gap > 2 ? '#f59e0b' : '#10b981'} fontSize="28" fontWeight="700">
+      <text x={cx} y={cy + 8} textAnchor="middle" fill={gap > 5 ? '#ef4444' : gap > 2 ? '#AB5505' : '#10b981'} fontSize="28" fontWeight="700">
         {gap.toFixed(1)}
       </text>
       <text x={cx} y={cy + 22} textAnchor="middle" fill="var(--color-mid-gray)" fontSize="10">points</text>

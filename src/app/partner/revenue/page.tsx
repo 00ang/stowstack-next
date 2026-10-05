@@ -53,13 +53,13 @@ interface RevenueSummary {
   payouts: PayoutEntry[];
 }
 
-// Icon + medal accent per tier name. These medal colors are a categorical
-// signal on the tier icons only — not the brand sienna gold (which is banned
-// outside the logo). All earnings/CTA emphasis uses charcoal-on-light.
+// Icon + medal accent per tier name. These colors are a categorical signal
+// on the tier icons only, and none of them is gold (banned everywhere) —
+// the Gold tier gets navy. All earnings/CTA emphasis uses charcoal-on-light.
 const TIER_VISUAL: Record<string, { icon: LucideIcon; color: string }> = {
-  Bronze: { icon: Star, color: "#a07d4f" },
+  Bronze: { icon: Star, color: "#9A5B3C" },
   Silver: { icon: Award, color: "#8b94a3" },
-  Gold: { icon: Crown, color: "#9a8550" },
+  Gold: { icon: Crown, color: "#1E3C74" },
   Platinum: { icon: Sparkles, color: "#7c6f9c" },
 };
 

@@ -76,7 +76,7 @@ function getRecoveryBody(
       return `<div style="font-family: -apple-system, system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; line-height: 1.7; color: #1a1a1a;">
   <p>Hey ${firstName},</p>
   <p>Just a heads up, we have seen a few units get reserved since yesterday, and availability is getting tighter.</p>
-  <div style="margin: 24px 0; padding: 16px 20px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
+  <div style="margin: 24px 0; padding: 16px 20px; background: #FBEFE4; border-left: 4px solid #AB5505; border-radius: 0 8px 8px 0;">
     <p style="margin: 0; font-weight: 600; color: #92400e;">Units are going fast</p>
     <p style="margin: 4px 0 0; font-size: 14px; color: #78350f;">We can not guarantee pricing or availability beyond today. Lock in your rate now.</p>
   </div>

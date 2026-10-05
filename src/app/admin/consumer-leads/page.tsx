@@ -39,9 +39,9 @@ const STATUS_OPTIONS = ["new", "contacted", "toured", "reserved", "moved_in", "l
 const FILTER_OPTIONS = ["all", ...STATUS_OPTIONS] as const;
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  new: { bg: "rgba(181,139,63,0.1)", text: "var(--color-gold)" },
+  new: { bg: "rgba(68,99,134,0.1)", text: "var(--color-gold)" },
   contacted: { bg: "rgba(139,92,246,0.1)", text: "#8B5CF6" },
-  toured: { bg: "rgba(234,179,8,0.1)", text: "#EAB308" },
+  toured: { bg: "rgba(171,85,5,0.1)", text: "#AB5505" },
   reserved: { bg: "rgba(249,115,22,0.1)", text: "#F97316" },
   moved_in: { bg: "rgba(34,197,94,0.1)", text: "#22C55E" },
   lost: { bg: "rgba(239,68,68,0.1)", text: "#EF4444" },
@@ -297,7 +297,7 @@ export default function ConsumerLeadsPage() {
                         onClick={() => handleAddNote(lead.id)}
                         disabled={isLoading || !noteText.trim()}
                         className="p-1.5 rounded-lg transition-colors disabled:opacity-50"
-                        style={{ backgroundColor: "rgba(181,139,63,0.1)", color: "var(--color-gold)" }}
+                        style={{ backgroundColor: "rgba(68,99,134,0.1)", color: "var(--color-gold)" }}
                       >
                         <Send size={14} />
                       </button>

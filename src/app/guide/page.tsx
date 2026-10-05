@@ -90,7 +90,7 @@ function InfoBox({ children }: { children: React.ReactNode }) {
       className="rounded-lg px-4 py-3 text-sm"
       style={{
         background: "var(--accent-glow)",
-        border: "1px solid rgba(181,139,63,0.2)",
+        border: "1px solid rgba(68,99,134,0.2)",
         color: "var(--text-secondary)",
       }}
     >

@@ -150,7 +150,7 @@ export default async function ComparisonPage({ params }: PageProps) {
         {/* Key differentiator */}
         <div
           className="rounded-xl p-8 text-center mb-12"
-          style={{ backgroundColor: "var(--color-gold-light)", border: "1px solid rgba(181,139,63,0.2)" }}
+          style={{ backgroundColor: "var(--color-gold-light)", border: "1px solid rgba(68,99,134,0.2)" }}
         >
           <h2
             className="text-xl font-medium mb-3"

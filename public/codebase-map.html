@@ -8,9 +8,9 @@
 <style>
 :root {
   --bg: #faf7f1; --panel: #ffffff; --ink: #2b2620; --muted: #7a7164;
-  --line: #e6dfd2; --line-soft: #efe9dd; --accent: #8a6d1f;
+  --line: #e6dfd2; --line-soft: #efe9dd; --accent: #446386;
   --green: #2e7d4f; --green-bg: #e7f3ea; --green-line: #bcdcc6;
-  --yellow: #9a6b07; --yellow-bg: #fcf3d9; --yellow-line: #ecd9a0;
+  --orange: #AB5505; --orange-bg: #FBEFE4; --orange-line: #F3C9A6;
   --red: #b3402e; --red-bg: #fbe7e1; --red-line: #efc4b8;
   --gray: #6b6b6b; --gray-bg: #efedea; --gray-line: #d8d4cc;
   --people: #4a5d80; --people-bg: #eaeef6;
@@ -27,7 +27,7 @@ header.top .meta { color: var(--muted); font-size: 12px; }
 .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-left: auto; font-size: 12px; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
-.dot.green { background: var(--green); } .dot.yellow { background: var(--yellow); }
+.dot.green { background: var(--green); } .dot.yellow { background: var(--orange); }
 .dot.red { background: var(--red); } .dot.gray { background: var(--gray); }
 
 nav.tabs { display: flex; gap: 6px; margin: 14px 0 0; }
@@ -40,7 +40,7 @@ nav.tabs button.on { background: var(--panel); color: var(--ink); border-color: 
 
 /* status tints */
 .s-green  { background: var(--green-bg);  border-color: var(--green-line) !important; }
-.s-yellow { background: var(--yellow-bg); border-color: var(--yellow-line) !important; }
+.s-yellow { background: var(--orange-bg); border-color: var(--orange-line) !important; }
 .s-red    { background: var(--red-bg);    border-color: var(--red-line) !important; }
 .s-gray   { background: var(--gray-bg);   border-color: var(--gray-line) !important; }
 .s-people { background: var(--people-bg); border-color: #c6d0e2 !important; }
@@ -86,7 +86,7 @@ path.wire.fade { opacity: 0.08; }
 .treebar button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; }
 .trow { display: flex; align-items: center; gap: 7px; padding: 4px 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
 .trow:hover { background: var(--line-soft); }
-.trow.sel { background: var(--yellow-bg); border-color: var(--yellow-line); }
+.trow.sel { background: var(--orange-bg); border-color: var(--orange-line); }
 .trow .chev { width: 13px; flex: none; text-align: center; color: var(--muted); font-size: 10px; }
 .trow .tname { font: 13px ui-monospace, Menlo, monospace; font-weight: 500; white-space: nowrap; }
 .trow .tname.isdir { font-weight: 700; }
@@ -101,7 +101,7 @@ path.wire.fade { opacity: 0.08; }
 .progress-top { display: flex; justify-content: space-between; align-items: baseline; }
 .progress-top b { font-size: 26px; }
 .pbar { height: 16px; border-radius: 999px; background: var(--line-soft); overflow: hidden; display: flex; border: 1px solid var(--line); }
-.pbar .seg-done { background: var(--green); } .pbar .seg-part { background: var(--yellow); }
+.pbar .seg-done { background: var(--green); } .pbar .seg-part { background: var(--orange); }
 .pnote { color: var(--muted); font-size: 12px; margin-top: 5px; }
 .statchips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
 .statchips span { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 5px 11px; font-size: 12.5px; color: var(--muted); }
@@ -136,10 +136,10 @@ footer.foot code { background: var(--line-soft); padding: 1px 6px; border-radius
 
 /* tree search */
 .treebar input { flex: 1; min-width: 120px; font: inherit; font-size: 13px; padding: 4px 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
-.treebar input:focus { outline: 2px solid var(--yellow-line); }
+.treebar input:focus { outline: 2px solid var(--orange-line); }
 
 /* next-up + history chart */
-.nextbox { background: var(--yellow-bg); border: 1px solid var(--yellow-line); border-radius: 8px; padding: 9px 13px; margin: 12px 0 0; font-size: 13px; }
+.nextbox { background: var(--orange-bg); border: 1px solid var(--orange-line); border-radius: 8px; padding: 9px 13px; margin: 12px 0 0; font-size: 13px; }
 .nextbox .dot { width: 8px; height: 8px; }
 .histwrap { margin: 12px 0 2px; }
 .histchart { display: block; width: 100%; height: 90px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
@@ -560,7 +560,7 @@ function renderRoadmap() {
 
   h += '<div class="progress-wrap"><div class="progress-top"><span>Toward a fully functional product</span><b>' + r.percent + '%</b></div>' +
     '<div class="pbar"><div class="seg-done" style="width:' + dPct.toFixed(1) + '%"></div><div class="seg-part" style="width:' + pPct.toFixed(1) + '%"></div></div>' +
-    '<div class="pnote">Weighted by effort (a big missing piece counts more than a small finished one). Green = done, yellow sliver = partial credit for built-but-unproven pieces. Update <code>roadmap.json</code> statuses, then run <code>npm run map</code>.' + (r.updated ? ' Statuses last reviewed: ' + esc(r.updated) + '.' : '') + '</div></div>';
+    '<div class="pnote">Weighted by effort (a big missing piece counts more than a small finished one). Green = done, orange sliver = partial credit for built-but-unproven pieces. Update <code>roadmap.json</code> statuses, then run <code>npm run map</code>.' + (r.updated ? ' Statuses last reviewed: ' + esc(r.updated) + '.' : '') + '</div></div>';
 
   h += nextUpBox(r);
   h += historyChart();

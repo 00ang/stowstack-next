@@ -25,7 +25,7 @@ function buildPhotoPromptEmail(facilityName: string): string {
 <div style="max-width:560px;margin:0 auto;padding:32px 16px;">
   <div style="text-align:center;margin-bottom:24px;">
     <span style="font-size:20px;font-weight:600;letter-spacing:-0.5px;">
-      <span style="color:#141413;">storage</span><span style="color:#B58B3F;">ads</span>
+      <span style="color:#141413;">storage</span><span style="color:#446386;">ads</span>
     </span>
   </div>
   <div style="background:#ffffff;border:1px solid #e8e6dc;border-radius:8px;padding:28px 24px;">

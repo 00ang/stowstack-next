@@ -363,7 +363,7 @@ function buildUserConfirmationEmail(name: string, requestId: string) {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 32px; background: #faf9f5; color: #141413;">
       <div style="margin-bottom: 24px;">
-        <span style="font-weight: 700; font-size: 18px; color: #141413;">Storage<span style="color: #B58B3F;">Ads</span></span>
+        <span style="font-weight: 700; font-size: 18px; color: #141413;">Storage<span style="color: #446386;">Ads</span></span>
       </div>
       <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #141413;">Data Deletion Request Received</h2>
       <p style="color: #6a6560; line-height: 1.6; margin-bottom: 16px;">Hi ${escapeHtml(name)},</p>
@@ -417,7 +417,7 @@ function buildAcknowledgmentEmail(name: string, requestId: string) {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 32px; background: #faf9f5; color: #141413;">
       <div style="margin-bottom: 24px;">
-        <span style="font-weight: 700; font-size: 18px; color: #141413;">Storage<span style="color: #B58B3F;">Ads</span></span>
+        <span style="font-weight: 700; font-size: 18px; color: #141413;">Storage<span style="color: #446386;">Ads</span></span>
       </div>
       <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #141413;">Deletion Request Acknowledged</h2>
       <p style="color: #6a6560; line-height: 1.6; margin-bottom: 16px;">Hi ${escapeHtml(name)},</p>
@@ -438,7 +438,7 @@ function buildCompletionEmail(name: string, requestId: string) {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 32px; background: #faf9f5; color: #141413;">
       <div style="margin-bottom: 24px;">
-        <span style="font-weight: 700; font-size: 18px; color: #141413;">Storage<span style="color: #B58B3F;">Ads</span></span>
+        <span style="font-weight: 700; font-size: 18px; color: #141413;">Storage<span style="color: #446386;">Ads</span></span>
       </div>
       <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #22C55E;">Data Deletion Complete</h2>
       <p style="color: #6a6560; line-height: 1.6; margin-bottom: 16px;">Hi ${escapeHtml(name)},</p>

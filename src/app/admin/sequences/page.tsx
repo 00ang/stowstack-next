@@ -54,8 +54,8 @@ const STATUS_FILTERS = ["all", "active", "paused", "completed", "cancelled"] as 
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; icon: typeof Mail }> = {
   active: { bg: "rgba(34,197,94,0.1)", text: "#22C55E", icon: Play },
-  paused: { bg: "rgba(234,179,8,0.1)", text: "#EAB308", icon: Pause },
-  completed: { bg: "rgba(181,139,63,0.1)", text: "var(--color-gold)", icon: CheckCircle },
+  paused: { bg: "rgba(171,85,5,0.1)", text: "#AB5505", icon: Pause },
+  completed: { bg: "rgba(68,99,134,0.1)", text: "var(--color-gold)", icon: CheckCircle },
   cancelled: { bg: "rgba(107,114,128,0.1)", text: "#6B7280", icon: XCircle },
 };
 
@@ -99,7 +99,7 @@ function SequenceCard({
           <button
             onClick={() => onEnroll(template.id)}
             className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
-            style={{ backgroundColor: "rgba(181,139,63,0.1)", color: "var(--color-gold)" }}
+            style={{ backgroundColor: "rgba(68,99,134,0.1)", color: "var(--color-gold)" }}
           >
             <Plus size={12} />
             Enroll
@@ -485,7 +485,7 @@ export default function SequencesPage() {
                               className="p-1.5 rounded-lg hover:bg-[var(--color-dark)]/5 transition-colors disabled:opacity-50"
                               title="Pause"
                             >
-                              <Pause size={14} style={{ color: "#EAB308" }} />
+                              <Pause size={14} style={{ color: "#AB5505" }} />
                             </button>
                           )}
                           {drip.status === "paused" && (

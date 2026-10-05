@@ -37,8 +37,8 @@ interface PartialLead {
 const STATUS_FILTERS = ["all", "pending", "in_recovery", "recovered", "exhausted"] as const;
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; icon: typeof Clock }> = {
-  pending: { bg: "rgba(234,179,8,0.1)", text: "#EAB308", icon: Clock },
-  in_recovery: { bg: "rgba(181,139,63,0.1)", text: "var(--color-gold)", icon: RotateCcw },
+  pending: { bg: "rgba(171,85,5,0.1)", text: "#AB5505", icon: Clock },
+  in_recovery: { bg: "rgba(68,99,134,0.1)", text: "var(--color-gold)", icon: RotateCcw },
   recovered: { bg: "rgba(34,197,94,0.1)", text: "#22C55E", icon: CheckCircle },
   exhausted: { bg: "rgba(107,114,128,0.1)", text: "#6B7280", icon: XCircle },
 };
@@ -118,7 +118,7 @@ export default function RecoveryPage() {
 
   const statCards = stats
     ? [
-        { label: "Pending", value: stats.pending, icon: Clock, color: "#EAB308" },
+        { label: "Pending", value: stats.pending, icon: Clock, color: "#AB5505" },
         { label: "In Recovery", value: stats.in_recovery, icon: RotateCcw, color: "var(--color-gold)" },
         { label: "Recovered", value: stats.recovered, icon: CheckCircle, color: "#22C55E" },
         { label: "Exhausted", value: stats.exhausted, icon: XCircle, color: "#6B7280" },
@@ -247,7 +247,7 @@ export default function RecoveryPage() {
                           onClick={() => handleSendRecovery(lead.id)}
                           disabled={isLoading}
                           className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                          style={{ backgroundColor: "rgba(181,139,63,0.1)", color: "var(--color-gold)" }}
+                          style={{ backgroundColor: "rgba(68,99,134,0.1)", color: "var(--color-gold)" }}
                         >
                           {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Mail size={12} />}
                           Recover

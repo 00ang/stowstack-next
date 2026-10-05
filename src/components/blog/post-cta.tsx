@@ -10,7 +10,7 @@ export function PostCta() {
       className="rounded-xl p-6 mt-12 text-center"
       style={{
         backgroundColor: 'var(--color-gold-light)',
-        border: '1px solid rgba(181, 139, 63, 0.2)',
+        border: '1px solid rgba(68, 99, 134, 0.2)',
       }}
     >
       <h3

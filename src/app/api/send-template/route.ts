@@ -57,8 +57,8 @@ const TEMPLATES: Record<string, Template> = {
           <p style="margin-top: 24px;">
             Blake Burkett<br/>
             StorageAds<br/>
-            <a href="tel:2699298541" style="color: #B58B3F; text-decoration: none;">269-929-8541</a><br/>
-            <a href="mailto:blake@storageads.com" style="color: #B58B3F; text-decoration: none;">blake@storageads.com</a>
+            <a href="tel:2699298541" style="color: #446386; text-decoration: none;">269-929-8541</a><br/>
+            <a href="mailto:blake@storageads.com" style="color: #446386; text-decoration: none;">blake@storageads.com</a>
           </p>
         </div>`;
     },
@@ -88,8 +88,8 @@ const TEMPLATES: Record<string, Template> = {
           <p style="margin-top: 24px;">
             Blake Burkett<br/>
             StorageAds<br/>
-            <a href="tel:2699298541" style="color: #B58B3F; text-decoration: none;">269-929-8541</a><br/>
-            <a href="mailto:blake@storageads.com" style="color: #B58B3F; text-decoration: none;">blake@storageads.com</a>
+            <a href="tel:2699298541" style="color: #446386; text-decoration: none;">269-929-8541</a><br/>
+            <a href="mailto:blake@storageads.com" style="color: #446386; text-decoration: none;">blake@storageads.com</a>
           </p>
         </div>`;
     },
@@ -122,8 +122,8 @@ const TEMPLATES: Record<string, Template> = {
           <p style="margin-top: 24px;">
             Blake Burkett<br/>
             StorageAds<br/>
-            <a href="tel:2699298541" style="color: #B58B3F; text-decoration: none;">269-929-8541</a><br/>
-            <a href="mailto:blake@storageads.com" style="color: #B58B3F; text-decoration: none;">blake@storageads.com</a>
+            <a href="tel:2699298541" style="color: #446386; text-decoration: none;">269-929-8541</a><br/>
+            <a href="mailto:blake@storageads.com" style="color: #446386; text-decoration: none;">blake@storageads.com</a>
           </p>
         </div>`;
     },
@@ -145,8 +145,8 @@ const TEMPLATES: Record<string, Template> = {
           <p style="margin-top: 24px;">
             Blake Burkett<br/>
             StorageAds<br/>
-            <a href="tel:2699298541" style="color: #B58B3F; text-decoration: none;">269-929-8541</a><br/>
-            <a href="mailto:blake@storageads.com" style="color: #B58B3F; text-decoration: none;">blake@storageads.com</a>
+            <a href="tel:2699298541" style="color: #446386; text-decoration: none;">269-929-8541</a><br/>
+            <a href="mailto:blake@storageads.com" style="color: #446386; text-decoration: none;">blake@storageads.com</a>
           </p>
         </div>`;
     },
@@ -165,13 +165,13 @@ const TEMPLATES: Record<string, Template> = {
           <p>Just a quick reminder \u2014 we're getting your campaigns ready to launch, but we still need a few details from you to make sure everything is dialed in for <strong>${esc(lead.facilityName)}</strong>.</p>
           <div style="margin: 24px 0; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; text-align: center;">
             <p style="margin: 0 0 12px; font-weight: 600; color: #166534;">Complete Your Campaign Setup</p>
-            <a href="https://storageads.com/portal" style="display: inline-block; padding: 14px 28px; background: #B58B3F; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Open Your Portal</a>
+            <a href="https://storageads.com/portal" style="display: inline-block; padding: 14px 28px; background: #141413; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Open Your Portal</a>
           </div>
           <p>It only takes about 5 minutes. The sooner we have your info, the sooner your ads go live.</p>
           <p style="margin-top: 24px;">
             Anna Almeida<br/>
             StorageAds<br/>
-            <a href="mailto:anna@storageads.com" style="color: #B58B3F; text-decoration: none;">anna@storageads.com</a>
+            <a href="mailto:anna@storageads.com" style="color: #446386; text-decoration: none;">anna@storageads.com</a>
           </p>
         </div>`;
     },
@@ -189,14 +189,14 @@ const TEMPLATES: Record<string, Template> = {
           <p>Here's a quick update on how your <strong>${esc(lead.facilityName)}</strong> campaigns are performing.</p>
           <p>You can always check your full dashboard with real-time metrics at any time:</p>
           <div style="margin: 24px 0; text-align: center;">
-            <a href="https://storageads.com/portal" style="display: inline-block; padding: 14px 28px; background: #B58B3F; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">View Your Dashboard</a>
+            <a href="https://storageads.com/portal" style="display: inline-block; padding: 14px 28px; background: #141413; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">View Your Dashboard</a>
           </div>
           <p>Let us know if you have any questions about the numbers or if there's anything you'd like us to adjust in the campaigns.</p>
           <p style="margin-top: 24px;">
             Blake Burkett<br/>
             StorageAds<br/>
-            <a href="tel:2699298541" style="color: #B58B3F; text-decoration: none;">269-929-8541</a><br/>
-            <a href="mailto:blake@storageads.com" style="color: #B58B3F; text-decoration: none;">blake@storageads.com</a>
+            <a href="tel:2699298541" style="color: #446386; text-decoration: none;">269-929-8541</a><br/>
+            <a href="mailto:blake@storageads.com" style="color: #446386; text-decoration: none;">blake@storageads.com</a>
           </p>
         </div>`;
     },
@@ -254,8 +254,8 @@ const TEMPLATES: Record<string, Template> = {
           <p style="margin-top: 24px;">
             Blake Burkett<br/>
             StorageAds<br/>
-            <a href="tel:2699298541" style="color: #B58B3F; text-decoration: none;">269-929-8541</a><br/>
-            <a href="mailto:blake@storageads.com" style="color: #B58B3F; text-decoration: none;">blake@storageads.com</a>
+            <a href="tel:2699298541" style="color: #446386; text-decoration: none;">269-929-8541</a><br/>
+            <a href="mailto:blake@storageads.com" style="color: #446386; text-decoration: none;">blake@storageads.com</a>
           </p>
         </div>`;
     },
@@ -280,7 +280,7 @@ const TEMPLATES: Record<string, Template> = {
           <div style="margin: 24px 0; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; text-align: center;">
             <p style="margin: 0 0 4px; font-weight: 600; color: #166534; font-size: 18px;">Your unit is still available</p>
             <p style="margin: 0 0 16px; font-size: 14px; color: #374151;">Pick up right where you left off \u2014 takes less than 60 seconds.</p>
-            <a href="${esc(lead.returnUrl || "https://storageads.com")}" style="display: inline-block; padding: 14px 32px; background: #B58B3F; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Reserve Your Unit</a>
+            <a href="${esc(lead.returnUrl || "https://storageads.com")}" style="display: inline-block; padding: 14px 32px; background: #141413; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Reserve Your Unit</a>
           </div>
           <p style="font-size: 13px; color: #6b7280;">Questions? Just reply to this email or call us at <a href="tel:2699298541" style="color: #16a34a;">269-929-8541</a>.</p>
         </div>`;
@@ -301,12 +301,12 @@ const TEMPLATES: Record<string, Template> = {
         <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; line-height: 1.7; color: #1a1a1a;">
           <p>Hey ${firstName},</p>
           <p>Just a heads up \u2014 we have seen a few units get reserved since yesterday, and availability is getting tighter.</p>
-          <div style="margin: 24px 0; padding: 16px 20px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
+          <div style="margin: 24px 0; padding: 16px 20px; background: #FBEFE4; border-left: 4px solid #AB5505; border-radius: 0 8px 8px 0;">
             <p style="margin: 0; font-weight: 600; color: #92400e;">Units are going fast</p>
             <p style="margin: 4px 0 0; font-size: 14px; color: #78350f;">We can not guarantee pricing or availability beyond today. Lock in your rate now.</p>
           </div>
           <div style="margin: 24px 0; text-align: center;">
-            <a href="${esc(lead.returnUrl || "https://storageads.com")}" style="display: inline-block; padding: 14px 32px; background: #B58B3F; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Reserve Now \u2014 Keep Your Rate</a>
+            <a href="${esc(lead.returnUrl || "https://storageads.com")}" style="display: inline-block; padding: 14px 32px; background: #141413; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Reserve Now \u2014 Keep Your Rate</a>
           </div>
           <p style="font-size: 13px; color: #6b7280;">Need help deciding? Call us at <a href="tel:2699298541" style="color: #16a34a;">269-929-8541</a> \u2014 we will walk you through options.</p>
         </div>`;
@@ -331,7 +331,7 @@ const TEMPLATES: Record<string, Template> = {
             <p style="margin: 0 0 4px; font-size: 13px; color: #34d399; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Limited Time Offer</p>
             <p style="margin: 0 0 8px; font-size: 32px; font-weight: 800; color: white;">$1 First Month</p>
             <p style="margin: 0 0 20px; font-size: 14px; color: #94a3b8;">Reserve in the next 48 hours to lock this in.</p>
-            <a href="${esc(lead.returnUrl || "https://storageads.com")}?promo=COMEBACK1" style="display: inline-block; padding: 14px 32px; background: #B58B3F; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Claim Your $1 First Month</a>
+            <a href="${esc(lead.returnUrl || "https://storageads.com")}?promo=COMEBACK1" style="display: inline-block; padding: 14px 32px; background: #141413; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Claim Your $1 First Month</a>
           </div>
           <p style="font-size: 13px; color: #6b7280;">This offer expires in 48 hours and is limited to new reservations only. Questions? Reply to this email or call <a href="tel:2699298541" style="color: #16a34a;">269-929-8541</a>.</p>
         </div>`;
@@ -355,8 +355,8 @@ const TEMPLATES: Record<string, Template> = {
           <p style="margin-top: 24px;">
             Blake Burkett<br/>
             StorageAds<br/>
-            <a href="tel:2699298541" style="color: #B58B3F; text-decoration: none;">269-929-8541</a><br/>
-            <a href="mailto:blake@storageads.com" style="color: #B58B3F; text-decoration: none;">blake@storageads.com</a>
+            <a href="tel:2699298541" style="color: #446386; text-decoration: none;">269-929-8541</a><br/>
+            <a href="mailto:blake@storageads.com" style="color: #446386; text-decoration: none;">blake@storageads.com</a>
           </p>
         </div>`;
     },

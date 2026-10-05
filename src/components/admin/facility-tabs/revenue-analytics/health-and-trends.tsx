@@ -100,7 +100,7 @@ function HealthScore({ health, expanded, onToggle }: {
                 <path
                   d="M 20 95 A 80 80 0 0 1 180 95"
                   fill="none"
-                  stroke={health.overall >= 75 ? '#10b981' : health.overall >= 50 ? '#f59e0b' : '#ef4444'}
+                  stroke={health.overall >= 75 ? '#10b981' : health.overall >= 50 ? '#AB5505' : '#ef4444'}
                   strokeWidth="12"
                   strokeLinecap="round"
                   strokeDasharray={`${health.overall * 2.51} 251`}

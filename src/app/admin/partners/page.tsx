@@ -39,7 +39,7 @@ interface Organization {
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   active: { bg: "rgba(34,197,94,0.1)", text: "#22C55E" },
   inactive: { bg: "rgba(107,114,128,0.1)", text: "#6B7280" },
-  trial: { bg: "rgba(234,179,8,0.1)", text: "#EAB308" },
+  trial: { bg: "rgba(171,85,5,0.1)", text: "#AB5505" },
   churned: { bg: "rgba(239,68,68,0.1)", text: "#EF4444" },
 };
 
@@ -105,7 +105,7 @@ export default function PartnersPage() {
           </div>
           <div className="rounded-xl border p-5" style={{ backgroundColor: "var(--bg-elevated)", borderColor: "var(--border-subtle)" }}>
             <div className="flex items-center gap-2 mb-2">
-              <DollarSign size={16} style={{ color: "#EAB308" }} />
+              <DollarSign size={16} style={{ color: "#AB5505" }} />
               <span className="text-xs font-medium" style={{ color: "var(--color-mid-gray)" }}>Total MRR</span>
             </div>
             <p className="text-2xl font-semibold" style={{ color: "var(--color-dark)" }}>${totalMrr.toLocaleString()}</p>
