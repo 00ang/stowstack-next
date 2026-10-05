@@ -157,3 +157,23 @@ describe("whyFlagged", () => {
     expect(text).toMatch(/pulled it/);
   });
 });
+
+describe("person-run sources", () => {
+  it("count only up to the last time anyone saw the ad", () => {
+    const ad = windowOf({ source: "meta_ad_library_web", last_seen_at: new Date("2026-03-02T00:00:00.000Z") });
+    expect(daysRunning(ad, new Date("2026-09-01T00:00:00.000Z"))).toBe(60);
+  });
+
+  it("say when they were last seen", () => {
+    const ad = windowOf({ source: "meta_ad_library_web", last_seen_at: new Date("2026-04-01T00:00:00.000Z") });
+    const text = whyFlagged(ad, new Date("2026-09-01T00:00:00.000Z"));
+    expect(text).toMatch(/Running 3 months as of Apr 1, 2026/);
+    expect(text).not.toMatch(/Still running/);
+  });
+
+  it("are never swept as stale", () => {
+    expect(
+      shouldMarkInactive(windowOf({ source: "meta_ad_library_web", last_seen_at: start }), new Date("2026-12-01"))
+    ).toBe(false);
+  });
+});

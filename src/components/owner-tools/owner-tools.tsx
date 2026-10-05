@@ -32,6 +32,7 @@ import {
   BarChart3,
   Users,
   Phone,
+  Library,
 } from "lucide-react";
 import type { FacilityProp } from "@/components/admin/facility-tabs/facility-overview/types";
 
@@ -67,6 +68,9 @@ const TenantManagement = lazy(() => import("@/components/admin/facility-tabs/ten
 const PmsDashboard = lazy(() => import("@/components/admin/facility-tabs/pms-dashboard"));
 const CallTracking = lazy(() => import("@/components/admin/facility-tabs/call-tracking"));
 const FacilityFunnels = lazy(() => import("@/components/admin/facility-tabs/facility-funnels"));
+const ProvenAdsLibrary = lazy(() =>
+  import("@/components/proven-ads/proven-ads-library").then((m) => ({ default: m.ProvenAdsLibrary }))
+);
 
 export type ToolFacility = FacilityProp & { videoEnabled: boolean };
 
@@ -78,6 +82,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
   {
     title: "Ads",
     tools: [
+      { key: "proven-ads", label: "Proven Ads", icon: Library },
       { key: "creative-studio", label: "Creative Studio", icon: Palette },
       { key: "ad-studio", label: "Ad Generator", icon: Sparkles },
       { key: "ad-publisher", label: "Publish Ads", icon: Send },
@@ -118,16 +123,24 @@ export const TOOL_GROUPS: ToolGroup[] = [
 
 const TOOL_KEYS = new Set(TOOL_GROUPS.flatMap((g) => g.tools.map((t) => t.key)));
 
+/** "12 Main St, Columbus, OH 43215, USA" → "OH". */
+export function stateOf(address: string | undefined): string | null {
+  const m = address?.match(/,\s*([A-Z]{2})\s+\d{5}/);
+  return m ? m[1] : null;
+}
+
 function ToolContent({
   tool,
   facility,
   onUpdate,
   upgradeHref,
+  openTool,
 }: {
   tool: string;
   facility: ToolFacility;
   onUpdate: () => void;
   upgradeHref: string;
+  openTool: (key: string, params?: Record<string, string>) => void;
 }) {
   const adminKey = ""; // owner mode
   const props = { facilityId: facility.id, adminKey, facilityName: facility.name };
@@ -141,6 +154,13 @@ function ToolContent({
       }
     >
       {tool === "overview" && <FacilityOverview facility={facility} adminKey={adminKey} onUpdate={onUpdate} />}
+      {tool === "proven-ads" && (
+        <ProvenAdsLibrary
+          mode="owner"
+          facility={{ id: facility.id, name: facility.name, state: stateOf(facility.google_address) }}
+          onOpenDraft={(variationId) => openTool("ad-studio", { variation: variationId })}
+        />
+      )}
       {tool === "creative-studio" && <CreativeStudio {...props} />}
       {tool === "ad-studio" && <AdStudio {...props} />}
       {tool === "ad-publisher" && <AdPublisher {...props} />}
@@ -207,11 +227,15 @@ export function OwnerTools({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const pickTool = useCallback((key: string) => {
-    setTool(key);
+  const pickTool = useCallback((key: string, params?: Record<string, string>) => {
     const url = new URL(window.location.href);
     url.searchParams.set("tool", key);
+    // Tool-specific params (e.g. the Ad Generator's ?variation=) only travel
+    // with the tool that asked for them.
+    url.searchParams.delete("variation");
+    for (const [k, v] of Object.entries(params ?? {})) url.searchParams.set(k, v);
     window.history.replaceState(null, "", url);
+    setTool(key);
   }, []);
 
   const load = useCallback(async () => {
@@ -347,7 +371,14 @@ export function OwnerTools({
 
       <section className="min-w-0 flex-1 px-4 py-5 md:px-6 md:py-6">
         {/* key: switching facility remounts the tool so it reloads that facility's data */}
-        <ToolContent key={facility.id} tool={tool} facility={facility} onUpdate={load} upgradeHref={upgradeHref} />
+        <ToolContent
+          key={facility.id}
+          tool={tool}
+          facility={facility}
+          onUpdate={load}
+          upgradeHref={upgradeHref}
+          openTool={pickTool}
+        />
       </section>
     </div>
   );

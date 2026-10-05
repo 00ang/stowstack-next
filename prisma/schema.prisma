@@ -2582,7 +2582,7 @@ model conversion_reports {
 /// Images and video are never copied — the duplicate flow regenerates creative.
 model proven_ads {
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  /// meta_ad_library_api | manual | csv_import (adapter id)
+  /// meta_ad_library_api | meta_ad_library_web | manual | csv_import (adapter id)
   source              String    @db.VarChar(32)
   /// External identity (Meta Ad Library id). Manual rows get a generated one.
   source_ad_id        String    @db.VarChar(128)
@@ -2630,6 +2630,20 @@ model proven_ads {
   created_by          String?   @db.VarChar(120)
   created_at          DateTime  @default(now()) @db.Timestamptz(6)
   updated_at          DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  /// The read on the ad: what it is, why it has kept running, how an operator
+  /// runs their own version. Written by the proven-ads.insights job.
+  insight             Json?
+  insight_at          DateTime? @db.Timestamptz(6)
+  /// Live ads sharing this creative (one per location for a multi-site
+  /// operator). A scale signal, not a performance metric.
+  family_size         Int       @default(1)
+  /// movers | declutterers | vehicle_owners | businesses | students | military | general
+  audience            String?   @db.VarChar(32)
+  /// national | regional | independent
+  advertiser_scale    String?   @db.VarChar(16)
+  /// Editorial read: 3 a transferable structure, 2 solid, 1 a bare presence
+  /// ad. Orders the library; never shown as a score.
+  study_value         Int?      @db.SmallInt
 
   ad_variations ad_variations[]
 
@@ -2639,6 +2653,8 @@ model proven_ads {
   @@index([state], map: "idx_proven_ads_state")
   @@index([offer_type], map: "idx_proven_ads_offer")
   @@index([last_seen_at], map: "idx_proven_ads_last_seen")
+  @@index([audience], map: "idx_proven_ads_audience")
+  @@index([advertiser_scale], map: "idx_proven_ads_scale")
 }
 
 /// A configured discovery search for one adapter — e.g. "self storage" in

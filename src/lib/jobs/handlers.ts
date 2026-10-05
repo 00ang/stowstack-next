@@ -32,6 +32,7 @@ import {
   facilitiesWithUnitMix,
 } from "@/lib/events/detect";
 import { refreshProvenAds } from "@/lib/proven-ads/refresh";
+import { writeProvenAdInsights } from "@/lib/proven-ads/insights-job";
 import { PROCESS_BATCH, processUploadedReport, processUploadedReports } from "@/lib/pms-uploads";
 import { SWEEP_AFTER_MINUTES, retryStuckDiagnostics } from "@/lib/diagnostic-retry";
 
@@ -351,4 +352,7 @@ export const HANDLERS: Record<string, JobHandler> = {
   // Proven Ads library: re-check configured Meta Ad Library searches and
   // retire automated rows we have not seen in two weeks.
   "proven-ads.refresh": refreshProvenAds,
+  // Proven Ads library: write the read (why it runs, how to run your own) for
+  // rows that lack one. Enqueued by imports, manual adds and the refresh.
+  "proven-ads.insights": writeProvenAdInsights,
 };

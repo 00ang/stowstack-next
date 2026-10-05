@@ -23,6 +23,8 @@ export interface SourceCopy {
   offer_type?: string | null;
   format?: string | null;
   platform?: string | null;
+  /** The library's read on the source, when it has one: why it works and how it's built. */
+  read?: { why: string; beats: { label: string; text: string }[] } | null;
 }
 
 const META_CTAS = new Set([
@@ -143,12 +145,12 @@ export function fallbackAdapt(source: SourceCopy, facility: FacilitySnapshot): A
       headline = rating ? rating.slice(0, 40) : facility.name.slice(0, 40);
       primaryText = rating
         ? `${rating}. ${facility.name} in ${city}${rate ? `, from ${rate}` : ""}.`
-        : `${facility.name} in ${city}${rate ? ` — from ${rate}` : ""}.`;
+        : `${facility.name} in ${city}${rate ? `, from ${rate}` : ""}.`;
       description = "Rated by neighbors";
       break;
     case "convenience":
       headline = `Storage in ${city}`.slice(0, 40);
-      primaryText = `${facility.name} — reserve a unit online. No long lease${rate ? `, from ${rate}` : ""}.`;
+      primaryText = `Reserve a unit at ${facility.name} online. No long lease${rate ? `, from ${rate}` : ""}.`;
       description = "Reserve in minutes";
       break;
     case "urgency":
@@ -168,7 +170,7 @@ export function fallbackAdapt(source: SourceCopy, facility: FacilitySnapshot): A
       break;
     default:
       headline = facility.name.slice(0, 40);
-      primaryText = `${facility.name} in ${city}${rate ? ` — units from ${rate}` : ""}.`;
+      primaryText = `${facility.name} in ${city}${rate ? `. Units from ${rate}` : ""}.`;
       description = "Self storage nearby";
   }
 
@@ -253,6 +255,12 @@ export function buildAdaptUserMessage(source: SourceCopy, facility: FacilitySnap
     `cta_style: ${source.cta ?? "Learn More"}`,
     `source_headline (DO NOT REUSE): ${source.headline ?? "(none)"}`,
     `source_primary (DO NOT REUSE): ${source.primary_text ?? "(none)"}`,
+    ...(source.read
+      ? [
+          `why_it_works (keep this mechanism): ${source.read.why}`,
+          `structure (keep these beats, in order): ${source.read.beats.map((b) => `${b.label}: ${b.text}`).join(" / ")}`,
+        ]
+      : []),
     "",
     "TARGET FACILITY (use these facts):",
     `name: ${facility.name}`,

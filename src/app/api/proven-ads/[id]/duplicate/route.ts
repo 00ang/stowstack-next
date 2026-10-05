@@ -11,6 +11,7 @@ import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { adaptForFacility, persistAdaptedDraft } from "@/lib/proven-ads/adapt";
 import { loadFacilitySnapshot } from "@/lib/proven-ads/facility-snapshot";
+import { readInsight } from "@/lib/proven-ads/present";
 
 export const maxDuration = 60;
 
@@ -65,6 +66,10 @@ export async function POST(req: NextRequest) {
         offer_type: ad.offer_type,
         format: ad.format,
         platform: ad.platform,
+        read: (() => {
+          const read = readInsight(ad.insight);
+          return read && read.relevance === "renter" ? { why: read.why, beats: read.beats } : null;
+        })(),
       },
       facility,
       process.env.ANTHROPIC_API_KEY ?? null

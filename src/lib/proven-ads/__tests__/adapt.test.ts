@@ -121,6 +121,23 @@ describe("scrubAdapted", () => {
 });
 
 describe("adapt prompt", () => {
+  it("hands the model the read when the library has one", () => {
+    const msg = buildAdaptUserMessage(
+      { ...source, read: { why: "Price first, then proof.", beats: [{ label: "Offer", text: "Leads with a $1 month." }] } },
+      facility
+    );
+    expect(msg).toMatch(/why_it_works \(keep this mechanism\): Price first/);
+    expect(msg).toMatch(/Offer: Leads with a \$1 month/);
+    expect(buildAdaptUserMessage(source, facility)).not.toMatch(/why_it_works/);
+  });
+
+  it("writes fallback copy without dashes", () => {
+    for (const angle of ["social_proof", "convenience", "urgency", "lifestyle", "price", "other"]) {
+      const c = fallbackAdapt({ ...source, angle }, facility);
+      expect(`${c.headline} ${c.primaryText} ${c.description}`).not.toMatch(/[\u2014\u2013]/);
+    }
+  });
+
   it("tells the model not to reuse source words or names", () => {
     expect(ADAPT_SYSTEM_PROMPT).toMatch(/Do not reuse the source headline/);
     expect(ADAPT_SYSTEM_PROMPT).toMatch(/Do not use the source advertiser's name/);
