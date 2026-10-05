@@ -33,18 +33,12 @@ export const MONO = {
   mono: "var(--mono)",
 } as const;
 
-export type PaletteId =
-  | "cool"
-  | "paper"
-  | "oxblood"
-  | "petrol"
-  | "blueprint"
-  | "eames"
-  | "green"
-  | "bw";
+export type PaletteId = "cool" | "black" | "white";
 
-/** Shipped page ground. Paper/cream stays in the picker and is not the default. */
+/** Shipped page ground. Cool light. Black and white are the only other themes. */
 export const DEFAULT_PALETTE_ID: PaletteId = "cool";
+
+export const PALETTE_STORAGE_KEY = "storageads.palette";
 
 export const PALETTES: {
   id: PaletteId;
@@ -52,15 +46,18 @@ export const PALETTES: {
   sub: string;
   swatches: [string, string, string];
 }[] = [
-  { id: "cool",      label: "Cool Light",     sub: "Twilight light, companion field", swatches: ["#E0E0E5", "#16161A", "#C0BFCF"] },
-  { id: "paper",     label: "Paper / Ink",    sub: "Cream broadsheet, brick accent",  swatches: ["#f2ede3", "#1c1a16", "#c0452b"] },
-  { id: "oxblood",   label: "Oxblood & Oat",  sub: "Burgundy, oat, peach",            swatches: ["#2a0e0d", "#ebe1cc", "#FAC08A"] },
-  { id: "petrol",    label: "Petrol Navy",    sub: "Deep petrol, bone, lichen",       swatches: ["#0d2336", "#e8e2d1", "#C9E098"] },
-  { id: "blueprint", label: "Blueprint",      sub: "Architect navy, chalk, safety",   swatches: ["#0e2440", "#e8eef0", "#ff7a2a"] },
-  { id: "eames",     label: "Eames Olive",    sub: "Warm olive, cream, rust",         swatches: ["#4a4a2a", "#f0ead5", "#e85a1e"] },
-  { id: "green",     label: "Green Phosphor", sub: "VT100 CRT green",                 swatches: ["#040a05", "#33ff66", "#FAC08A"] },
-  { id: "bw",        label: "Black & White",  sub: "High-contrast monochrome",        swatches: ["#ffffff", "#000000", "#5e5e5e"] },
+  { id: "cool",  label: "Cool",  sub: "Cool light, the default ground", swatches: ["#E0E0E5", "#16161A", "#C0BFCF"] },
+  { id: "black", label: "Black", sub: "Observatory night",               swatches: ["#0E0E12", "#E0E0E5", "#3A3A44"] },
+  { id: "white", label: "White", sub: "Pure white ground",               swatches: ["#FFFFFF", "#16161A", "#D8D8DE"] },
 ];
+
+/** Retired picker ids, plus the old black-and-white alias, fall back here. */
+export function normalizePaletteId(value: string | null | undefined): PaletteId {
+  if (value === "black" || value === "dark") return "black";
+  if (value === "white" || value === "bw") return "white";
+  if (value === "cool") return "cool";
+  return DEFAULT_PALETTE_ID;
+}
 
 /* ─── Label — tiny uppercase mono caption ─── */
 export function Label({ children, color, style, className }: { children: ReactNode; color?: string; style?: CSSProperties; className?: string }) {

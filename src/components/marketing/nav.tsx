@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { Dot, Label, MONO } from "@/components/mono";
+import PaletteSwitch from "@/components/palette-switch";
 import { CAL_BOOKING_URL } from "@/lib/booking";
 
 /* ── Link configuration ── */
@@ -532,6 +533,20 @@ export default function Nav() {
             paddingRight: "24px",
           }}
         >
+          <div className="mb-6">
+            <p
+              className="text-[11px] font-semibold uppercase mb-3"
+              style={{
+                color: "var(--color-mid-gray)",
+                fontFamily: "var(--font-heading)",
+                letterSpacing: "0.1em",
+              }}
+            >
+              Theme
+            </p>
+            <PaletteSwitch />
+          </div>
+
           {/* ── Section links (on-page anchors) ── */}
           <div className="mb-6">
             <p

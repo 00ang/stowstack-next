@@ -1,5 +1,6 @@
 import { Mail } from "lucide-react";
 import { CAL_BOOKING_URL } from "@/lib/booking";
+import PaletteSwitch from "@/components/palette-switch";
 
 const FOOTER_LINKS: Array<{ label: string; href: string; external?: boolean }> = [
   { label: "How It Works", href: "#how-it-works" },
@@ -25,6 +26,7 @@ const LEGAL_LINKS = [
 export default function Footer() {
   return (
     <footer
+      className="max-lg:pb-28"
       style={{
         background: "var(--color-light)",
         borderTop: "1px solid var(--border-subtle)",
@@ -124,7 +126,23 @@ export default function Footer() {
         </div>
 
         <div
-          className="mt-12 pt-8 text-center text-xs"
+          className="mt-12 pt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"
+          style={{ borderTop: "1px solid var(--border-subtle)" }}
+        >
+          <p
+            className="text-xs font-semibold uppercase"
+            style={{
+              color: "var(--text-tertiary)",
+              letterSpacing: "var(--tracking-wide)",
+            }}
+          >
+            Theme
+          </p>
+          <PaletteSwitch />
+        </div>
+
+        <div
+          className="mt-8 text-center text-xs"
           style={{
             borderTop: "1px solid var(--border-subtle)",
             color: "var(--text-tertiary)",

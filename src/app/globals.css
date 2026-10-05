@@ -1,30 +1,24 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════
-   NULL//TRACE PALETTES
-   Palettes swap via <html data-palette="...">.
-   Shipped default is cool light (#E0E0E5). Paper/cream stays selectable
-   and is not the default ground.
-   No gold in any of them: no sienna, goldenrod, mustard or amber.
+   THEMES
+   Three only, swapped via <html data-palette="...">.
+   cool (default) #E0E0E5 · black (observatory night) · white (#ffffff).
+   No gold. No cream, paper, or print themes.
    Every component reads tokens, never hardcodes a hex.
-   Source: design_handoff_storageads_theme/reference/Homepage.html
    ═══════════════════════════════════════════ */
 
 :root {
   /* ── Stable brand tokens — DO NOT scope under a palette ──
      Logo "ads" blue: one 212° hue at two luminance steps, so the two-tone
      lockup reads on every ground. Components use --brand-ads; only the
-     dark-palette rule below re-points it. */
-  --brand-slate: #446386;       /* logo "ads" on light grounds, including cool light */
-  --brand-sky: #8EC1FF;         /* same hue, solved light for dark grounds */
+     black theme re-points it. */
+  --brand-slate: #446386;       /* logo "ads" on cool light and white */
+  --brand-sky: #8EC1FF;         /* same hue, solved light for the black theme */
   --brand-ads: var(--brand-slate);
 }
 
-:root[data-palette="oxblood"],
-:root[data-palette="petrol"],
-:root[data-palette="blueprint"],
-:root[data-palette="eames"],
-:root[data-palette="green"] {
+:root[data-palette="black"] {
   --brand-ads: var(--brand-sky);
 }
 
@@ -68,102 +62,50 @@
   --font-archivo: var(--font-manrope);
 }
 
-/* Paper / cream — optional, not the shipped default.
-   Selectable from the palette picker. Do not point <html data-palette> here. */
-:root[data-palette="paper"] {
-  --bg: #f2ede3;
-  --bg-alt: #ebe5d6;
-  --bg-hi: #e0d8c4;
-  --bg-ink: #1c1a16;
-  --line: #b5a890;
-  --line-hi: #8a8068;
-  --line-dim: #d4cbb6;
-  --text: #1c1a16;
-  --text-dim: #5a5448;
-  --text-faint: #8a8270;
-  --text-accent: #0d0c0a;
-  --accent: #c0452b;
-  --accent-dim: #8a2f1e;
-  --accent-soft: #e8c2b0;
+/* Black — observatory night. Cool near-black ground, cool-light type.
+   Not a colored dark theme. Lines stay visible against the ground. */
+:root[data-palette="black"] {
+  --bg: #0E0E12;
+  --bg-alt: #1A1A22;
+  --bg-hi: #26262E;
+  --bg-ink: #07070A;
+  --line: #3A3A44;
+  --line-hi: #6A6A78;
+  --line-dim: #2A2A32;
+  --text: #E0E0E5;
+  --text-dim: #C4C4CE;
+  --text-faint: #A2A2AE;
+  --text-accent: #F4F4F8;
+  --accent: #E8E8EE;
+  --accent-dim: #B8B8C4;
+  --accent-soft: #2A2A32;
+  --hue-a: #8EC1FF;
+  --hue-b: #E8A06A;
+  --hue-c: #A8C48A;
+  --hue-d: #C4A8D8;
+}
+
+/* White — pure white page ground. Companion field is a cool gray so
+   cards still lift. Type stays the cool-light ink, not pure black. */
+:root[data-palette="white"] {
+  --bg: #ffffff;
+  --bg-alt: #F4F4F6;
+  --bg-hi: #E6E6EA;
+  --bg-ink: #16161A;
+  --line: #16161A;
+  --line-hi: #16161A;
+  --line-dim: #D8D8DE;
+  --text: #16161A;
+  --text-dim: #3A3A42;
+  --text-faint: #5C5C66;
+  --text-accent: #0C0C10;
+  --accent: #16161A;
+  --accent-dim: #2E2E36;
+  --accent-soft: #E6E6EA;
   --hue-a: #1f5a6b;
   --hue-b: #AB5505;
   --hue-c: #4a6b2e;
   --hue-d: #5e3880;
-}
-
-:root[data-palette="oxblood"] {
-  --bg: #2a0e0d; --bg-alt: #37110f; --bg-hi: #4a1815; --bg-ink: #ebe1cc;
-  --line: #6a2a22; --line-hi: #8a3d30; --line-dim: #3d1411;
-  --text: #ebe1cc; --text-dim: #b8a78a; --text-faint: #8a7860; --text-accent: #f5ead3;
-  --accent: #FAC08A; --accent-dim: #D9824F; --accent-soft: #5e3a2c;
-  --hue-a: #6aa8c4; --hue-b: #e85a3a; --hue-c: #a8c472; --hue-d: #d490b8;
-}
-
-:root[data-palette="petrol"] {
-  --bg: #0d2336; --bg-alt: #112a40; --bg-hi: #1a3a52; --bg-ink: #e8e2d1;
-  --line: #2e5072; --line-hi: #4270a0; --line-dim: #18304a;
-  --text: #e8e2d1; --text-dim: #9ba8b6; --text-faint: #6a7a88; --text-accent: #f4eedd;
-  --accent: #C9E098; --accent-dim: #93AC5E; --accent-soft: #2a3a4a;
-  --hue-a: #5ac4b8; --hue-b: #ff6b4a; --hue-c: #c8a2ff; --hue-d: #F2B5C4;
-}
-
-:root[data-palette="blueprint"] {
-  --bg: #0e2440; --bg-alt: #142d4d; --bg-hi: #1c3b62; --bg-ink: #e8eef0;
-  --line: #30527a; --line-hi: #4870a0; --line-dim: #183258;
-  --text: #e8eef0; --text-dim: #8ca0b8; --text-faint: #5a7090; --text-accent: #ffffff;
-  --accent: #ff7a2a; --accent-dim: #c04818; --accent-soft: #2a3a58;
-  --hue-a: #DFB3FB; --hue-b: #4ac4e8; --hue-c: #8ae070; --hue-d: #ff5a8a;
-}
-
-:root[data-palette="eames"] {
-  --bg: #4a4a2a; --bg-alt: #555532; --bg-hi: #62623a; --bg-ink: #f0ead5;
-  --line: #7a7a48; --line-hi: #989858; --line-dim: #3e3e22;
-  --text: #f0ead5; --text-dim: #c6bf9e; --text-faint: #938d72; --text-accent: #faf4e0;
-  --accent: #e85a1e; --accent-dim: #a84014; --accent-soft: #3a3a1c;
-  --hue-a: #70bab8; --hue-b: #FAC08A; --hue-c: #d89ac4; --hue-d: #a8c8f0;
-}
-
-:root[data-palette="green"] {
-  --bg: #040a05; --bg-alt: #081408; --bg-hi: #0e1f0c; --bg-ink: #33ff66;
-  --line: #1e5a22; --line-hi: #2a7a30; --line-dim: #0e2410;
-  --text: #44ee77; --text-dim: #2a9944; --text-faint: #1a6028; --text-accent: #9cffb8;
-  --accent: #FAC08A; --accent-dim: #D9824F; --accent-soft: #0a2a10;
-  --hue-a: #33ddff; --hue-b: #ff5544; --hue-c: #ff88cc; --hue-d: #ffffff;
-}
-
-/* ── BLACK & WHITE — high-contrast monochrome theme ──
-   Reachable through BOTH theme entry points, sharing one token source:
-   the live TweaksPanel palette picker (<html data-palette="bw">, see
-   PALETTES in src/components/mono/index.tsx) and the ThemeProvider toggle
-   (<html data-theme="bw">). Overrides only the core tokens; every
-   legacy/semantic alias below derives from these via var(), so the whole
-   site renders monochrome with no per-component edits. Categorical hues
-   collapse to grayscale. Borders stay visible (--line-dim is a real gray,
-   not near-white). */
-:root[data-theme="bw"],
-:root[data-palette="bw"] {
-  /* Surfaces */
-  --bg: #ffffff;
-  --bg-alt: #f4f4f4;
-  --bg-hi: #e8e8e8;
-  --bg-ink: #000000;
-  /* Lines — strong primary borders, still-visible subtle borders */
-  --line: #000000;
-  --line-hi: #000000;
-  --line-dim: #c4c4c4;
-  /* Type */
-  --text: #000000;
-  --text-dim: #333333;
-  --text-faint: #5e5e5e;
-  --text-accent: #000000;
-  /* Accent + categorical hues all collapse to grayscale */
-  --accent: #000000;
-  --accent-dim: #2b2b2b;
-  --accent-soft: #e0e0e0;
-  --hue-a: #1a1a1a;
-  --hue-b: #3a3a3a;
-  --hue-c: #555555;
-  --hue-d: #767676;
 }
 
 /* Keyframes driving all motion — prefers-reduced-motion override below */

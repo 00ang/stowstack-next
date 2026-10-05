@@ -2,11 +2,11 @@
 
 Canonical design-system reference. CLAUDE.md points here; this file is the source of truth for palette, typography, and visual rules. CSS custom properties are defined in `src/app/globals.css`.
 
-Cool-light default. Paper/cream is an optional palette, not the shipped page ground.
+Three themes only. Cool light is the default. Black is the observatory night. White is a pure white ground. Cream, paper, print, and the older color palettes are not in the switcher.
 
 ## Core palette
 
-The `--color-*` tokens are **palette-aware aliases**, not fixed hexes — they resolve to the active palette in `globals.css` (default: `:root` / `[data-palette="cool"]`). globals.css holds the live values; the cool-light defaults below are for reference only. `[data-palette="paper"]` still exists as a selectable cream theme and is not the default.
+The `--color-*` tokens are **palette-aware aliases**, not fixed hexes — they resolve to the active palette in `globals.css` (default: `:root` / `[data-palette="cool"]`). globals.css holds the live values; the cool-light defaults below are for reference only. The only other themes are `[data-palette="black"]` (`#0E0E12` observatory night) and `[data-palette="white"]` (page ground `#ffffff`).
 
 - `--color-dark` → `var(--text)`, default `#16161A` — primary text, never pure black
 - `--color-light` → `var(--bg)`, default `#E0E0E5` — page ground (cool light)
@@ -41,7 +41,7 @@ The `--color-*` tokens are **palette-aware aliases**, not fixed hexes — they r
 
 ## Logo
 
-`storageads` (`storageads/attr` in the marketing nav). Manrope 700, lowercase, no icon. **Two-tone color split is brand-mandatory** — "storage" renders in the surface text color (palette-aware: `--text-accent` / `--color-dark` / `#1A1A1A`), "ads" always renders in `var(--brand-ads)`. That is one 212° blue at two luminance steps, defined in `:root` outside the palette blocks: `--brand-slate` `#446386` on light grounds (cool light, paper, bw, admin) and `--brand-sky` `#8EC1FF` on the dark palettes (oxblood, petrol, blueprint, eames, green), switched by one rule in `globals.css`. `.admin-theme` pins it to slate because the admin ground is cool light. Surfaces with a hardcoded light ground (e.g. the ideas gate) use `var(--brand-slate)` directly. Replaced the original sienna gold `#B58B3F` in Oct 2026; do not restore it. Used in marketing nav, footer, tool header, contact, cost-of-inaction, ideas gate, admin sidebar, and admin login.
+`storageads` (`storageads/attr` in the marketing nav). Manrope 700, lowercase, no icon. **Two-tone color split is brand-mandatory** — "storage" renders in the surface text color (palette-aware: `--text-accent` / `--color-dark` / `#1A1A1A`), "ads" always renders in `var(--brand-ads)`. That is one 212° blue at two luminance steps, defined in `:root` outside the palette blocks: `--brand-slate` `#446386` on cool light, white, and admin, and `--brand-sky` `#8EC1FF` on the black theme, switched by one rule in `globals.css`. `.admin-theme` pins it to slate because the admin ground is cool light. Surfaces with a hardcoded light ground (e.g. the ideas gate) use `var(--brand-slate)` directly. Replaced the original sienna gold `#B58B3F` in Oct 2026; do not restore it. Used in marketing nav, footer, tool header, contact, cost-of-inaction, ideas gate, admin sidebar, and admin login.
 
 ## Charts
 
@@ -53,11 +53,12 @@ Admin charts use **recharts**. Color convention: dark=Meta, blue=Google, green=r
 
 ## Rules
 
-- Never use pure #000 or #fff — always brand tokens
+- The white theme page ground is `#ffffff`. Other surfaces use brand tokens. Do not paint a second cream or paper ground.
+- The black theme is the observatory night (`#0E0E12`), not a colored dark palette.
 - Never use Tailwind default grays — only brand tokens
 - Never use gradients, stock photos, or AI images
 - Icons: lucide-react only (see above) — no other icon libraries
 - Sienna gold is banned everywhere, the logo included — the logo `ads` uses `--brand-ads` (supersedes any older gold references in `globals.css`)
-- No gold-reading color anywhere (sienna, goldenrod, mustard, amber, Tailwind `amber-*`/`yellow-*` hexes): not in palettes, admin status colors, emails, PDFs, OG images or icons. The warm/caution slot is burnt orange — `--hue-b` `#AB5505` on the cool-light default and on paper (Tailwind orange/amber/yellow classes remap to it); inline caution hexes use `#AB5505`; email CTAs are charcoal `#141413`; brand tints use slate `rgba(68,99,134,…)`
+- No gold-reading color anywhere (sienna, goldenrod, mustard, amber, Tailwind `amber-*`/`yellow-*` hexes): not in palettes, admin status colors, emails, PDFs, OG images or icons. The warm/caution slot is burnt orange — `--hue-b` `#AB5505` on cool light and white (Tailwind orange/amber/yellow classes remap to it); inline caution hexes use `#AB5505`; email CTAs are charcoal `#141413`; brand tints use slate `rgba(68,99,134,…)`
 - Chart colors: dark=Meta, blue=Google, green=retargeting (recharts)
 - All emails from *@storageads.com

@@ -5,7 +5,8 @@ import { Inter, JetBrains_Mono, Archivo } from "next/font/google";
 import ScrollProgress from "@/components/scroll-progress";
 import GrainOverlay from "@/components/grain-overlay";
 import Analytics from "@/components/analytics";
-import TweaksPanel from "@/components/mono/tweaks-panel";
+import PaletteSwitchBar from "@/components/palette-switch-bar";
+import { PALETTE_BOOT_SCRIPT } from "@/lib/palette-boot";
 import "./globals.css";
 
 // JetBrains Mono is the primary voice across the product.
@@ -144,6 +145,7 @@ export default function RootLayout({
           <link rel="dns-prefetch" href="https://maps.googleapis.com" />
           <link rel="dns-prefetch" href="https://places.googleapis.com" />
           <link rel="manifest" href="/manifest.json" />
+          <script dangerouslySetInnerHTML={{ __html: PALETTE_BOOT_SCRIPT }} />
           <script
             dangerouslySetInnerHTML={{
               __html: `
@@ -173,7 +175,7 @@ export default function RootLayout({
           <ScrollProgress />
           <GrainOverlay />
           {children}
-          <TweaksPanel />
+          <PaletteSwitchBar />
         </body>
       </html>
     </ClerkProvider>
