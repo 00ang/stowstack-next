@@ -32,8 +32,9 @@ npm run start          # Start production server
 npm run lint           # ESLint
 npm run typecheck      # tsc --noEmit (type-check without building)
 npm run test           # vitest run (one-shot); npm run test:watch for watch mode
-npm run db:push        # prisma db push — push schema to DB (no migration history)
+npm run db:push        # prisma db push — LOCAL/DEV ONLY; never production (see Database)
 npm run db:migrate:dev # prisma migrate dev — create + apply a dev migration
+npm run db:migrate:deploy # prisma migrate deploy — apply pending migrations (production: explicit approval only)
 npm run lint:safety    # bash scripts/check-no-data-loss.sh — blocks --accept-data-loss reintroduction
 npx prisma generate    # Regenerate Prisma client after schema changes
 ```
@@ -91,6 +92,11 @@ All API routes are in `src/app/api/`. The surface is large (~200 route directori
 Prisma schema at `prisma/schema.prisma` (large — ~98 models; count with `grep -c '^model ' prisma/schema.prisma` rather than trusting a fixed number). All tables use UUID primary keys. Key models: `organizations`, `org_users`, `sessions`, `facilities`, `clients`, `shared_audits`, `landing_pages`, `drip_sequences`, `platform_connections`.
 
 Singleton client at `src/lib/db.ts`. Raw SQL (`$queryRaw`/`$executeRaw`) is used in `src/lib/session-auth.ts` for direct `sessions`-table operations; everywhere else, use Prisma client methods.
+
+**Migrations are the source of truth for the database.** As of 2026-10-05 `prisma/migrations` replays onto an empty database to exactly `schema.prisma`, and production's `_prisma_migrations` records every migration (`prisma migrate status` is clean). Keep it that way:
+- Every schema change ships as a migration in `prisma/migrations/` — additive and idempotent (`IF NOT EXISTS`, guarded constraints), like the existing ones. Never change the schema with `db push` against production: that is how June–September changes ended up with no migration files and production drifted from the code (missing tables, broken routes).
+- Apply to production with `npm run db:migrate:deploy`, with explicit approval, **before** merging code that depends on it — Prisma names every column of a model in its queries, so a declared column the database lacks breaks every query on that table.
+- Known, deliberate differences between production and the schema: legacy table `audit_report_cache` (unreferenced; not dropped to avoid data loss), extra FKs on `client_invoices` / `client_messages`, and the `gbp_connections.sync_config` default.
 
 ### Design System — Light Only
 
