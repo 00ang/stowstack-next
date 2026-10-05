@@ -213,7 +213,7 @@ export default function ConcessionClient() {
 
               <div
                 className="grid grid-cols-2 gap-px mt-6 rounded-xl overflow-hidden"
-                style={{ background: "rgba(250,249,245,0.12)" }}
+                style={{ background: "color-mix(in srgb, var(--bg) 12%, transparent)" }}
               >
                 <MiniStat
                   label="Effective rate / mo"
@@ -243,7 +243,7 @@ export default function ConcessionClient() {
 
               <div
                 className="mt-5 pt-5"
-                style={{ borderTop: "1px solid rgba(250,249,245,0.12)" }}
+                style={{ borderTop: "1px solid color-mix(in srgb, var(--bg) 12%, transparent)" }}
               >
                 <div className="flex items-baseline justify-between">
                   <span className="text-sm" style={{ color: "var(--color-mid-gray)" }}>

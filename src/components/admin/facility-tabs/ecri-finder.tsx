@@ -510,7 +510,7 @@ function LetterModal({
             fontSize: "13px",
             lineHeight: 1.6,
             color: "var(--ink)",
-            background: "var(--light, #faf9f5)",
+            background: "var(--light, #E0E0E5)",
             border: "none",
             padding: "20px",
             outline: "none",
@@ -537,7 +537,7 @@ function LetterModal({
           <button
             type="button"
             onClick={onMarkSent}
-            style={{ ...btnStyle, color: "var(--light, #faf9f5)", background: "var(--ink)", borderColor: "var(--ink)" }}
+            style={{ ...btnStyle, color: "var(--light, #E0E0E5)", background: "var(--ink)", borderColor: "var(--ink)" }}
           >
             <Check className="h-4 w-4" />
             Mark as sent

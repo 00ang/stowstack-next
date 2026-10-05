@@ -35,7 +35,7 @@ export function toolOgImage({
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          backgroundColor: "#faf9f5",
+          backgroundColor: "#E0E0E5",
           padding: "72px",
           position: "relative",
         }}

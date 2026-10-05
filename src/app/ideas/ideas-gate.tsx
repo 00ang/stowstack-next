@@ -77,7 +77,7 @@ export default function IdeasGate() {
   return (
     <div
       className="flex min-h-screen items-center justify-center"
-      style={{ background: "#faf9f5", fontFamily: FONT }}
+      style={{ background: "#E0E0E5", fontFamily: FONT }}
     >
       <div
         className="w-full max-w-[340px] p-8"
@@ -105,7 +105,7 @@ export default function IdeasGate() {
               fontFamily: FONT,
               fontSize: "12px",
               fontWeight: 400,
-              color: "#8a877f",
+              color: "#5A5966",
               letterSpacing: "0.02em",
             }}
           >
@@ -116,7 +116,7 @@ export default function IdeasGate() {
         {booting ? (
           <p
             className="text-center"
-            style={{ fontSize: "13px", color: "#8a877f" }}
+            style={{ fontSize: "13px", color: "#5A5966" }}
           >
             Checking access…
           </p>
@@ -135,7 +135,7 @@ export default function IdeasGate() {
                 padding: "9px 12px",
                 borderRadius: "5px",
                 border: "1px solid rgba(0,0,0,0.12)",
-                background: "#faf9f5",
+                background: "#E0E0E5",
                 color: "#141413",
                 marginBottom: "10px",
               }}
@@ -160,7 +160,7 @@ export default function IdeasGate() {
                 fontSize: "13px",
                 fontWeight: 600,
                 background: "#141413",
-                color: "#faf9f5",
+                color: "#E0E0E5",
                 border: "none",
                 borderRadius: "5px",
                 padding: "9px 16px",

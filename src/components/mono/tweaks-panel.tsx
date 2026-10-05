@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState, useCallback } from "react";
-import { PALETTES, type PaletteId, MONO } from "./index";
+import { DEFAULT_PALETTE_ID, PALETTES, type PaletteId, MONO } from "./index";
 
 const STORAGE_KEY = "storageads.palette";
 
@@ -17,18 +17,18 @@ function applyPalette(id: PaletteId) {
 }
 
 function readStoredPalette(): PaletteId {
-  if (typeof window === "undefined") return "paper";
+  if (typeof window === "undefined") return DEFAULT_PALETTE_ID;
   try {
     const v = window.localStorage.getItem(STORAGE_KEY);
     if (v && PALETTES.some((p) => p.id === v)) return v as PaletteId;
   } catch {
     /* ignore */
   }
-  return "paper";
+  return DEFAULT_PALETTE_ID;
 }
 
 export default function TweaksPanel() {
-  const [palette, setPalette] = useState<PaletteId>("paper");
+  const [palette, setPalette] = useState<PaletteId>(DEFAULT_PALETTE_ID);
   const [open, setOpen] = useState(false);
 
   // On mount: hydrate from localStorage and apply.

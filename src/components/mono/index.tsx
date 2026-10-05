@@ -34,6 +34,7 @@ export const MONO = {
 } as const;
 
 export type PaletteId =
+  | "cool"
   | "paper"
   | "oxblood"
   | "petrol"
@@ -42,12 +43,16 @@ export type PaletteId =
   | "green"
   | "bw";
 
+/** Shipped page ground. Paper/cream stays in the picker and is not the default. */
+export const DEFAULT_PALETTE_ID: PaletteId = "cool";
+
 export const PALETTES: {
   id: PaletteId;
   label: string;
   sub: string;
   swatches: [string, string, string];
 }[] = [
+  { id: "cool",      label: "Cool Light",     sub: "Twilight light, companion field", swatches: ["#E0E0E5", "#16161A", "#C0BFCF"] },
   { id: "paper",     label: "Paper / Ink",    sub: "Cream broadsheet, brick accent",  swatches: ["#f2ede3", "#1c1a16", "#c0452b"] },
   { id: "oxblood",   label: "Oxblood & Oat",  sub: "Burgundy, oat, peach",            swatches: ["#2a0e0d", "#ebe1cc", "#FAC08A"] },
   { id: "petrol",    label: "Petrol Navy",    sub: "Deep petrol, bone, lichen",       swatches: ["#0d2336", "#e8e2d1", "#C9E098"] },

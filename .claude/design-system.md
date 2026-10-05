@@ -2,17 +2,17 @@
 
 Canonical design-system reference. CLAUDE.md points here; this file is the source of truth for palette, typography, and visual rules. CSS custom properties are defined in `src/app/globals.css`.
 
-Anthropic-inspired warm palette.
+Cool-light default. Paper/cream is an optional palette, not the shipped page ground.
 
 ## Core palette
 
-The `--color-*` tokens are **palette-aware aliases**, not fixed hexes — they resolve to the active palette in `globals.css` (default: `:root` / `[data-palette="paper"]`). globals.css holds the live values; the paper-palette defaults below are for reference only.
+The `--color-*` tokens are **palette-aware aliases**, not fixed hexes — they resolve to the active palette in `globals.css` (default: `:root` / `[data-palette="cool"]`). globals.css holds the live values; the cool-light defaults below are for reference only. `[data-palette="paper"]` still exists as a selectable cream theme and is not the default.
 
-- `--color-dark` → `var(--text)`, default `#1c1a16` — primary text, never pure black
-- `--color-light` → `var(--bg)`, default `#f2ede3` — backgrounds, never pure white
-- `--color-body-text` → `var(--text-dim)`, default `#5a5448` — body text
-- `--color-mid-gray` → `var(--text-faint)`, default `#8a8270` — secondary/muted
-- `--color-light-gray` → `var(--bg-alt)`, default `#ebe5d6` — card fills, borders, surfaces
+- `--color-dark` → `var(--text)`, default `#16161A` — primary text, never pure black
+- `--color-light` → `var(--bg)`, default `#E0E0E5` — page ground (cool light)
+- `--color-body-text` → `var(--text-dim)`, default `#3C3C46` — body text
+- `--color-mid-gray` → `var(--text-faint)`, default `#484852` — secondary/muted
+- `--color-light-gray` → `var(--bg-alt)`, default `#C0BFCF` — companion field for cards and alt surfaces
 
 ## Accent — Charcoal-on-light / Light-on-dark (no primary color accent)
 
@@ -21,7 +21,7 @@ The `--color-*` tokens are **palette-aware aliases**, not fixed hexes — they r
 
 **Secondary accents** (also palette-aware aliases): `--color-blue` (→ `var(--hue-a)`, default `#1f5a6b` deep teal — Google/informational), `--color-green` (→ `var(--hue-c)`, default `#4a6b2e` olive — success/growth) — use sparingly for categorical distinctions (chart series, informational callouts), never as a primary CTA color.
 **Error only:** `--color-red` (→ `var(--accent)`, default `#c0452b` brick) — NEVER for CTAs or decorative use
-**Dashboard surfaces:** `--color-dark-surface` (→ `var(--bg-ink)`, default `#1c1a16`) for admin/partner dashboards
+**Dashboard surfaces:** `--color-dark-surface` (→ `var(--bg-ink)`, default `#16161A`) for inverse ink panels. Admin shell ground is cool light `#E0E0E5`, not cream.
 
 ## Typography
 
@@ -41,7 +41,7 @@ The `--color-*` tokens are **palette-aware aliases**, not fixed hexes — they r
 
 ## Logo
 
-`storageads` (`storageads/attr` in the marketing nav). Manrope 700, lowercase, no icon. **Two-tone color split is brand-mandatory** — "storage" renders in the surface text color (palette-aware: `--text-accent` / `--color-dark` / `#1A1A1A`), "ads" always renders in `var(--brand-ads)`. That is one 212° blue at two luminance steps, defined in `:root` outside the palette blocks: `--brand-slate` `#446386` on light grounds (paper, bw, admin; 5.3:1 on paper cream) and `--brand-sky` `#8EC1FF` on the dark palettes (oxblood, petrol, blueprint, eames, amber, green), switched by one rule in `globals.css`. `.admin-theme` pins it to slate because the admin ground is always cream. Surfaces with a hardcoded light ground (e.g. the ideas gate) use `var(--brand-slate)` directly. Replaced the original sienna gold `#B58B3F` in Oct 2026; do not restore it. Used in marketing nav, footer, tool header, contact, cost-of-inaction, ideas gate, admin sidebar, and admin login.
+`storageads` (`storageads/attr` in the marketing nav). Manrope 700, lowercase, no icon. **Two-tone color split is brand-mandatory** — "storage" renders in the surface text color (palette-aware: `--text-accent` / `--color-dark` / `#1A1A1A`), "ads" always renders in `var(--brand-ads)`. That is one 212° blue at two luminance steps, defined in `:root` outside the palette blocks: `--brand-slate` `#446386` on light grounds (cool light, paper, bw, admin) and `--brand-sky` `#8EC1FF` on the dark palettes (oxblood, petrol, blueprint, eames, green), switched by one rule in `globals.css`. `.admin-theme` pins it to slate because the admin ground is cool light. Surfaces with a hardcoded light ground (e.g. the ideas gate) use `var(--brand-slate)` directly. Replaced the original sienna gold `#B58B3F` in Oct 2026; do not restore it. Used in marketing nav, footer, tool header, contact, cost-of-inaction, ideas gate, admin sidebar, and admin login.
 
 ## Charts
 
@@ -58,6 +58,6 @@ Admin charts use **recharts**. Color convention: dark=Meta, blue=Google, green=r
 - Never use gradients, stock photos, or AI images
 - Icons: lucide-react only (see above) — no other icon libraries
 - Sienna gold is banned everywhere, the logo included — the logo `ads` uses `--brand-ads` (supersedes any older gold references in `globals.css`)
-- No gold-reading color anywhere (sienna, goldenrod, mustard, amber, Tailwind `amber-*`/`yellow-*` hexes): not in palettes, admin status colors, emails, PDFs, OG images or icons. The warm/caution slot is burnt orange — `--hue-b` `#AB5505` on paper (Tailwind orange/amber/yellow classes remap to it); inline caution hexes use `#AB5505`; email CTAs are charcoal `#141413`; brand tints use slate `rgba(68,99,134,…)`
+- No gold-reading color anywhere (sienna, goldenrod, mustard, amber, Tailwind `amber-*`/`yellow-*` hexes): not in palettes, admin status colors, emails, PDFs, OG images or icons. The warm/caution slot is burnt orange — `--hue-b` `#AB5505` on the cool-light default and on paper (Tailwind orange/amber/yellow classes remap to it); inline caution hexes use `#AB5505`; email CTAs are charcoal `#141413`; brand tints use slate `rgba(68,99,134,…)`
 - Chart colors: dark=Meta, blue=Google, green=retargeting (recharts)
 - All emails from *@storageads.com

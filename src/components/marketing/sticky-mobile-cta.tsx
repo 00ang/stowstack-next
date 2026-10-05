@@ -105,7 +105,7 @@ export default function StickyMobileCTA() {
           opacity: visible ? 1 : 0,
           pointerEvents: visible ? "auto" : "none",
           transition: "transform 280ms ease, opacity 200ms ease",
-          background: "rgba(250, 249, 245, 0.92)",
+          background: "color-mix(in srgb, var(--bg) 92%, transparent)",
           backdropFilter: "blur(18px) saturate(160%)",
           WebkitBackdropFilter: "blur(18px) saturate(160%)",
           borderTop: "1px solid var(--border-subtle)",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PALETTES } from "../index";
+import { DEFAULT_PALETTE_ID, PALETTES } from "../index";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -11,6 +11,15 @@ describe("PALETTES registry", () => {
     // High-contrast monochrome: white ground, black ink.
     expect(bw?.swatches[0]).toBe("#ffffff");
     expect(bw?.swatches[1]).toBe("#000000");
+  });
+
+  it("ships cool light as the default ground and keeps paper selectable", () => {
+    expect(DEFAULT_PALETTE_ID).toBe("cool");
+    const cool = PALETTES.find((p) => p.id === "cool");
+    expect(cool?.swatches[0]).toBe("#E0E0E5");
+    expect(cool?.swatches[2]).toBe("#C0BFCF");
+    expect(PALETTES[0]?.id).toBe("cool");
+    expect(PALETTES.some((p) => p.id === "paper")).toBe(true);
   });
 
   it("keeps the original palettes intact (no regression)", () => {

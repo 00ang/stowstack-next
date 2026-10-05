@@ -287,8 +287,8 @@ export default function Nav() {
           height: "calc(var(--nav-height) + env(safe-area-inset-top, 0px))",
           paddingTop: "env(safe-area-inset-top, 0px)",
           background: isScrolled
-            ? "rgba(250, 249, 245, 0.92)"
-            : "rgba(250, 249, 245, 0.6)",
+            ? "color-mix(in srgb, var(--bg) 92%, transparent)"
+            : "color-mix(in srgb, var(--bg) 60%, transparent)",
           backdropFilter: isScrolled
             ? "blur(24px) saturate(180%)"
             : "blur(12px)",

@@ -360,7 +360,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
                 key={i}
                 style={{
                   background: "var(--bg-elevated, #f5f4f0)",
-                  border: "1px solid var(--border-subtle, #e8e6dc)",
+                  border: "1px solid var(--border-subtle, #A8A7B6)",
                   borderRadius: "8px",
                   padding: "16px 20px",
                   overflowX: "auto",
@@ -393,7 +393,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
                             style={{
                               textAlign: "left",
                               padding: "10px 12px",
-                              borderBottom: "2px solid var(--border-subtle, #e8e6dc)",
+                              borderBottom: "2px solid var(--border-subtle, #A8A7B6)",
                               fontWeight: 600,
                               color: "var(--text-primary)",
                             }}
@@ -412,7 +412,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
                             key={k}
                             style={{
                               padding: "10px 12px",
-                              borderBottom: "1px solid var(--border-subtle, #e8e6dc)",
+                              borderBottom: "1px solid var(--border-subtle, #A8A7B6)",
                               color: "var(--text-secondary)",
                             }}
                           >
@@ -435,7 +435,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
                   style={{
                     maxWidth: "100%",
                     borderRadius: "8px",
-                    border: "1px solid var(--border-subtle, #e8e6dc)",
+                    border: "1px solid var(--border-subtle, #A8A7B6)",
                   }}
                 />
                 {node.alt && (
@@ -458,7 +458,7 @@ export function MarkdownRenderer({ content }: { content: string }) {
                 key={i}
                 style={{
                   border: "none",
-                  borderTop: "1px solid var(--border-subtle, #e8e6dc)",
+                  borderTop: "1px solid var(--border-subtle, #A8A7B6)",
                   margin: "32px 0",
                 }}
               />
