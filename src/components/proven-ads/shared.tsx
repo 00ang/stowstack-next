@@ -3,10 +3,9 @@
 /**
  * The Proven Ads vocabulary: one hue per kind of information, the run-length
  * figure, labels. Hues come from the palette-aware --hue-* tokens so every
- * palette keeps working; chip text is the hue pulled 20% toward ink, which
- * holds 4.5:1 on its own tint across the light palettes (olive alone does
- * not). Secondary text is --color-body-text, never --color-mid-gray, which
- * measures 3.2:1 on the cream.
+ * palette (cool, white, black) keeps working; chip text is the hue pulled 20%
+ * toward ink, which holds 5.2:1 or better on its own tint in all three.
+ * Secondary text is --color-body-text.
  */
 
 import type { CSSProperties, ReactNode } from "react";
