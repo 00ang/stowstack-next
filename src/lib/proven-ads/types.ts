@@ -1,6 +1,11 @@
 /** Shared types for the Proven Ads library. No I/O. */
 
-export const PROVEN_SOURCES = ["meta_ad_library_api", "manual", "csv_import"] as const;
+export const PROVEN_SOURCES = [
+  "meta_ad_library_api",
+  "meta_ad_library_web",
+  "manual",
+  "csv_import",
+] as const;
 export type ProvenSource = (typeof PROVEN_SOURCES)[number];
 
 export const PROVEN_PLATFORMS = ["meta", "google", "tiktok"] as const;
@@ -78,6 +83,77 @@ export const PLATFORM_LABELS: Record<ProvenPlatform, string> = {
   tiktok: "TikTok",
 };
 
+export const AUDIENCES = [
+  "movers",
+  "declutterers",
+  "vehicle_owners",
+  "businesses",
+  "students",
+  "military",
+  "general",
+] as const;
+export type Audience = (typeof AUDIENCES)[number];
+
+export const AUDIENCE_LABELS: Record<Audience, string> = {
+  movers: "Movers",
+  declutterers: "Declutterers",
+  vehicle_owners: "RV, boat, vehicle",
+  businesses: "Businesses",
+  students: "Students",
+  military: "Military",
+  general: "Everyone",
+};
+
+export const ADVERTISER_SCALES = ["national", "regional", "independent"] as const;
+export type AdvertiserScale = (typeof ADVERTISER_SCALES)[number];
+
+export const SCALE_LABELS: Record<AdvertiserScale, string> = {
+  national: "National",
+  regional: "Regional",
+  independent: "Independent",
+};
+
+/**
+ * The read on one ad, written for an independent operator. Facts about the
+ * ad (offer, unit, angle, format, audience, scale, market) live in their own
+ * columns; this holds the prose and the playbook.
+ */
+export interface ProvenAdInsight {
+  v: 1;
+  /**
+   * renter: sells storage to people who would rent it. Anything else (an
+   * investor pitch, a vendor, a job post, a listing) keeps its row but is
+   * left out of the library, and carries no prose.
+   */
+  relevance: "renter" | "investor" | "b2b" | "jobs" | "listing" | "not_storage";
+  /**
+   * Our editorial read on how much an operator can take from it: 3 a clear,
+   * transferable structure; 2 solid and ordinary; 1 a bare presence ad.
+   * Judgement, not a performance number, and labelled that way.
+   */
+  study_value: 1 | 2 | 3;
+  /** One sentence: what this ad is, operator to operator. */
+  summary: string;
+  /** Why it has kept running: the renter problem, the friction removed, why the offer is believable. */
+  why: string;
+  /** What stops the scroll in the first second, described rather than quoted. */
+  hook: string;
+  /** What the image or video frame shows, as a shootable direction. Empty when no image was read. */
+  creative: string;
+  /** The ad's structure, in order. */
+  beats: { label: string; text: string }[];
+  /** Three steps to run a version of this at your own facility. */
+  run_it: string[];
+  /** What an operator must really have for this to work honestly. */
+  needs: string[];
+  /** Situations the ad fits. */
+  best_for: string[];
+  /** How it goes wrong when copied. Empty when there is nothing real to say. */
+  watch_out: string;
+  /** Which model wrote it, for re-runs. */
+  model: string;
+}
+
 export interface MediaRef {
   kind: "image" | "video";
   url: string;
@@ -116,6 +192,10 @@ export interface ProvenAdDraft {
   raw?: unknown;
   notes?: string | null;
   created_by?: string | null;
+  /** Live ads sharing this creative, this one included. */
+  family_size?: number;
+  audience?: Audience | null;
+  advertiser_scale?: AdvertiserScale | null;
 }
 
 export interface AdaptedCopy {

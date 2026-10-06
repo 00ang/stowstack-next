@@ -12,6 +12,7 @@ import { getAdapter } from "./adapters";
 import type { AdapterSearch } from "./adapters/types";
 import { shouldMarkInactive } from "./days-running";
 import { upsertMany } from "./upsert";
+import { scheduleInsights } from "./insights-job";
 
 export const DEFAULT_SEARCHES: { adapter: string; label: string; config: Record<string, unknown> }[] = [
   {
@@ -175,5 +176,6 @@ export const refreshProvenAds: JobHandler = async (ctx) => {
   }
 
   const swept = await sweepStale();
+  if (upserted > 0) await scheduleInsights("refresh");
   return { kind: "done", progressDone: upserted + swept };
 };

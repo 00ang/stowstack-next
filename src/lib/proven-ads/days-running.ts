@@ -14,10 +14,16 @@ export const PROVEN_DAYS = 60;
 /**
  * How long an automated-source ad may go unseen before we stop believing it is
  * running. Meta's archive returns active ads on every refresh, so two weeks of
- * silence is a stopped ad, not a flaky fetch. Manual rows are never swept —
- * nobody is re-observing them, so a person decides.
+ * silence is a stopped ad, not a flaky fetch. Person-run sources are never
+ * swept — nobody re-observes them on a clock, so a person decides.
  */
 export const STALE_AFTER_DAYS = 14;
+
+/**
+ * Sources a person runs (typing an ad in, importing a CSV, importing an Ad
+ * Library export). Nothing re-observes these on a schedule.
+ */
+export const PERSON_RUN_SOURCES = ["manual", "csv_import", "meta_ad_library_web"] as const;
 
 const DAY_MS = 86_400_000;
 
@@ -26,6 +32,8 @@ export interface RunWindow {
   last_seen_at: Date | string;
   ended_at?: Date | string | null;
   active: boolean;
+  /** Adapter id. Person-run sources only count up to the last time anyone saw the ad. */
+  source?: string;
 }
 
 function toDate(d: Date | string): Date {
@@ -37,18 +45,32 @@ function daysBetween(from: Date, to: Date): number {
   return Math.max(0, Math.floor((to.getTime() - from.getTime()) / DAY_MS));
 }
 
+export function isManualSource(source: string): boolean {
+  return (PERSON_RUN_SOURCES as readonly string[]).includes(source);
+}
+
 /**
- * Days the ad has run.
+ * The last instant we can vouch the ad was running.
  *
- * Active ads count up to `now`. Inactive ads are frozen at the moment they
- * stopped — the explicit `ended_at` when a source gave us one, otherwise the
- * last time we actually saw it running, which is the conservative choice.
+ * A stopped ad: the explicit `ended_at` when a source gave us one, otherwise
+ * the last time we actually saw it — the conservative choice. A live ad from
+ * an automated source: now, because the refresh re-sees it twice a day and the
+ * sweep retires it after two weeks of silence. A live ad from a person-run
+ * source: the last time someone saw it. Counting those to "now" would claim
+ * months nobody observed.
  */
+export function confirmedThrough(ad: RunWindow, now: Date = new Date()): Date {
+  if (!ad.active) return ad.ended_at ? toDate(ad.ended_at) : toDate(ad.last_seen_at);
+  if (ad.source && isManualSource(ad.source)) {
+    const seen = toDate(ad.last_seen_at);
+    return seen.getTime() < now.getTime() ? seen : now;
+  }
+  return now;
+}
+
+/** Days the ad has run, as far as anyone can vouch. */
 export function daysRunning(ad: RunWindow, now: Date = new Date()): number {
-  const start = toDate(ad.started_at);
-  if (ad.active) return daysBetween(start, now);
-  const end = ad.ended_at ? toDate(ad.ended_at) : toDate(ad.last_seen_at);
-  return daysBetween(start, end);
+  return daysBetween(toDate(ad.started_at), confirmedThrough(ad, now));
 }
 
 export function isProven(ad: RunWindow, now: Date = new Date()): boolean {
@@ -69,31 +91,40 @@ export function shouldMarkInactive(
   return daysBetween(toDate(ad.last_seen_at), now) >= staleAfterDays;
 }
 
-export function isManualSource(source: string): boolean {
-  return source === "manual" || source === "csv_import";
+function shortDate(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+}
+
+/** "7 months", "1 year 2 months", or "45 days" under two months. */
+export function spanLabel(days: number): string {
+  if (days < PROVEN_DAYS) return `${days} days`;
+  const months = Math.round(days / 30.44);
+  if (months < 12) return `${months} months`;
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  const y = `${years} year${years === 1 ? "" : "s"}`;
+  return rest ? `${y} ${rest} month${rest === 1 ? "" : "s"}` : y;
 }
 
 /**
  * The sentence shown next to the flag. Plain, specific, and honest about
- * whether the ad is still live — an ad that ran 90 days and stopped is still
- * worth copying, but the reader should know which case they are looking at.
+ * whether the ad is still live and how recently anyone saw it.
  */
 export function whyFlagged(ad: RunWindow, now: Date = new Date()): string {
   const days = daysRunning(ad, now);
-  const since = toDate(ad.started_at).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const months = Math.floor(days / 30);
-  const span = months >= 2 ? `${months} months` : `${days} days`;
+  const since = shortDate(toDate(ad.started_at));
+  const span = spanLabel(days);
+  const through = confirmedThrough(ad, now);
+  const observed = ad.active && ad.source !== undefined && isManualSource(ad.source);
+  const asOf = observed ? ` as of ${shortDate(through)}` : "";
 
   if (days < PROVEN_DAYS) {
     const left = PROVEN_DAYS - days;
-    return `Running ${days} days since ${since}. ${left} more day${left === 1 ? "" : "s"} before it counts as proven.`;
+    return `Running ${days} days since ${since}${asOf}. ${left} more day${left === 1 ? "" : "s"} before it counts as proven.`;
   }
   if (ad.active) {
-    return `Still running after ${span} (started ${since}). Nobody pays for ${span} of an ad that isn't bringing in move-ins.`;
+    const lead = observed ? `Running ${span}${asOf}` : `Still running after ${span}`;
+    return `${lead} (started ${since}). Nobody pays for ${span} of an ad that isn't bringing in move-ins.`;
   }
-  return `Ran ${span} (${since} until it stopped). It earned its budget for ${span} before the advertiser pulled it — the structure worked.`;
+  return `Ran ${span} (${since} until it stopped). It earned its budget for ${span} before the advertiser pulled it. The structure worked.`;
 }
