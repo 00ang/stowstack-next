@@ -10,7 +10,7 @@ import { ProvenAdsLibrary } from "@/components/proven-ads/proven-ads-library";
  * tools, plus the controls that feed it.
  */
 export default function ProvenAdsPage() {
-  const { facilities, currentId, setFacility } = useFacility();
+  const { facilities, currentId } = useFacility();
   const [reloadKey, setReloadKey] = useState(0);
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
@@ -21,9 +21,6 @@ export default function ProvenAdsPage() {
       defaultTargetId={currentId !== "all" ? currentId : undefined}
       adminSlot={<ProvenAdsAdminTools onChanged={reload} />}
       reloadKey={reloadKey}
-      onDraftCreated={(facilityId) => {
-        if (currentId !== facilityId) setFacility(facilityId);
-      }}
     />
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Check, ChevronDown, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronDown, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
 import { adminFetch } from "@/hooks/use-admin-fetch";
+import { adStudioDraftPath } from "@/lib/proven-ads/studio-link";
 import { ADVERTISER_SCALES, AD_FORMATS, ANGLES, AUDIENCES, OFFER_TYPES, UNIT_TYPES } from "@/lib/proven-ads/types";
 import type { LibraryPatterns } from "@/lib/proven-ads/patterns";
 import { AdCard } from "./ad-card";
@@ -97,7 +99,7 @@ export interface ProvenAdsLibraryProps {
   onDraftCreated?: (facilityId: string) => void;
 }
 
-type Draft = { state: "idle" } | { state: "working" } | { state: "done"; variationId: string; studioUrl: string; via: string } | { state: "error"; message: string };
+type Draft = { state: "idle" } | { state: "working" } | { state: "error"; message: string };
 
 export function ProvenAdsLibrary({
   mode,
@@ -120,6 +122,7 @@ export function ProvenAdsLibrary({
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<ProvenAd | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const router = useRouter();
   const [draft, setDraft] = useState<Draft>({ state: "idle" });
   const [target, setTarget] = useState<string>(facility?.id ?? defaultTargetId ?? "");
   const firstLoad = useRef(true);
@@ -201,81 +204,49 @@ export function ProvenAdsLibrary({
         `/api/proven-ads/${open.id}/duplicate`,
         { method: "POST", body: JSON.stringify({ facilityId }) }
       );
-      setDraft({ state: "done", ...data });
-      onDraftCreated?.(facilityId);
+      if (mode === "owner" && onOpenDraft) {
+        onDraftCreated?.(facilityId);
+        onOpenDraft(data.variationId);
+        return;
+      }
+      if (!data.studioUrl) throw new Error("Draft was created without a link to Ad Studio");
+      router.push(adStudioDraftPath(data.studioUrl, facilityId));
     } catch (err) {
       setDraft({ state: "error", message: err instanceof Error && err.message.length < 160 ? err.message : "That didn't work. Try again." });
     }
-  }, [open, mode, facility?.id, target, onDraftCreated]);
+  }, [open, mode, facility?.id, target, onDraftCreated, onOpenDraft, router]);
 
   const nearState = mode === "owner" && facility?.state && states.includes(facility.state) ? facility.state : null;
 
   const footer = open ? (
     <div className="space-y-2.5">
-      {draft.state === "done" ? (
-        <>
-          <div className="flex items-center gap-2 text-[14px]" style={{ color: "var(--color-dark)", fontWeight: 750 }}>
-            <Check size={16} aria-hidden /> Your version is ready as a draft.
-          </div>
-          {mode === "owner" && onOpenDraft ? (
-            <button
-              type="button"
-              onClick={() => onOpenDraft(draft.variationId)}
-              className="flex h-11 w-full items-center justify-center rounded-[4px] text-[14px] transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-dark)]"
-              style={{ background: "var(--color-dark)", color: "var(--color-light)", fontWeight: 800 }}
-            >
-              Open it in the Ad Generator
-            </button>
-          ) : (
-            <a
-              href={draft.studioUrl}
-              className="flex h-11 w-full items-center justify-center rounded-[4px] text-[14px] transition-opacity hover:opacity-90"
-              style={{ background: "var(--color-dark)", color: "var(--color-light)", fontWeight: 800 }}
-            >
-              Open it in Ad Studio
-            </a>
-          )}
-          <p className="text-[12px] leading-[1.5]" style={{ color: "var(--color-body-text)", fontWeight: 600 }}>
-            {draft.via === "claude"
-              ? "New copy, written for your facility. Add your own photo before it runs."
-              : "A starting draft from your facility's details. Edit the copy and add your own photo before it runs."}
-          </p>
-        </>
+      {mode === "admin" && (
+        <SelectBox
+          label="Facility"
+          value={target}
+          onChange={setTarget}
+          options={[["", "Pick a facility"], ...facilities.map((f) => [f.id, f.location ? `${f.name} · ${f.location}` : f.name] as [string, string])]}
+        />
+      )}
+      <button
+        type="button"
+        onClick={makeDraft}
+        disabled={draft.state === "working" || (mode === "admin" && !target)}
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-[4px] text-[14px] transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-dark)]"
+        style={{ background: "var(--color-dark)", color: "var(--color-light)", fontWeight: 800 }}
+      >
+        {draft.state === "working" && <Loader2 size={15} className="animate-spin" aria-hidden />}
+        {draft.state === "working" ? "Recreating…" : "Recreate this ad"}
+      </button>
+      {draft.state === "error" ? (
+        <p role="alert" className="text-[13px]" style={{ color: "var(--accent-dim)", fontWeight: 700 }}>
+          {draft.message}
+        </p>
       ) : (
-        <>
-          {mode === "admin" && (
-            <SelectBox
-              label="Facility"
-              value={target}
-              onChange={setTarget}
-              options={[["", "Pick a facility"], ...facilities.map((f) => [f.id, f.location ? `${f.name} · ${f.location}` : f.name] as [string, string])]}
-            />
-          )}
-          <button
-            type="button"
-            onClick={makeDraft}
-            disabled={draft.state === "working" || (mode === "admin" && !target)}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-[4px] text-[14px] transition-opacity hover:opacity-90 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-dark)]"
-            style={{ background: "var(--color-dark)", color: "var(--color-light)", fontWeight: 800 }}
-          >
-            {draft.state === "working" && <Loader2 size={15} className="animate-spin" aria-hidden />}
-            {draft.state === "working"
-              ? "Writing your version"
-              : mode === "owner"
-                ? `Make my version for ${facility?.name ?? "my facility"}`
-                : "Make a version for this facility"}
-          </button>
-          {draft.state === "error" ? (
-            <p role="alert" className="text-[13px]" style={{ color: "var(--accent-dim)", fontWeight: 700 }}>
-              {draft.message}
-            </p>
-          ) : (
-            <p className="text-[12px] leading-[1.5]" style={{ color: "var(--color-body-text)", fontWeight: 600 }}>
-              Keeps the angle, the offer and the format. Writes new copy from your rates, specials and reviews. Their name, words
-              and photos stay behind.
-            </p>
-          )}
-        </>
+        <p className="text-[12px] leading-[1.5]" style={{ color: "var(--color-body-text)", fontWeight: 600 }}>
+          Keeps the angle, the offer and the format. Writes new copy from your rates, specials and reviews. Their name, words
+          and photos stay behind.
+        </p>
       )}
     </div>
   ) : null;
