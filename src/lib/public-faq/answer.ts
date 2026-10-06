@@ -1,4 +1,5 @@
 import {
+  isCommercialPricingQuestion,
   retrievePublicChunks,
   retrievalIsGrounded,
   type ScoredChunk,
@@ -62,12 +63,35 @@ function firstSentences(text: string, count = 2): string {
   return parts.slice(0, count).join(" ").trim();
 }
 
+const PLAN_SENTENCE =
+  /\b(Launch|Growth|Portfolio|Single Site|Site \+ Landing Pages|Portfolio Build) costs [^.]+\./;
+
 function extractive(hits: ScoredChunk[]): string {
   let text = hits[0].text;
   const answerAt = text.indexOf("Answer: ");
   if (answerAt >= 0) text = text.slice(answerAt + "Answer: ".length);
   text = text.replace(/^(Paid media plan|Site build package)\.\s*/i, "");
   return plain(firstSentences(text));
+}
+
+/**
+ * Price questions quote the public plan cards. A general "one facility"
+ * question names Launch and Growth. A named plan stays on that plan.
+ */
+function commercialPricingAnswer(question: string, hits: ScoredChunk[]): string | null {
+  if (!isCommercialPricingQuestion(question)) return null;
+  const named = question.match(/\b(launch|growth|portfolio|single site|portfolio build)\b/i);
+  const sentences: string[] = [];
+  for (const hit of hits) {
+    if (hit.href !== "/pricing") continue;
+    const sentence = hit.text.match(PLAN_SENTENCE)?.[0];
+    if (!sentence) continue;
+    if (named && !sentence.toLowerCase().includes(named[1].toLowerCase())) continue;
+    if (!named && !/\$\d[\d,]*\/mo per facility/i.test(sentence)) continue;
+    if (!sentences.includes(sentence)) sentences.push(sentence);
+  }
+  if (sentences.length === 0) return null;
+  return plain(sentences.slice(0, 2).join(" "));
 }
 
 function dollarAmounts(text: string): string[] {
@@ -140,18 +164,22 @@ export async function answerPublicQuestion(
 
   const sources = sourcesFrom(hits);
   const excerpts = hits.map((hit) => hit.text).join("\n");
-  const fallback = extractive(hits);
+  const fallback = commercialPricingAnswer(question, hits) ?? extractive(hits);
 
   const raw = await complete(buildPrompt(question, hits));
   const parsed = raw ? parseModel(raw) : null;
   if (!parsed || parsed.refused) {
-    if (parsed?.refused) {
+    if (parsed?.refused && !(isCommercialPricingQuestion(question) && fallback)) {
       return { answer: REFUSAL, sources: [], grounded: false, refused: true };
     }
     return { answer: fallback, sources, grounded: true, refused: false };
   }
 
   if (!dollarsStayInExcerpts(parsed.answer, excerpts)) {
+    return { answer: fallback, sources, grounded: true, refused: false };
+  }
+
+  if (isCommercialPricingQuestion(question) && dollarAmounts(parsed.answer).length === 0) {
     return { answer: fallback, sources, grounded: true, refused: false };
   }
 
