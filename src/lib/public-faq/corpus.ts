@@ -187,6 +187,47 @@ const STOP = new Set([
   "please", "stored", "number", "numbers", "data", "info", "information",
 ]);
 
+/**
+ * Product-price questions. "how" and "much" are stopwords, so a question like
+ * "how much is it for one facility?" otherwise ranks on "one" + "facility"
+ * and a blog title that contains "One" beats the pricing page.
+ * Occupancy, unit-rate, and REIT questions stay on the general corpus.
+ */
+const COMMERCIAL_PRICE =
+  /\bhow much is it\b|\b(?:what(?:'s| is) (?:the |your )?)?(?:price|prices|pricing|cost|costs|fee|fees)\b|\bhow much (?:is|does|do|are|would|will)\b/;
+
+const COMMERCIAL_SUBJECT =
+  /\b(it|this|you|your|storageads|plan|plans|tier|tiers|facility|facilities|month|monthly|launch|growth|portfolio|subscription|retainer)\b/;
+
+const NOT_PRODUCT_PRICE =
+  /\b(unit|units|10x\d*|5x\d*|street rate|web rate|occupancy|reit|reits)\b/;
+
+export function isCommercialPricingQuestion(question: string): boolean {
+  const q = question.toLowerCase();
+  if (NOT_PRODUCT_PRICE.test(q)) return false;
+  if (/\bhow much is it\b/.test(q)) return true;
+  if (/\bwhat(?:'s| is) the (?:price|cost|fee)\b/.test(q)) return true;
+  if (!COMMERCIAL_PRICE.test(q)) return false;
+  return COMMERCIAL_SUBJECT.test(q);
+}
+
+function isBlogChunk(chunk: PublicChunk): boolean {
+  return chunk.href === "/blog" || chunk.href.startsWith("/blog/");
+}
+
+/** A published plan card, not the move-in lifetime-value illustration. */
+function isPlanPriceChunk(chunk: PublicChunk): boolean {
+  return chunk.href === "/pricing" && /\bcosts\b/i.test(chunk.text) && /\$\d|Custom pricing/i.test(chunk.text);
+}
+
+function commercialBoost(chunk: PublicChunk): number {
+  if (isPlanPriceChunk(chunk) && /\$\d[\d,]*\/mo per facility/i.test(chunk.text)) return 16;
+  if (isPlanPriceChunk(chunk)) return 12;
+  if (chunk.href === "/help" && /\$\d/.test(chunk.text)) return 6;
+  if (chunk.href === "/pricing" || chunk.href === "/help" || chunk.href === "/#faq") return 1;
+  return 0;
+}
+
 export function questionTokens(question: string): string[] {
   return question
     .toLowerCase()
@@ -207,14 +248,16 @@ function tokenWeight(token: string, chunks: PublicChunk[]): number {
 
 export function retrievePublicChunks(question: string, limit = 4): ScoredChunk[] {
   const tokens = [...new Set(questionTokens(question))];
-  if (tokens.length === 0) return [];
+  const pricingIntent = isCommercialPricingQuestion(question);
+  if (tokens.length === 0 && !pricingIntent) return [];
   const chunks = getPublicChunks();
+  const pool = pricingIntent ? chunks.filter((chunk) => !isBlogChunk(chunk)) : chunks;
   const weights = new Map(tokens.map((token) => [token, tokenWeight(token, chunks)]));
 
-  const ranked = chunks
+  const ranked = pool
     .map((chunk) => {
       const hay = `${chunk.title} ${chunk.text}`.toLowerCase();
-      let score = 0;
+      let score = pricingIntent ? commercialBoost(chunk) : 0;
       for (const token of tokens) {
         if (!hay.includes(token)) continue;
         score += weights.get(token) ?? 1;
@@ -233,8 +276,12 @@ export function retrievePublicChunks(question: string, limit = 4): ScoredChunk[]
  * A stray common word (tenant, phone) is not enough if the rare term is missing.
  */
 export function retrievalIsGrounded(question: string, hits: ScoredChunk[]): boolean {
+  if (hits.length === 0) return false;
+  if (isCommercialPricingQuestion(question)) {
+    return hits.some((hit) => isPlanPriceChunk(hit) && /\$\d/.test(hit.text));
+  }
   const tokens = [...new Set(questionTokens(question))];
-  if (hits.length === 0 || tokens.length === 0) return false;
+  if (tokens.length === 0) return false;
   const chunks = getPublicChunks();
   const weights = new Map(tokens.map((token) => [token, tokenWeight(token, chunks)]));
   const total = tokens.reduce((sum, token) => sum + (weights.get(token) ?? 0), 0);
