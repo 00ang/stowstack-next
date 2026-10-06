@@ -67,14 +67,18 @@ export default function AdStudio({ facilityId, adminKey, facilityName }: {
         setTemplates(imageData.templates)
       }
       if (creativeData.variations?.length) {
-        const metaVariations = creativeData.variations.filter(
-          (v: AdVariation) => v.platform === 'meta_feed' && v.status !== 'rejected'
-        )
-        setVariations(metaVariations)
         const wanted =
           typeof window !== 'undefined'
             ? new URLSearchParams(window.location.search).get('variation')
             : null
+        // A recreate deep-link must land on that draft even when the source
+        // platform is not Meta feed (Google proven ads persist as google_search).
+        const metaVariations = creativeData.variations.filter(
+          (v: AdVariation) =>
+            v.status !== 'rejected' &&
+            (v.platform === 'meta_feed' || (wanted != null && v.id === wanted))
+        )
+        setVariations(metaVariations)
         const fromProven = wanted
           ? metaVariations.find((v: AdVariation) => v.id === wanted)
           : null
