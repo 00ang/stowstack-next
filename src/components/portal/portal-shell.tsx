@@ -381,11 +381,14 @@ function PortalHeader({ client, onToggle, onLogout, expanded, toggleRef }: { cli
 /* ─── sample portal banner ─── */
 
 function SampleBanner({ onLeave }: { onLeave: () => void }) {
+  // Instrument Calm (library entry 008): sample data is labeled, not shouted.
   return (
-    <div className="border-b-[1.5px] border-[var(--color-dark)] bg-[var(--act-6)] px-4 py-2.5 text-[var(--act-ink)] md:px-6">
-      <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-bold">
-        <span>Sample portal. A made-up facility, and nothing you do here is saved.</span>
-        <button type="button" onClick={onLeave} className="underline underline-offset-4">
+    <div className="border-b-2 border-[var(--ic-ink)] bg-[var(--ic-pane)] px-4 py-2 text-[var(--ic-ink)] md:px-6">
+      <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <span className="ic-label text-[10.5px]">
+          Sample portal <span aria-hidden="true">·</span> a made-up facility <span aria-hidden="true">·</span> nothing is saved
+        </span>
+        <button type="button" onClick={onLeave} className="text-[13px] font-bold underline underline-offset-4">
           Leave the sample
         </button>
       </div>

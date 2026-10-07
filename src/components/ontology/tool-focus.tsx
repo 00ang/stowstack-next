@@ -6,15 +6,15 @@ import { X } from "lucide-react";
 import { TYPE_DEFS } from "@/lib/ontology/registry";
 import type { OntologyObject } from "@/lib/ontology/types";
 import { ObjectMark } from "./object-mark";
-import { ActionFill } from "./action-fill";
+import { IcButton } from "./ic-button";
 import { indexHref } from "./use-ontology";
 
 /**
  * Tools in focus: when a tool is opened from an object (?focus=units/10x10),
- * the object rides along. The bar shows what you came to work on; the context
- * lets any tool read it, so a tool can start from what the system already
- * knows instead of asking again. Tools outside the provider get null and
- * behave exactly as before.
+ * the object rides along. The bar shows what you came to work on, in the
+ * "Looking at" grammar of library entry 008; the context lets any tool read
+ * it, so a tool starts from what the system already knows instead of asking
+ * again. Tools outside the provider get null and behave exactly as before.
  */
 
 const ToolFocusCtx = createContext<OntologyObject | null>(null);
@@ -32,27 +32,33 @@ export function FocusBar({ object, onClear, showIndexLink = true }: { object: On
   const [copied, setCopied] = useState(false);
   const def = TYPE_DEFS[object.type];
   return (
-    <div className="mb-5 border-y-[1.5px] border-[var(--color-dark)] py-3" role="region" aria-label={`Working on ${object.name}`}>
-      <div className="flex items-start gap-3">
-        <ObjectMark address={object.address} type={object.type} size={32} />
-        <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-body-text)]">
-            Working on {def.singular.toLowerCase()} <span className="normal-case tracking-normal tabular-nums">{object.address}</span>
-          </div>
-          <div className="mt-0.5 text-[15px] font-bold leading-snug text-[var(--color-dark)]">{object.brief}</div>
-        </div>
+    <div
+      className="mb-5 border border-[var(--ic-ink)] bg-[var(--ic-pane)] p-4 text-[var(--ic-ink)] sm:p-5"
+      role="region"
+      aria-label={`Looking at ${object.name}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="ic-label text-[10.5px] text-[var(--ic-instruction)]">Looking at · {def.singular}</div>
         <button
           type="button"
           onClick={onClear}
-          aria-label="Stop working on this"
-          className="-mr-1 shrink-0 p-1.5 text-[var(--color-dark)] hover:bg-[var(--bg-alt)]"
+          aria-label="Stop looking at this"
+          className="-mr-1.5 -mt-1.5 shrink-0 p-1.5 text-[var(--ic-ink)] hover:bg-[var(--ic-soft)]"
         >
           <X className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2.5 sm:pl-11">
-        <ActionFill
-          n={0}
+      <div className="mt-1 border-b border-[var(--ic-ink)]/20 pb-3 text-[24px] font-extrabold leading-tight tracking-tight">{object.name}</div>
+      <div className="mt-3 flex items-start gap-3">
+        <ObjectMark address={object.address} size={48} />
+        <div className="min-w-0">
+          <div className="text-[15px] font-bold leading-snug">{object.brief}</div>
+          <div className="ic-label mt-1 text-[10.5px] normal-case tracking-[0.02em] text-[var(--ic-instruction)]">{object.address}</div>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-2.5">
+        <IcButton
+          variant="secondary"
           onClick={() => {
             navigator.clipboard?.writeText(object.brief).then(() => {
               setCopied(true);
@@ -61,13 +67,14 @@ export function FocusBar({ object, onClear, showIndexLink = true }: { object: On
           }}
         >
           {copied ? "Copied" : "Copy the facts"}
-        </ActionFill>
+        </IcButton>
         {showIndexLink && (
-          <Link href={indexHref(object.address)} className="text-[13px] font-bold text-[var(--color-dark)] underline underline-offset-4">
+          <Link href={indexHref(object.address)} className="text-[13px] font-bold underline underline-offset-4">
             See everything it touches
           </Link>
         )}
       </div>
+      <div className="ic-label mt-3 text-[10px] text-[var(--ic-instruction)]">Opened from the index. Nothing changes until you save in the tool.</div>
     </div>
   );
 }

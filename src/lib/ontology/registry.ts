@@ -6,10 +6,9 @@ import type { LaneKey, ObjectTypeKey, ToolKey } from "./types";
  * bar all read from here, so a type can never be called one thing on one
  * screen and another thing on the next.
  *
- * Colour is identity, not decoration: every type has its own hue
- * (`--onto-<type>` in globals.css), solved by luminance to 5.2:1 or better on
- * the cool-light ground and checked so no two neighbouring tiles are close
- * (worst neighbour ΔE00 14.0). Text never takes these hues; marks and glyphs do.
+ * Kinds are told apart by name, glyph and lane, in ink (Instrument Calm,
+ * reference library 008). Colour is kept for one signal: navy, for what is
+ * selected and what needs you.
  */
 
 export interface TypeDef {
@@ -150,11 +149,6 @@ export const TYPE_ORDER: ObjectTypeKey[] = [
   "reviews",
   "competitors",
 ];
-
-/** The CSS custom property carrying a type's identity hue. */
-export function typeHue(type: ObjectTypeKey): string {
-  return `var(--onto-${type})`;
-}
 
 export function typesInLane(lane: LaneKey): ObjectTypeKey[] {
   return TYPE_ORDER.filter((t) => TYPE_DEFS[t].lane === lane);

@@ -8,13 +8,14 @@ import { NextMoves } from "./next-moves";
 import { useOntology } from "./use-ontology";
 
 /**
- * Note: the site-wide `.urbit-landing` scope paints every <section> with the
- * page ground and sets every <p> to weight 300 (globals.css). These panels
- * take the same p-5 as the portal's cards, and text blocks are divs so the
- * weights set here are the weights you see.
+ * The ontology on the portal dashboard, in Instrument Calm (library entry 008):
+ * what needs you, then the facility as an instrument. Both read the same
+ * object graph the index and the tools use.
  *
- * The ontology on the portal dashboard: what needs you, then the facility as
- * an instrument. Both read the same object graph the index and the tools use.
+ * Note: the site-wide `.urbit-landing` scope paints every <section> with the
+ * page ground and sets every <p> to weight 300 (globals.css). These panels take
+ * the same padding as the portal's cards, and text blocks are divs so the
+ * weights set here are the weights you see.
  */
 export function PortalFacilitySection() {
   const { client, authFetch } = usePortal();
@@ -26,22 +27,33 @@ export function PortalFacilitySection() {
   return (
     <>
       <section aria-labelledby="next-heading" className="p-5">
-        <h2 id="next-heading" className="mb-2 text-sm font-bold text-[var(--color-dark)]">
-          Next
-        </h2>
+        <div className="mb-2 flex items-baseline justify-between gap-3">
+          <h2 id="next-heading" className="text-base font-extrabold text-[var(--ic-ink)]">
+            Needs you
+          </h2>
+          <span
+            className="text-[28px] font-extrabold leading-none tabular-nums text-[var(--ic-selected)]"
+            aria-label={`${data.moves.length} ${data.moves.length === 1 ? "thing" : "things"}`}
+          >
+            {data.moves.length}
+          </span>
+        </div>
         <NextMoves ontology={data} />
       </section>
 
       <section aria-labelledby="facility-heading" className="px-3 py-5 sm:p-5">
         <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 id="facility-heading" className="text-sm font-bold text-[var(--color-dark)]">
+          <h2 id="facility-heading" className="text-base font-extrabold text-[var(--ic-ink)]">
             Your facility
           </h2>
-          <Link href="/portal/index" className="text-[13px] font-bold text-[var(--color-dark)] underline underline-offset-4">
+          <Link href="/portal/index" className="text-[13px] font-bold text-[var(--ic-ink)] underline underline-offset-4">
             Open the index
           </Link>
         </div>
         <FacilityInstrument summaries={data.summaries} />
+        <div className="ic-label mt-4 border-t-2 border-[var(--ic-ink)] pt-2 text-[10.5px] text-[var(--ic-instruction)]">
+          {data.facility.name} · {data.objects.length} things, one address each
+        </div>
       </section>
     </>
   );
