@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import type { GenerationPlatform } from "./types";
 import { GENERATION_OPTIONS } from "./types";
+import { useToolFocus } from "@/components/ontology/tool-focus";
 
 export function GenerationPanel({
   generating,
@@ -16,8 +17,12 @@ export function GenerationPanel({
   hasVariations: boolean;
   onGenerate: (platform: GenerationPlatform, feedback?: string) => void;
 }) {
-  const [showRegenInput, setShowRegenInput] = useState(false);
-  const [regenFeedback, setRegenFeedback] = useState("");
+  // Opened from an object (a unit, an offer…)? Start with its facts as the
+  // direction, so the owner edits a sentence instead of writing one.
+  const focus = useToolFocus();
+  const seeded = focus ? `Feature this. ${focus.brief}` : "";
+  const [showRegenInput, setShowRegenInput] = useState(!!seeded);
+  const [regenFeedback, setRegenFeedback] = useState(seeded);
 
   /* Regenerate with notes */
   if (showRegenInput) {

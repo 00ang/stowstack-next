@@ -1,3 +1,5 @@
+import { demoSession, exitPortalDemo, isPortalDemo } from "@/lib/portal-demo/demo-mode";
+
 export interface PortalSession {
   email: string;
   accessCode: string;
@@ -118,6 +120,9 @@ const SESSION_TTL = 24 * 60 * 60 * 1000;
 
 export function getPortalSession(): PortalSession | null {
   if (typeof window === "undefined") return null;
+  // The sample portal (/portal?demo) runs on its own session and never reads
+  // or replaces a real one.
+  if (isPortalDemo()) return demoSession();
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
@@ -140,6 +145,10 @@ export function savePortalSession(email: string, accessCode: string) {
 }
 
 export function clearPortalSession() {
+  if (isPortalDemo()) {
+    exitPortalDemo();
+    return;
+  }
   localStorage.removeItem(SESSION_KEY);
 }
 

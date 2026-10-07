@@ -108,6 +108,82 @@
   --hue-d: #5e3880;
 }
 
+/* Facility ontology — one identity hue per kind of object (src/lib/ontology/registry.ts).
+   Identity, never action and never text: marks and type glyphs take these;
+   words stay ink. Solved by luminance to 5.2:1 on the cool-light ground
+   (8.5:1 for the deep tier that separates close neighbours), worst
+   neighbouring-tile ΔE00 14.0, none in the gold band. The white theme keeps
+   the same values (6.8:1 and up on #fff); the black theme solves the same
+   hues light, 4.8:1 and up on #0E0E12. */
+:root,
+:root[data-palette="cool"],
+:root[data-palette="white"] {
+  --onto-units: #1E59AA;
+  --onto-offers: #1E6730;
+  --onto-campaigns: #7F34B5;
+  --onto-ads: #91450C;
+  --onto-pages: #066376;
+  --onto-links: #3E2E7A;
+  --onto-posts: #5F2456;
+  --onto-leads: #0C4331;
+  --onto-tours: #54601C;
+  --onto-tenants: #0D3E5D;
+  --onto-reviews: #A62953;
+  --onto-competitors: #5E2D24;
+  /* Action fills: frameless, each its own, ink text 8.8–16.3:1 on every one.
+     Neighbours never match; buttons in a row take them in this order. */
+  --act-1: #86B8FB;
+  --act-2: #FFBC7E;
+  --act-3: #7EDEFD;
+  --act-4: #DFB3FB;
+  --act-5: #ADDDDC;
+  --act-6: #EEFF41;
+  --act-ink: #16161A;
+  /* Selected is inversion: navy, white text 10.7:1. */
+  --onto-selected: #1E3C74;
+  --onto-selected-ink: #FFFFFF;
+}
+
+/* Action fills. Each button in a row takes the next fill; hover crossfades to
+   the one after it (240ms). Frameless, square, ink text. Focus ring on
+   keyboard focus only. */
+.act-fill {
+  background: var(--act-1);
+  color: var(--act-ink);
+  transition: background-color 240ms cubic-bezier(0.2, 0, 0, 1);
+}
+.act-fill[data-fill="1"] { background: var(--act-1); }
+.act-fill[data-fill="2"] { background: var(--act-2); }
+.act-fill[data-fill="3"] { background: var(--act-3); }
+.act-fill[data-fill="4"] { background: var(--act-4); }
+.act-fill[data-fill="5"] { background: var(--act-5); }
+.act-fill[data-fill="6"] { background: var(--act-6); }
+.act-fill[data-fill="1"]:hover { background: var(--act-2); }
+.act-fill[data-fill="2"]:hover { background: var(--act-3); }
+.act-fill[data-fill="3"]:hover { background: var(--act-4); }
+.act-fill[data-fill="4"]:hover { background: var(--act-5); }
+.act-fill[data-fill="5"]:hover { background: var(--act-6); }
+.act-fill[data-fill="6"]:hover { background: var(--act-1); }
+.act-fill:focus-visible { outline: 2px solid var(--act-ink); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .act-fill { transition: none; } }
+
+:root[data-palette="black"] {
+  --onto-units: #5791E1;
+  --onto-offers: #30A44D;
+  --onto-campaigns: #B079D8;
+  --onto-ads: #E56E13;
+  --onto-pages: #0A9DBA;
+  --onto-links: #8472CA;
+  --onto-posts: #C058AE;
+  --onto-leads: #199069;
+  --onto-tours: #86992C;
+  --onto-tenants: #1C86C7;
+  --onto-reviews: #DA6D91;
+  --onto-competitors: #BE6755;
+  --onto-selected: #E0E0E5;
+  --onto-selected-ink: #16161A;
+}
+
 /* Keyframes driving all motion — prefers-reduced-motion override below */
 @keyframes mono-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
 @keyframes mono-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }

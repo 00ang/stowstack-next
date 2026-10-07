@@ -35,6 +35,8 @@ import {
   Library,
 } from "lucide-react";
 import type { FacilityProp } from "@/components/admin/facility-tabs/facility-overview/types";
+import { useOntology } from "@/components/ontology/use-ontology";
+import { FocusBar, ToolFocusProvider } from "@/components/ontology/tool-focus";
 
 /**
  * The facility tools, for owners: the same components the admin facility
@@ -224,8 +226,20 @@ export function OwnerTools({
     const requested = new URLSearchParams(window.location.search).get("tool");
     return requested && TOOL_KEYS.has(requested) ? requested : "overview";
   });
+  // The object this tool was opened for (/portal/tools?tool=…&focus=units/10x10).
+  // It stays in focus across tool switches until the owner clears it.
+  const [focus, setFocus] = useState<string | null>(() =>
+    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("focus"),
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const clearFocus = useCallback(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("focus");
+    window.history.replaceState(null, "", url);
+    setFocus(null);
+  }, []);
 
   const pickTool = useCallback((key: string, params?: Record<string, string>) => {
     const url = new URL(window.location.href);
@@ -268,6 +282,12 @@ export function OwnerTools({
   useEffect(() => {
     load();
   }, [load]);
+
+  const ontology = useOntology(focus && facilityId ? { kind: "manage", facilityId } : null);
+  const focused = focus ? ontology.data?.objects.find((o) => o.address === focus) ?? null : null;
+  // Hold the tool back for the moment it takes to read the focus, so it mounts
+  // once, already knowing what it was opened for.
+  const waitingForFocus = !!focus && ontology.loading && !ontology.data;
 
   if (loading) {
     return (
@@ -370,15 +390,30 @@ export function OwnerTools({
       </aside>
 
       <section className="min-w-0 flex-1 px-4 py-5 md:px-6 md:py-6">
-        {/* key: switching facility remounts the tool so it reloads that facility's data */}
-        <ToolContent
-          key={facility.id}
-          tool={tool}
-          facility={facility}
-          onUpdate={load}
-          upgradeHref={upgradeHref}
-          openTool={pickTool}
-        />
+        {focused && (
+          <FocusBar
+            object={focused}
+            onClear={clearFocus}
+            showIndexLink={typeof window !== "undefined" && window.location.pathname.startsWith("/portal")}
+          />
+        )}
+        {waitingForFocus ? (
+          <div className="flex items-center justify-center py-24 text-[var(--color-body-text)]">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading…
+          </div>
+        ) : (
+          <ToolFocusProvider object={focused}>
+            {/* key: switching facility remounts the tool so it reloads that facility's data */}
+            <ToolContent
+              key={facility.id}
+              tool={tool}
+              facility={facility}
+              onUpdate={load}
+              upgradeHref={upgradeHref}
+              openTool={pickTool}
+            />
+          </ToolFocusProvider>
+        )}
       </section>
     </div>
   );

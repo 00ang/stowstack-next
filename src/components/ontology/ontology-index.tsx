@@ -1,0 +1,316 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Copy, Check } from "lucide-react";
+import { LANES, TYPE_DEFS, TYPE_ORDER, typeOfAddress } from "@/lib/ontology/registry";
+import type { ObjectTypeKey, Ontology, OntologyObject } from "@/lib/ontology/types";
+import { FacilityInstrument } from "./facility-instrument";
+import { ObjectMark, TypeGlyph } from "./object-mark";
+import { ActionFill } from "./action-fill";
+import { actionHref } from "./use-ontology";
+
+/**
+ * The index: every object at the facility, by kind, each with its address,
+ * its facts, what it is linked to, and what can be done with it. Following a
+ * link walks the graph: open a unit, see the leads who asked for that size,
+ * open one of them, see the page they came from.
+ *
+ * State lives in the URL (?t=units, ?o=units/10x10-climate) so any object can
+ * be linked to, and the back button behaves.
+ */
+export function OntologyIndex({ ontology, toolsBase = "/portal/tools" }: { ontology: Ontology; toolsBase?: string }) {
+  const byAddress = useMemo(() => new Map(ontology.objects.map((o) => [o.address, o])), [ontology]);
+  const [type, setType] = useState<ObjectTypeKey>("units");
+  const [open, setOpen] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Read ?o= / ?t= once, on arrival.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const o = params.get("o");
+    const t = params.get("t") as ObjectTypeKey | null;
+    if (o && byAddress.has(o)) {
+      setType(typeOfAddress(o) ?? "units"); // eslint-disable-line react-hooks/set-state-in-effect -- URL is external state
+      setOpen(o);
+      requestAnimationFrame(() => document.getElementById(rowId(o))?.scrollIntoView({ block: "center" }));
+    } else if (t && (TYPE_ORDER as string[]).includes(t)) {
+      setType(t);
+    } else {
+      // Arrive on the first kind that has anything in it.
+      const first = TYPE_ORDER.find((k) => ontology.summaries.find((s) => s.type === k)?.count);
+      if (first) setType(first);
+    }
+  }, [byAddress, ontology.summaries]);
+
+  const writeUrl = (next: { t?: ObjectTypeKey; o?: string | null }) => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("t");
+    url.searchParams.delete("o");
+    if (next.o) url.searchParams.set("o", next.o);
+    else if (next.t) url.searchParams.set("t", next.t);
+    window.history.replaceState(null, "", url.toString().replace(/%2F/g, "/"));
+  };
+
+  const selectType = useCallback((t: ObjectTypeKey) => {
+    setType(t);
+    setOpen(null);
+    writeUrl({ t });
+    listRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  const goTo = useCallback(
+    (address: string) => {
+      const t = typeOfAddress(address);
+      if (!t || !byAddress.has(address)) return;
+      setType(t);
+      setOpen(address);
+      writeUrl({ o: address });
+      requestAnimationFrame(() => document.getElementById(rowId(address))?.scrollIntoView({ block: "start", behavior: "smooth" }));
+    },
+    [byAddress],
+  );
+
+  const toggle = (address: string) => {
+    const next = open === address ? null : address;
+    setOpen(next);
+    writeUrl(next ? { o: next } : { t: type });
+  };
+
+  const def = TYPE_DEFS[type];
+  const lane = LANES.find((l) => l.key === def.lane)!;
+  const summary = ontology.summaries.find((s) => s.type === type)!;
+  const objects = ontology.objects.filter((o) => o.type === type);
+
+  return (
+    <div className="space-y-8">
+      <header>
+        <h1 className="text-2xl font-extrabold tracking-tight text-[var(--color-dark)]">{ontology.facility.name}</h1>
+        <div className="mt-1 text-sm font-semibold text-[var(--color-body-text)]">
+          Every unit, offer, ad, lead and review here, each with one address and everything it touches.
+        </div>
+      </header>
+
+      <FacilityInstrument summaries={ontology.summaries} selected={type} onSelect={selectType} />
+
+      <section aria-labelledby="index-type" ref={listRef} tabIndex={-1} className="outline-none">
+        <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-body-text)]">
+          {lane.label} <span aria-hidden="true">·</span> {lane.definition}
+        </div>
+        <div className="mt-2 flex items-start gap-3 border-b-[1.5px] border-[var(--color-dark)] pb-3">
+          <TypeGlyph type={type} className="mt-0.5 h-6 w-6 shrink-0" />
+          <div className="min-w-0">
+            <h2 id="index-type" className="text-lg font-extrabold leading-tight text-[var(--color-dark)]">
+              {def.plural}{" "}
+              <span className="tabular-nums text-[var(--color-body-text)]">{summary.count}</span>
+            </h2>
+            <div className="mt-0.5 text-[13px] font-medium text-[var(--color-body-text)]">
+              {def.definition} {summary.reading.value} {summary.reading.unit}: {summary.reading.definition.charAt(0).toLowerCase() + summary.reading.definition.slice(1)}
+            </div>
+          </div>
+        </div>
+
+        {objects.length === 0 ? (
+          <EmptyKind type={type} toolsBase={toolsBase} />
+        ) : (
+          <ul>
+            {objects.map((o) => (
+              <ObjectRow
+                key={o.address}
+                object={o}
+                open={open === o.address}
+                onToggle={() => toggle(o.address)}
+                byAddress={byAddress}
+                moves={ontology.moves.filter((m) => m.subject === o.address)}
+                goTo={goTo}
+                toolsBase={toolsBase}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
+const rowId = (address: string) => `obj-${address.replace(/[^a-z0-9]+/gi, "-")}`;
+
+function EmptyKind({ type, toolsBase }: { type: ObjectTypeKey; toolsBase: string }) {
+  const def = TYPE_DEFS[type];
+  const action =
+    type === "units"
+      ? { label: "Upload your unit mix", href: "/portal/upload" }
+      : def.tool
+        ? { label: `Open ${toolLabel(def.tool)}`, href: actionHref({ label: "", tool: def.tool }, null, toolsBase) }
+        : null;
+  return (
+    <div className="py-8">
+      <div className="text-sm font-semibold text-[var(--color-body-text)]">No {def.plural.toLowerCase()} yet.</div>
+      {action && (
+        <ActionFill href={action.href} n={0} className="mt-3">
+          {action.label}
+        </ActionFill>
+      )}
+    </div>
+  );
+}
+
+function toolLabel(tool: string): string {
+  const labels: Record<string, string> = {
+    occupancy: "Occupancy",
+    revenue: "Revenue",
+    funnels: "Campaign Builder",
+    "ad-studio": "Ad Generator",
+    "landing-pages": "Landing Pages",
+    "utm-links": "Tracking Links",
+    gbp: "Google Business",
+    "lead-nurture": "Lead Follow-Up",
+    tenants: "Tenants",
+    "market-intel": "Competitors",
+  };
+  return labels[tool] ?? "the tools";
+}
+
+function ObjectRow({
+  object,
+  open,
+  onToggle,
+  byAddress,
+  moves,
+  goTo,
+  toolsBase,
+}: {
+  object: OntologyObject;
+  open: boolean;
+  onToggle: () => void;
+  byAddress: Map<string, OntologyObject>;
+  moves: Ontology["moves"];
+  goTo: (address: string) => void;
+  toolsBase: string;
+}) {
+  const id = rowId(object.address);
+  return (
+    <li id={id} className="scroll-mt-20 border-b border-[var(--line-dim)]">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`${id}-detail`}
+        className="flex w-full items-center gap-3 py-3 text-left transition-colors duration-[240ms] hover:bg-[var(--bg-alt)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-dark)]"
+      >
+        <ObjectMark address={object.address} type={object.type} size={24} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[15px] font-bold text-[var(--color-dark)]">{object.name}</span>
+          <span className="block truncate text-xs font-semibold tabular-nums text-[var(--color-body-text)]">{object.address}</span>
+        </span>
+        {object.status && (
+          <span className="hidden shrink-0 text-xs font-bold text-[var(--color-body-text)] sm:inline">{object.status.replace(/_/g, " ")}</span>
+        )}
+        {moves.length > 0 && <span className="sr-only">Needs you.</span>}
+        <span className="shrink-0 text-xs font-bold tabular-nums text-[var(--color-body-text)]">
+          {object.links.length} {object.links.length === 1 ? "link" : "links"}
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          className={`h-4 w-4 shrink-0 text-[var(--color-dark)] transition-transform duration-[240ms] ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div id={`${id}-detail`} className="space-y-5 pb-6 pl-0 sm:pl-9">
+          {moves.map((m) => (
+            <div key={m.id} className="border-l-[3px] pl-3" style={{ borderColor: "var(--color-dark)" }}>
+              <div className="text-sm font-bold text-[var(--color-dark)]">{m.sentence}</div>
+              <div className="text-[13px] font-medium text-[var(--color-body-text)]">{m.reason}</div>
+            </div>
+          ))}
+
+          {object.facts.length > 0 && (
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-[max-content_1fr]">
+              {object.facts.map((f) => (
+                <div key={f.label} className="contents">
+                  <dt className="text-xs font-bold text-[var(--color-body-text)] sm:pt-px">{f.label}</dt>
+                  <dd className="-mt-1.5 text-sm font-semibold text-[var(--color-dark)] sm:mt-0">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+
+          <Links object={object} byAddress={byAddress} goTo={goTo} />
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {object.actions.map((a, i) => (
+              <ActionFill key={a.label} href={actionHref(a, object.address, toolsBase)} n={i}>
+                {a.label}
+              </ActionFill>
+            ))}
+            <CopyAddress address={object.address} />
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function Links({
+  object,
+  byAddress,
+  goTo,
+}: {
+  object: OntologyObject;
+  byAddress: Map<string, OntologyObject>;
+  goTo: (address: string) => void;
+}) {
+  if (object.links.length === 0) {
+    return <div className="text-[13px] font-semibold text-[var(--color-body-text)]">Not linked to anything yet.</div>;
+  }
+  const groups = TYPE_ORDER.map((t) => ({
+    type: t,
+    items: object.links.map((a) => byAddress.get(a)).filter((o): o is OntologyObject => !!o && o.type === t),
+  })).filter((g) => g.items.length);
+  return (
+    <div className="space-y-3">
+      <div className="text-xs font-bold text-[var(--color-body-text)]">Linked to</div>
+      {groups.map((g) => (
+        <div key={g.type}>
+          <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-body-text)]">{TYPE_DEFS[g.type].plural}</div>
+          <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {g.items.slice(0, 12).map((o) => (
+              <li key={o.address}>
+                <button
+                  type="button"
+                  onClick={() => goTo(o.address)}
+                  className="inline-flex max-w-[16rem] items-center gap-1.5 text-left text-[13px] font-bold text-[var(--color-dark)] underline decoration-[var(--line-dim)] underline-offset-4 hover:decoration-[var(--color-dark)]"
+                >
+                  <ObjectMark address={o.address} type={o.type} size={16} />
+                  <span className="truncate">{o.name}</span>
+                </button>
+              </li>
+            ))}
+            {g.items.length > 12 && (
+              <li className="text-[13px] font-semibold text-[var(--color-body-text)]">and {g.items.length - 12} more</li>
+            )}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CopyAddress({ address }: { address: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard?.writeText(address).then(() => {
+          setDone(true);
+          setTimeout(() => setDone(false), 1600);
+        });
+      }}
+      className="inline-flex min-h-10 items-center gap-1.5 px-1 text-[13px] font-bold text-[var(--color-dark)] underline underline-offset-4"
+    >
+      {done ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
+      {done ? "Copied" : "Copy address"}
+    </button>
+  );
+}

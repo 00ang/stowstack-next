@@ -33,6 +33,8 @@ import {
 import { Card, EmptyState, SectionSkeleton, ErrorState } from "@/components/portal/ui";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { PullIndicator } from "@/components/ui/pull-indicator";
+import { PortalFacilitySection } from "@/components/ontology/portal-facility-section";
+import { clearOntologyCache } from "@/components/ontology/use-ontology";
 
 /* ─── types ─── */
 
@@ -54,6 +56,7 @@ export default function PortalDashboard() {
 
   const { containerRef, pullDistance, refreshing } = usePullToRefresh({
     onRefresh: async () => {
+      clearOntologyCache();
       setRefreshKey((k) => k + 1);
     },
   });
@@ -67,6 +70,7 @@ export default function PortalDashboard() {
       <div className="space-y-8">
         <WelcomeBanner key={`welcome-${refreshKey}`} />
         <OnboardingProgress key={`onboarding-${refreshKey}`} />
+        <PortalFacilitySection key={`facility-${refreshKey}`} />
         <CampaignGoalProgress key={`goal-${refreshKey}`} />
         <CampaignAlerts key={`alerts-${refreshKey}`} />
         <RecentActivity key={`activity-${refreshKey}`} />
