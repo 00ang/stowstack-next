@@ -9,7 +9,7 @@ import {
   type ComponentType,
 } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Loader2,
   AlertCircle,
@@ -225,40 +225,50 @@ function VideoUpgrade({ href }: { href: string }) {
   );
 }
 
-export function OwnerTools({
-  defaultFacilityId,
-  upgradeHref,
-  campaignsBase,
-}: {
+type OwnerToolsProps = {
   /** Facility to open first (e.g. the portal client's own). */
   defaultFacilityId?: string;
   /** Where the video upgrade prompt sends the owner. */
   upgradeHref: string;
   /** Where campaigns live as pages of their own (the portal); the Campaigns tool forwards there. */
   campaignsBase?: string;
-}) {
+};
+
+/** The tools read ?tool= and ?focus= through the router, which needs a Suspense boundary. */
+export function OwnerTools(props: OwnerToolsProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-24 text-[var(--color-body-text)]">
+          <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading your tools…
+        </div>
+      }
+    >
+      <OwnerToolsInner {...props} />
+    </Suspense>
+  );
+}
+
+function OwnerToolsInner({ defaultFacilityId, upgradeHref, campaignsBase }: OwnerToolsProps) {
   const [facilities, setFacilities] = useState<ToolFacility[]>([]);
   const [facilityId, setFacilityId] = useState<string | null>(null);
-  // Deep link: /portal/tools?tool=landing-pages. Only ever rendered client-side
-  // (both shells render children after their login check), so window is safe.
-  const [tool, setTool] = useState(() => {
-    if (typeof window === "undefined") return "overview";
-    const requested = new URLSearchParams(window.location.search).get("tool");
-    return requested && TOOL_KEYS.has(requested) ? requested : "overview";
-  });
-  // The object this tool was opened for (/portal/tools?tool=…&focus=units/10x10).
-  // It stays in focus across tool switches until the owner clears it.
-  const [focus, setFocus] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("focus"),
-  );
+  // Deep link: /portal/tools?tool=landing-pages&focus=units/10x10. Read through
+  // the router, not window.location: on an in-app link the new page renders
+  // before the browser's URL changes, so a one-time read saw the old page's URL
+  // and dropped the tool and its focus. The focus stays across tool switches
+  // until the owner clears it.
+  const searchParams = useSearchParams();
+  const requested = searchParams.get("tool");
+  const tool = requested && TOOL_KEYS.has(requested) ? requested : "overview";
+  const focus = searchParams.get("focus");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // history.replaceState keeps the tool switch instant; Next syncs it into useSearchParams.
   const clearFocus = useCallback(() => {
     const url = new URL(window.location.href);
     url.searchParams.delete("focus");
     window.history.replaceState(null, "", url);
-    setFocus(null);
   }, []);
 
   const pickTool = useCallback((key: string, params?: Record<string, string>) => {
@@ -269,7 +279,6 @@ export function OwnerTools({
     url.searchParams.delete("variation");
     for (const [k, v] of Object.entries(params ?? {})) url.searchParams.set(k, v);
     window.history.replaceState(null, "", url);
-    setTool(key);
   }, []);
 
   const load = useCallback(async () => {
