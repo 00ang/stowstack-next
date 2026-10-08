@@ -61,6 +61,8 @@ export function useCampaignDraft(funnelId: string | null, ctx: FunnelContext) {
   const [loading, setLoading] = useState(!!funnelId);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Bumps when a campaign opens or a template replaces the graph, so the canvas can frame the start once. */
+  const [viewportKey, setViewportKey] = useState(0);
   const dirty = useRef(false);
   const graphRef = useRef(graph);
   graphRef.current = graph;
@@ -86,6 +88,7 @@ export function useCampaignDraft(funnelId: string | null, ctx: FunnelContext) {
         setGraph(next);
         setPast([]);
         setFuture([]);
+        setViewportKey((k) => k + 1);
         dirty.current = false;
       })
       .catch(() => {
@@ -213,6 +216,7 @@ export function useCampaignDraft(funnelId: string | null, ctx: FunnelContext) {
       dirty.current = true;
       setSelectedId(null);
       setGraph(next);
+      setViewportKey((k) => k + 1);
     },
     [ctx],
   );
@@ -249,6 +253,7 @@ export function useCampaignDraft(funnelId: string | null, ctx: FunnelContext) {
   return {
     graph,
     loading,
+    viewportKey,
     saving,
     notice,
     setNotice,

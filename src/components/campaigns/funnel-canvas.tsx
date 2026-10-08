@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Background,
   Handle,
@@ -109,6 +109,10 @@ function FunnelFlowNode({ data, selected }: NodeProps<Node<FunnelNodeData>>) {
 
 const nodeTypes = { funnel: FunnelFlowNode };
 
+/** Title is 14px. Zoom 1 keeps it at 14px; Fit will not go below this, so it stays about 12px. */
+const READABLE_ZOOM = 1;
+const FIT_MIN_ZOOM = 0.85;
+
 function nodeData(graph: FunnelGraph, ctx: FunnelContext): Node<FunnelNodeData>[] {
   return graph.nodes.map((n) => {
     const def = defOf(n.type);
@@ -136,6 +140,7 @@ function nodeData(graph: FunnelGraph, ctx: FunnelContext): Node<FunnelNodeData>[
 function CanvasInner({
   graph,
   ctx,
+  focusKey,
   onMove,
   onConnectPorts,
   onSelect,
@@ -144,6 +149,7 @@ function CanvasInner({
 }: {
   graph: FunnelGraph;
   ctx: FunnelContext;
+  focusKey: number;
   onMove: (id: string, x: number, y: number) => void;
   onConnectPorts: (fromId: string, fromPort: number, toId: string, toPort: number) => string | null;
   onSelect: (id: string | null) => void;
@@ -151,6 +157,25 @@ function CanvasInner({
   onRefuse: (reason: string) => void;
 }) {
   const flow = useReactFlow();
+  const nodesRef = useRef(graph.nodes);
+
+  useEffect(() => {
+    nodesRef.current = graph.nodes;
+  });
+
+  const frameStart = useCallback(() => {
+    const nodes = nodesRef.current;
+    if (!nodes.length) return;
+    const minX = Math.min(...nodes.map((n) => n.x));
+    const minY = Math.min(...nodes.map((n) => n.y));
+    // Zoom 1, with the start of the path in the top-left. Fit can pull back later.
+    void flow.setViewport({ x: 28 - minX, y: 20 - minY, zoom: READABLE_ZOOM });
+  }, [flow]);
+
+  useEffect(() => {
+    const handle = requestAnimationFrame(() => frameStart());
+    return () => cancelAnimationFrame(handle);
+  }, [focusKey, frameStart]);
   const nodes = useMemo(() => nodeData(graph, ctx), [graph, ctx]);
   const edges = useMemo(
     () =>
@@ -217,14 +242,15 @@ function CanvasInner({
         const pos = flow.screenToFlowPosition({ x: e.clientX, y: e.clientY });
         onDropType(type as NodeType, pos.x - 110, pos.y - 40);
       }}
-      fitView
+      defaultViewport={{ x: 24, y: 24, zoom: READABLE_ZOOM }}
       proOptions={{ hideAttribution: true }}
       nodesDraggable
       nodesConnectable
       elementsSelectable
       deleteKeyCode={null}
-      minZoom={0.4}
+      minZoom={FIT_MIN_ZOOM}
       maxZoom={1.6}
+      onInit={() => frameStart()}
     >
       <Background gap={24} size={1.2} color="#C3C5CF" />
     </ReactFlow>
@@ -234,6 +260,7 @@ function CanvasInner({
 export function FunnelCanvas(props: {
   graph: FunnelGraph;
   ctx: FunnelContext;
+  focusKey: number;
   onMove: (id: string, x: number, y: number) => void;
   onConnectPorts: (fromId: string, fromPort: number, toId: string, toPort: number) => string | null;
   onSelect: (id: string | null) => void;
@@ -271,7 +298,11 @@ function CanvasTools() {
       <button type="button" className="h-8 border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-2 font-extrabold" onClick={() => flow.zoomIn()} aria-label="Zoom in">
         +
       </button>
-      <button type="button" className="h-8 border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-2 text-[12px] font-extrabold" onClick={() => flow.fitView()}>
+      <button
+        type="button"
+        className="h-8 border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-2 text-[12px] font-extrabold"
+        onClick={() => void flow.fitView({ padding: 0.18, minZoom: FIT_MIN_ZOOM, maxZoom: READABLE_ZOOM })}
+      >
         Fit
       </button>
     </div>

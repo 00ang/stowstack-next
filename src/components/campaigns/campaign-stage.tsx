@@ -215,6 +215,7 @@ export function CampaignStage({
               <FunnelCanvas
                 graph={draft.graph}
                 ctx={ctx}
+                focusKey={draft.viewportKey}
                 onMove={draft.moveNode}
                 onConnectPorts={draft.connectPorts}
                 onSelect={(id) => {
