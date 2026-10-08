@@ -126,7 +126,7 @@ function fromCampaign(working: WorkingOn, where: Where): FlowMove | null {
     id: `campaign:${working.id}:${working.move.action.kind}`,
     source: "campaign",
     sentence: working.move.sentence,
-    reason: `${working.name}. ${working.move.reason}`,
+    reason: `${working.name} · ${working.move.reason}`,
     label: working.move.actionLabel,
     href,
     here: where.surface === "campaign",

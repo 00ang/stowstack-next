@@ -6,6 +6,7 @@ import { SectionSkeleton, ErrorState } from "@/components/portal/ui";
 import { FacilityInstrument } from "./facility-instrument";
 import { NextMoves } from "./next-moves";
 import { useOntology } from "./use-ontology";
+import { useFlow } from "@/components/flow/flow-context";
 
 /**
  * The ontology on the portal dashboard, in Instrument Calm (library entry 008):
@@ -20,6 +21,7 @@ import { useOntology } from "./use-ontology";
 export function PortalFacilitySection() {
   const { client, authFetch } = usePortal();
   const { data, loading, error, reload } = useOntology({ kind: "portal", facilityId: client.facilityId, authFetch });
+  const shownId = useFlow()?.shown?.id ?? null;
 
   if (loading && !data) return <SectionSkeleton />;
   if (error || !data) return <ErrorState message={error ?? "Couldn't load your facility index."} onRetry={reload} />;
@@ -38,7 +40,7 @@ export function PortalFacilitySection() {
             {data.moves.length}
           </span>
         </div>
-        <NextMoves ontology={data} />
+        <NextMoves ontology={data} skipId={shownId} />
       </section>
 
       <section aria-labelledby="facility-heading" className="px-3 py-5 sm:p-5">

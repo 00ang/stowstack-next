@@ -135,8 +135,11 @@ function answer(url: URL, method: string, rawBody?: string): Answer {
         onboarding: { accessCode: "demo", updatedAt: iso(now, 100), completedAt: iso(now, 100), steps: {} },
         completionPct: 100,
       });
-    case "/api/client-goals":
-      return ok({ current: { target: 8, actual: 4, pct: 50 } });
+    case "/api/client-goals": {
+      // The same shape /api/client-goals returns, for this month (UTC months, as it counts them).
+      const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+      return ok({ current: { month, target: 12, actual: 4, pct: 33 }, goals: [{ month, target: 12, actual: 4 }] });
+    }
     case "/api/alert-history":
       return ok({
         data: [

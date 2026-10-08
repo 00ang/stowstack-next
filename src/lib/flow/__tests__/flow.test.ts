@@ -150,7 +150,7 @@ describe("chooseMove", () => {
     const move = chooseMove({ ontology: o, pace: null, working, where: { surface: "reports" } })!;
     expect(move.source).toBe("campaign");
     expect(move.href).toBe(campaignHref("c1", true));
-    expect(move.reason.startsWith("Fill drive-up units.")).toBe(true);
+    expect(move.reason.startsWith("Fill drive-up units · ")).toBe(true);
     const inBuilder = chooseMove({ ontology: o, pace: null, working, where: { surface: "campaign" } })!;
     expect(inBuilder.source).not.toBe("campaign");
   });
