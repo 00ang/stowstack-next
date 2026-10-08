@@ -361,9 +361,9 @@ describe("toPublishPlan", () => {
     const meta = plan.find((s) => s.title === "Run on Meta");
     const google = plan.find((s) => s.title === "Google Search");
     expect(meta?.paused).toBe(true);
-    expect(meta?.summary).toContain("PAUSED");
+    expect(meta?.summary).toMatch(/paused/i);
     expect(google?.paused).toBe(true);
-    expect(google?.summary).toContain("PAUSED");
+    expect(google?.summary).toMatch(/paused/i);
     expect(plan.find((s) => s.title === "Landing page")?.paused).toBe(false);
     expect(plan.map((s) => s.endpoint)).toEqual(nodes.map((n) => CATALOG[n.type].endpoint));
   });

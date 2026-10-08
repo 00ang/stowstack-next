@@ -8,6 +8,8 @@ import { fireMetaCapi } from "@/lib/meta-capi";
 import { identifyFromRequest } from "@/lib/attribution/visitor";
 import { respondToNewLeadSafely, scheduleSpeedCheck } from "@/lib/respond/speed-to-lead";
 import { enqueue } from "@/lib/jobs/queue";
+import { followUpTrigger } from "@/lib/campaign-publish/follow-up";
+import { selfBaseUrl } from "@/lib/self-url";
 
 /**
  * When a lead converts on a landing page that belongs to a funnel,
@@ -39,6 +41,10 @@ async function enrollInFunnelDrip(
     where: { session_id: leadSessionId },
     data: { funnel_id: lp.funnel_id },
   });
+
+  // A campaign published from the canvas arms its own follow-up
+  // (src/lib/campaign-publish/follow-up.ts): enrol the lead in that and stop.
+  if (await enrollInCampaignFollowUp(lp.funnel_id, fId, lead.id)) return;
 
   // Find the funnel's post-conversion drip template
   const template = await db.drip_sequence_templates.findFirst({
@@ -72,6 +78,46 @@ async function enrollInFunnelDrip(
       history: [],
     },
   });
+}
+
+/**
+ * Enrol a lead in its campaign's follow-up, when the campaign has one armed.
+ * Idempotent per lead and sequence. Returns whether the campaign had one.
+ */
+async function enrollInCampaignFollowUp(funnelId: string, facilityId: string | null, leadId: string): Promise<boolean> {
+  const sequence = await db.nurture_sequences.findFirst({
+    where: { trigger_type: followUpTrigger(funnelId), status: "active" },
+    select: { id: true, facility_id: true, steps: true },
+  });
+  if (!sequence) return false;
+  const already = await db.nurture_enrollments.findFirst({
+    where: { sequence_id: sequence.id, lead_id: leadId },
+    select: { id: true },
+  });
+  if (already) return true;
+
+  const [lead, page] = await Promise.all([
+    db.partial_leads.findUnique({ where: { id: leadId }, select: { name: true, email: true, phone: true, unit_size: true } }),
+    db.landing_pages.findFirst({ where: { funnel_id: funnelId, status: "published" }, select: { slug: true } }),
+  ]);
+  const steps = (sequence.steps as { delay_minutes?: number }[] | null) ?? [];
+  const first = steps[0]?.delay_minutes ?? 24 * 60;
+  await db.nurture_enrollments.create({
+    data: {
+      sequence_id: sequence.id,
+      facility_id: facilityId || sequence.facility_id,
+      lead_id: leadId,
+      contact_name: lead?.name ?? null,
+      contact_email: lead?.email ?? null,
+      contact_phone: lead?.phone ?? null,
+      next_send_at: new Date(Date.now() + first * 60_000),
+      metadata: {
+        unit_size: lead?.unit_size || "unit",
+        reserve_link: page ? `${selfBaseUrl()}/lp/${page.slug}?utm_source=followup&utm_medium=email&utm_campaign=${funnelId}` : "",
+      },
+    },
+  });
+  return true;
 }
 
 function esc(str: string | null | undefined): string {
@@ -269,7 +315,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return jsonResponse({ success: true }, 200, origin);
+    // The lead id lets the page book a tour against this same lead.
+    return jsonResponse({ success: true, leadId: lead.id }, 200, origin);
   } catch {
     return errorResponse("Internal server error", 500, origin);
   }

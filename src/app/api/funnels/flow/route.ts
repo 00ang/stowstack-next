@@ -43,34 +43,46 @@ export async function GET(req: NextRequest) {
     const pageIds = pages.map((p) => p.id);
 
     const [touches, leads] = await Promise.all([
-      pageIds.length
-        ? db.touches.groupBy({
-            by: ["channel", "source"],
-            where: { kind: "visit", landing_page_id: { in: pageIds }, occurred_at: { gte: since } },
-            _count: { _all: true },
-          })
-        : Promise.resolve([] as { channel: string; source: string | null; _count: { _all: number } }[]),
+      // A visit belongs to the campaign by its page, or by the campaign id every
+      // link the campaign publishes carries in utm_campaign — which still holds
+      // when the page id is lost on the way in.
+      db.touches.groupBy({
+        by: ["channel", "source"],
+        where: {
+          kind: "visit",
+          occurred_at: { gte: since },
+          OR: [{ utm_campaign: id }, ...(pageIds.length ? [{ landing_page_id: { in: pageIds } }] : [])],
+        },
+        _count: { _all: true },
+      }),
       db.partial_leads.findMany({
         where: {
           deleted_at: null,
           created_at: { gte: since },
-          OR: [{ funnel_id: id }, ...(pageIds.length ? [{ landing_page_id: { in: pageIds } }] : [])],
+          OR: [
+            { funnel_id: id },
+            { utm_campaign: id },
+            ...(pageIds.length ? [{ landing_page_id: { in: pageIds } }] : []),
+          ],
         },
         select: { id: true, first_response_at: true, lead_status: true, matched_tenant_id: true, converted: true },
       }),
     ]);
 
     const leadIds = leads.map((l) => l.id);
-    const [enrolled, toured] = leadIds.length
+    const [nurtured, dripped, toured] = leadIds.length
       ? await Promise.all([
           db.nurture_enrollments.findMany({ where: { lead_id: { in: leadIds } }, select: { lead_id: true }, distinct: ["lead_id"] }),
+          db.drip_sequences.findMany({ where: { lead_id: { in: leadIds } }, select: { lead_id: true }, distinct: ["lead_id"] }),
           db.facility_tours.findMany({
             where: { lead_id: { in: leadIds }, status: { not: "cancelled" } },
             select: { lead_id: true },
             distinct: ["lead_id"],
           }),
         ])
-      : [[], []];
+      : [[], [], []];
+    // Follow-up runs on two systems (nurture, and the older funnel drip); a lead counts once.
+    const enrolled = new Set([...nurtured, ...dripped].map((r) => r.lead_id).filter(Boolean));
 
     const visits: FlowCounts["visits"] = { meta: 0, google: 0, gbp: 0, tiktok: 0, other: 0 };
     for (const t of touches) visits[visitBucket(t.channel, t.source)] += t._count._all;
@@ -81,7 +93,7 @@ export async function GET(req: NextRequest) {
       visits,
       leads: leads.length,
       answered: leads.filter((l) => l.first_response_at).length,
-      enrolled: enrolled.length,
+      enrolled: enrolled.size,
       toured: toured.length,
       holds: leads.filter((l) => HOLD_STATES.has(status(l.lead_status))).length,
       moveIns: leads.filter((l) => l.converted || l.matched_tenant_id || MOVED_STATES.has(status(l.lead_status))).length,

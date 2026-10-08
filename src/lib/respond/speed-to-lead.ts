@@ -73,10 +73,14 @@ export async function respondToNewLead(leadId: string): Promise<SpeedResult> {
 
   const rows = await db.$queryRaw<LeadRow[]>`
     SELECT pl.id, pl.name, pl.phone, pl.unit_size, pl.facility_id,
-           f.name AS facility_name, f.contact_phone AS operator_phone,
+           f.name AS facility_name,
+           -- A campaign's own alert phone (its Text-back function) wins over the facility's.
+           COALESCE(NULLIF(fu.config->>'alertPhone', ''), f.contact_phone) AS operator_phone,
            pl.converted_at, pl.first_response_at
     FROM partial_leads pl
     LEFT JOIN facilities f ON f.id = pl.facility_id
+    LEFT JOIN landing_pages lp ON lp.id = pl.landing_page_id
+    LEFT JOIN funnels fu ON fu.id = COALESCE(pl.funnel_id, lp.funnel_id)
     WHERE pl.id = ${leadId}::uuid AND pl.deleted_at IS NULL
     LIMIT 1
   `;

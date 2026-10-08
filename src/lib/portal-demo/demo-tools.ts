@@ -1,4 +1,5 @@
 import { demoRows, DEMO_FACILITY_ID } from "./demo-rows";
+import { demoPublishAnswer } from "./demo-publish";
 
 /**
  * The facility tools in the sample portal: Landing Pages, Tracking Links,
@@ -57,6 +58,7 @@ function write(made: Made) {
 export function clearDemoTools() {
   try {
     sessionStorage.removeItem(STORE);
+    sessionStorage.removeItem("sa-demo-publish");
   } catch {
     /* nothing stored */
   }
@@ -672,6 +674,8 @@ export function demoToolAnswer(url: URL, method: string, raw: string | undefined
       return nurture(url, method, raw, now);
     case "/api/facility-creatives":
       return creatives(url, method, raw, now);
+    case "/api/funnels/publish":
+      return demoPublishAnswer(url, method, raw, now);
     case "/api/funnels/flow": {
       if (method !== "GET") return null;
       // The sample's counts for one campaign, from the same rows: visits to its

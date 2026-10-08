@@ -27,9 +27,12 @@ import { funnelContextFromOntology, goalMonths } from "./context";
 import { FunnelCanvas, placeFrom, placeFunction } from "./funnel-canvas";
 import { FunnelInspector, type ToolLinkFor } from "./inspector";
 import { actionHref } from "@/lib/ontology/href";
+import type { ToolKey } from "@/lib/ontology/types";
 import { NextMoveBar } from "./next-move-bar";
 import { FunnelPalette } from "./palette";
 import { PublishDialog } from "./publish-dialog";
+import { PublishStrip } from "./publish-strip";
+import { attention, usePublish } from "./use-publish";
 import { ReadOnlyFlow } from "./read-only-flow";
 import { useCampaignDraft } from "./use-campaign-draft";
 
@@ -53,6 +56,9 @@ function useFlowCounts(funnelId: string): FlowCounts | null {
   }, [funnelId]);
   return counts;
 }
+
+/** The owner tools a publish result may send someone to. */
+const TOOL_KEYS: ReadonlySet<string> = new Set<ToolKey>(["ad-publisher", "creative-studio", "gbp", "landing-pages"]);
 
 /** Frameless, square, and each one its own fill (no two neighbours match). */
 const TOOL_BUTTON =
@@ -106,6 +112,14 @@ export function CampaignStage({
     () => (isEmptyFlow(flowCounts) ? undefined : edgeCounts(draft.graph, flowCounts)),
     [flowCounts, draft.graph],
   );
+  const pub = usePublish(funnelId);
+  const published = pub.state?.nodes;
+  // Where a publish result points to fix it: a tool in the portal. The admin has no portal links.
+  const fixHref = (tool: string): string | null => {
+    if (!shared || tool === "canvas") return null;
+    if (tool === "settings") return "/portal/settings";
+    return TOOL_KEYS.has(tool) ? actionHref({ label: "", tool: tool as ToolKey }, null) : null;
+  };
   const [readOnly, setReadOnly] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -136,6 +150,11 @@ export function CampaignStage({
       return;
     }
     if (action.kind === "ads-manager") {
+      const made = Object.values(published ?? {}).find((r) => r.state === "paused" && r.href);
+      if (made?.href) {
+        window.open(made.href, "_blank", "noopener,noreferrer");
+        return;
+      }
       draft.setNotice("The Meta campaign is paused. Switch it on in Ads Manager. Nothing here spends until you do.");
       return;
     }
@@ -158,21 +177,75 @@ export function CampaignStage({
   runRef.current = run;
   const setOverride = shared?.setOverride;
   const setWorking = shared?.setWorking;
-  const moveKey = `${move.sentence}|${move.actionLabel}|${counts.ready}/${counts.total}|${pathToMoveIn(draft.graph)}`;
+  // After a publish, the move is whatever the publish left for the owner:
+  // the first function that needs them, or switching on what was made paused.
+  const afterPublish = useMemo(() => {
+    const state = pub.state;
+    if (!state || (state.status === "running" && !pub.stale)) return null;
+    const ask = attention(state)[0];
+    if (ask) {
+      const node = draft.graph.nodes.find((n) => n.id === ask.id);
+      if (!node) return null;
+      const r = ask.result;
+      const href = r.fix ? fixHref(r.fix.tool) : null;
+      const title = defOf(node.type).title;
+      return {
+        key: `ask:${ask.id}:${r.state}:${r.line}`,
+        sentence: r.state === "needs" ? `${title} needs you.` : `${title} didn't publish.`,
+        reason: r.line,
+        label: href && r.fix ? r.fix.label : `Open ${title}`,
+        onDo: () => {
+          if (href) window.location.href = href;
+          else {
+            draft.setSelectedId(ask.id);
+            setFocusField(true);
+          }
+        },
+      };
+    }
+    const made = state.order.map((id) => ({ id, r: state.nodes[id] })).find((x) => x.r?.state === "paused" && x.r.href);
+    if (made?.r?.href) {
+      const node = draft.graph.nodes.find((n) => n.id === made.id);
+      const where = node?.type === "google" ? "Google Ads" : "Ads Manager";
+      return {
+        key: `paused:${made.id}`,
+        sentence: `Switch it on in ${where}.`,
+        reason: made.r.line,
+        label: `Open ${where}`,
+        onDo: () => window.open(made.r!.href!, "_blank", "noopener,noreferrer"),
+      };
+    }
+    return null;
+    // fixHref is rebuilt each render from `shared`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pub.state, pub.stale, draft.graph.nodes, shared]);
+  const moveKey = `${move.sentence}|${move.actionLabel}|${counts.ready}/${counts.total}|${pathToMoveIn(draft.graph)}|${afterPublish?.key ?? ""}`;
   useEffect(() => {
     if (!setOverride || draft.loading) return;
     setOverride({
-      sentence: move.sentence,
-      reason: move.reason,
-      label: move.actionLabel,
+      sentence: afterPublish?.sentence ?? move.sentence,
+      reason: afterPublish?.reason ?? move.reason,
+      label: afterPublish?.label ?? move.actionLabel,
       ready: counts.ready,
       total: counts.total,
       pathClosed: pathToMoveIn(draft.graph),
-      onDo: () => runRef.current(move.action),
+      onDo: afterPublish ? afterPublish.onDo : () => runRef.current(move.action),
     });
-    // moveKey stands for move, counts and path, which are rebuilt each render.
+    // moveKey stands for move, counts, path and the publish's ask, which are rebuilt each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moveKey, setOverride, draft.loading]);
+
+  // A run that put a page live publishes the canvas too (the server marks it; keep the tab in step).
+  const graphStatus = draft.graph.status;
+  const markPublished = draft.markPublished;
+  useEffect(() => {
+    const state = pub.state;
+    if (!state || state.status !== "finished" || graphStatus === "published") return;
+    const live = draft.graph.nodes.some((n) => n.type === "page" && ["done", "paused"].includes(state.nodes[n.id]?.state ?? ""));
+    if (live) markPublished();
+    // Only the run's status and the graph's own status decide this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pub.state?.status, pub.state?.runId, graphStatus, markPublished]);
   useEffect(() => () => setOverride?.(null), [setOverride]);
   useEffect(() => {
     if (!setWorking || draft.loading || !draft.graph.name) return;
@@ -320,6 +393,8 @@ export function CampaignStage({
               showBack={!narrow && readOnly}
               onBackToCanvas={() => setReadOnly(false)}
               edgeLabels={edgeLabels}
+              published={published}
+              fixHref={fixHref}
             />
           </div>
         ) : (
@@ -353,6 +428,7 @@ export function CampaignStage({
                 }
                 onRefuse={draft.setNotice}
                 edgeLabels={edgeLabels}
+                published={published}
               />
             </div>
             <FunnelInspector
@@ -373,10 +449,27 @@ export function CampaignStage({
               }}
               toolLink={shared ? toolLink : undefined}
               technical={!shared}
+              published={published}
+              fixHref={fixHref}
+              onRetry={(id) => void pub.start(draft.graph, [id])}
             />
           </>
         )}
       </div>
+
+      {pub.state && (
+        <PublishStrip
+          graph={draft.graph}
+          state={pub.state}
+          stale={pub.stale}
+          starting={pub.starting}
+          onShow={(id) => {
+            draft.setSelectedId(id);
+            setFocusField(false);
+          }}
+          onRetry={(retry) => void pub.start(draft.graph, retry)}
+        />
+      )}
 
       <div className="ic-label flex shrink-0 items-center justify-between gap-3 border-t border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-1 text-[10.5px] text-[var(--ic-secondary)] sm:px-4">
         <span>
@@ -389,7 +482,7 @@ export function CampaignStage({
             </>
           )}
         </span>
-        {draft.graph.status === "published" && <span>Ads created paused</span>}
+        {draft.graph.status === "published" && <span>Ads made paused</span>}
       </div>
 
       {/* In the portal the move rides the portal's own bar; the admin keeps this one. */}
@@ -432,11 +525,18 @@ export function CampaignStage({
       {publishOpen && (
         <PublishDialog
           graph={draft.graph}
+          preflight={pub.preflight}
+          previous={pub.state}
+          starting={pub.starting}
+          error={pub.error}
+          sample={sample}
+          fixHref={fixHref}
           onClose={() => setPublishOpen(false)}
-          onConfirm={() => {
-            draft.markPublished();
-            setPublishOpen(false);
-            draft.setNotice("Nothing was sent. Pages would go live and ad campaigns would be created paused.");
+          onPublish={async () => {
+            if (await pub.start(draft.graph)) {
+              setPublishOpen(false);
+              draft.setSelectedId(null);
+            }
           }}
         />
       )}

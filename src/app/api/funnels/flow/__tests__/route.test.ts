@@ -38,6 +38,7 @@ beforeEach(() => {
     ]),
   };
   mockDb.nurture_enrollments = { findMany: vi.fn().mockResolvedValue([{ lead_id: "l1" }]) };
+  mockDb.drip_sequences = { findMany: vi.fn().mockResolvedValue([{ lead_id: "l1" }, { lead_id: "l3" }]) };
   mockDb.facility_tours = { findMany: vi.fn().mockResolvedValue([{ lead_id: "l2" }]) };
 });
 
@@ -59,13 +60,20 @@ describe("GET /api/funnels/flow", () => {
       visits: { meta: 240, google: 31, gbp: 96, tiktok: 0, other: 12 },
       leads: 3,
       answered: 2,
-      enrolled: 1,
+      enrolled: 2,
       toured: 1,
       holds: 1,
       moveIns: 1,
     });
     const leadWhere = mockDb.partial_leads.findMany.mock.calls[0][0].where;
-    expect(leadWhere.OR).toEqual([{ funnel_id: FUNNEL }, { landing_page_id: { in: ["p1", "p2"] } }]);
+    expect(leadWhere.OR).toEqual([
+      { funnel_id: FUNNEL },
+      { utm_campaign: FUNNEL },
+      { landing_page_id: { in: ["p1", "p2"] } },
+    ]);
+    // Visits count by page or by the campaign id its links carry.
+    const touchWhere = mockDb.touches.groupBy.mock.calls[0][0].where;
+    expect(touchWhere.OR).toEqual([{ utm_campaign: FUNNEL }, { landing_page_id: { in: ["p1", "p2"] } }]);
   });
 
   it("is a 404 for a campaign that doesn't exist, and a 400 without an id", async () => {

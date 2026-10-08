@@ -35,6 +35,7 @@ import { refreshProvenAds } from "@/lib/proven-ads/refresh";
 import { writeProvenAdInsights } from "@/lib/proven-ads/insights-job";
 import { PROCESS_BATCH, processUploadedReport, processUploadedReports } from "@/lib/pms-uploads";
 import { SWEEP_AFTER_MINUTES, retryStuckDiagnostics } from "@/lib/diagnostic-retry";
+import { PUBLISH_QUEUE, publishCampaign } from "@/lib/campaign-publish/run";
 
 /**
  * Resumability proof. Counts to `payload.to` in chunks, yielding whenever the
@@ -355,4 +356,8 @@ export const HANDLERS: Record<string, JobHandler> = {
   // Proven Ads library: write the read (why it runs, how to run your own) for
   // rows that lack one. Enqueued by imports, manual adds and the refresh.
   "proven-ads.insights": writeProvenAdInsights,
+  // A campaign published from the canvas, one function at a time. Each
+  // function's result is written as it lands; ad-platform calls that may have
+  // happened are never retried without the owner (src/lib/campaign-publish/run.ts).
+  [PUBLISH_QUEUE]: publishCampaign,
 };
