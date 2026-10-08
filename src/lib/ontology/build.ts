@@ -605,6 +605,7 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
       type: "units",
       sentence: "Upload your unit mix.",
       reason: "Every size, rate and vacancy here reads from it. Offers, ads and price checks wait on it.",
+      why: "Every suggestion here starts from your sizes and prices.",
       action: { label: "Upload", href: "/portal/upload" },
     });
   }
@@ -617,13 +618,15 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
     .sort((a, b) => b.vacant - a.vacant || (a.o.address < b.o.address ? -1 : 1))
     .slice(0, 2);
   for (const { o, u, vacant } of unsold) {
-    const rate = money(u.webRate ?? u.streetRate);
+    const rateN = u.webRate ?? u.streetRate;
+    const rate = money(rateN);
     move({
       rule: "unsold-space",
       rank: 500 + Math.min(vacant, 99),
       subject: o.address,
       sentence: `${o.name} has ${vacant} empty and no ad names it.`,
       reason: `${vacant} of ${u.total} are open${rate ? ` at ${rate} a month online` : ""}.`,
+      why: rateN ? `${money(Math.round(vacant * rateN))} a month in rent is sitting in empty ${o.name} units.` : undefined,
       action: { label: "Write an ad", tool: "creative-studio" },
     });
   }
@@ -643,6 +646,22 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
   if (waiting.length) {
     const oldest = waiting[0];
     const days = daysSince(oldest.l.createdAt, now) ?? 0;
+    // The why: what happened here when people were answered quickly, if there
+    // are enough answered leads to say; otherwise who is waiting, for what.
+    const answered = ofType("leads")
+      .map((o) => leadRow.get(o.address)!)
+      .filter((l) => l.firstResponseAt && time(l.firstResponseAt) >= time(l.createdAt));
+    const quick = answered.filter((l) => time(l.firstResponseAt!) - time(l.createdAt) <= DAY);
+    const slow = answered.filter((l) => time(l.firstResponseAt!) - time(l.createdAt) > DAY);
+    const movedIn = (ls: RawLead[]) => ls.filter((l) => l.converted || !!l.matchedTenantId).length;
+    const who = oldest.l.name ? oldest.l.name.split(" ")[0] : "Someone";
+    const wanted = oldest.l.unitSize ? ` about a ${prettySize(oldest.l.unitSize) || oldest.l.unitSize}` : "";
+    const leadWhy =
+      quick.length >= 4 && slow.length >= 4
+        ? `Here, people answered within a day moved in ${movedIn(quick)} of ${quick.length} times; answered later, ${movedIn(slow)} of ${slow.length}.`
+        : days === 0
+          ? `${who} asked${wanted} today and is still waiting.`
+          : `${who} has waited ${plural(days, "day")} since asking${wanted}.`;
     move({
       rule: "leads-waiting",
       rank: 480 + Math.min(waiting.length, 19),
@@ -652,6 +671,7 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
         days === 0
           ? `The oldest came in today, from ${channelName(oldest.l.sourceChannel)}.`
           : `The oldest came in ${plural(days, "day")} ago, from ${channelName(oldest.l.sourceChannel)}.`,
+      why: leadWhy,
       action: { label: "Follow up", tool: "lead-nurture" },
     });
   }
@@ -675,20 +695,24 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
         unanswered.length === 1
           ? `Posted ${monthDay(first.reviewTime) ?? "recently"}.`
           : `Start with the ${first.rating}-star one from ${monthDay(first.reviewTime) ?? "recently"}.`,
+      why: first.text ? `${first.author ? `${first.author.split(" ")[0]} wrote` : "It says"}: “${excerpt(first.text, 90)}”` : undefined,
       action: { label: "Reply", tool: "gbp" },
     });
   }
 
   // Offers nobody can see.
+  const specialByAddress = new Map(raw.specials.map((sp) => [offerAddr.get(sp.id), sp]));
   for (const o of ofType("offers").filter((x) => x.status === "running")) {
     const shown = o.links.some((l) => l.startsWith("ads/") || l.startsWith("pages/") || l.startsWith("posts/"));
     if (shown) continue;
+    const ends = specialByAddress.get(o.address)?.endDate ?? null;
     move({
       rule: "offer-unseen",
       rank: 400,
       subject: o.address,
       sentence: `${o.name} isn't in any ad, page or Google post.`,
       reason: "An offer only works where people can see it.",
+      why: ends ? `It runs until ${monthDay(ends)}, and nobody has seen it yet.` : "It's running, and nobody has seen it yet.",
       action: { label: "Write a Google post", tool: "gbp" },
     });
   }
@@ -710,17 +734,25 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
     .sort((a, b) => b.ours - b.cheaper.price - (a.ours - a.cheaper.price) || (a.o.address < b.o.address ? -1 : 1))
     .slice(0, 1);
   for (const { o, ours, cheaper } of undercuts) {
+    const u = unitRow.get(o.address)!;
+    const empty = Math.max(0, u.total - u.occupied);
+    const pct = Math.round(((ours - cheaper.price) / ours) * 100);
     move({
       rule: "undercut",
       rank: 380 + Math.min(Math.round(ours - cheaper.price), 99),
       subject: o.address,
       sentence: `${cheaper.name} lists ${o.name} at ${money(cheaper.price)}.`,
       reason: `That is ${money(Math.round(ours - cheaper.price))} under your ${money(ours)}${cheaper.miles != null ? `, ${cheaper.miles} mi away` : ""}.`,
+      why: `They ask ${pct}% less${cheaper.miles != null ? `, ${cheaper.miles} mi from you,` : ""} while ${empty} of yours sit empty.`,
       action: { label: "Compare prices", tool: "market-intel" },
     });
   }
 
-  // Pages people visit and leave.
+  // Pages people visit and leave. The why compares them with this facility's
+  // own pages that do turn visits into leads, when there are any.
+  const converting = byId(raw.pages).filter((p) => lower(p.status) === "published" && p.visits30 >= 40 && (pageLeads30.get(p.id) ?? 0) > 0);
+  const convVisits = converting.reduce((n, p) => n + p.visits30, 0);
+  const convLeads = converting.reduce((n, p) => n + (pageLeads30.get(p.id) ?? 0), 0);
   for (const p of byId(raw.pages)) {
     if (lower(p.status) !== "published" || p.visits30 < 40 || (pageLeads30.get(p.id) ?? 0) > 0) continue;
     const address = pageAddr.get(p.id)!;
@@ -730,6 +762,9 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
       subject: address,
       sentence: `${p.title} had ${p.visits30} visits and no leads.`,
       reason: "Counted over the last 30 days.",
+      why: convLeads > 0
+        ? `Your other pages turn about 1 in ${Math.max(1, Math.round(convVisits / convLeads))} visits into a lead.`
+        : `${p.visits30} people looked and left without asking.`,
       action: { label: "Edit page", tool: "landing-pages" },
     });
   }
@@ -746,6 +781,7 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
       sentence:
         staleDrafts.length === 1 ? "An ad draft has sat for over a week." : `${plural(staleDrafts.length, "ad draft")} have sat for over a week.`,
       reason: `The oldest was written ${monthDay(staleDrafts[0].at)}.`,
+      why: staleDrafts.length === 1 ? "Written, and never shown to anyone." : "Written, and none of them shown to anyone.",
       action: { label: "Review drafts", tool: "ad-publisher" },
     });
   }

@@ -136,6 +136,8 @@ export type MoveAction =
 export interface NextMove {
   sentence: string;
   reason: string;
+  /** One plain line on why it matters (the goal, the gap), when there is one. */
+  why?: string;
   actionLabel: string;
   action: MoveAction;
 }

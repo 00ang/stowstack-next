@@ -122,6 +122,12 @@ export interface Move {
   type: ObjectTypeKey;
   sentence: string;
   reason: string;
+  /**
+   * One plain line on why it matters, from the facility's own numbers: the
+   * rent sitting idle, who is waiting and for what, what a reviewer said.
+   * Never advice, never a borrowed statistic.
+   */
+  why?: string;
   action: ObjectAction;
 }
 

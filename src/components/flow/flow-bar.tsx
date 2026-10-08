@@ -193,8 +193,12 @@ function Bar() {
         </span>
         <div className="min-w-0">
           <div className="text-[15px] font-extrabold leading-snug text-[var(--ic-ink)]">{chosen.sentence}</div>
-          {/* On a phone the reason gives way to the page: two lines at most. */}
-          <div className="line-clamp-2 text-[13px] font-semibold leading-snug text-[var(--ic-secondary)] sm:line-clamp-none">{chosen.reason}</div>
+          {/* The why when there is one (the insight), else the reason. On a phone it gives way after two lines. */}
+          {chosen.why ? (
+            <div className="line-clamp-2 text-[13px] font-bold leading-snug text-[var(--ic-ink)] sm:line-clamp-none">{chosen.why}</div>
+          ) : (
+            <div className="line-clamp-2 text-[13px] font-semibold leading-snug text-[var(--ic-secondary)] sm:line-clamp-none">{chosen.reason}</div>
+          )}
         </div>
       </div>
       {chosen.here ? (

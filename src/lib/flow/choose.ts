@@ -55,6 +55,8 @@ export interface FlowMove {
   source: "facility" | "campaign" | "goal";
   sentence: string;
   reason: string;
+  /** One plain line on why it matters, when the facility's numbers can say it. */
+  why?: string;
   /** The one button. */
   label: string;
   href: string;
@@ -107,6 +109,7 @@ function fromOntologyMove(move: Move, where: Where): FlowMove {
     source: "facility",
     sentence: move.sentence,
     reason: move.reason,
+    why: move.why,
     label: move.action.label,
     href,
     here: isHere(href, where),
@@ -127,6 +130,7 @@ function fromCampaign(working: WorkingOn, where: Where): FlowMove | null {
     source: "campaign",
     sentence: working.move.sentence,
     reason: `${working.name} · ${working.move.reason}`,
+    why: working.move.why,
     label: working.move.actionLabel,
     href,
     here: where.surface === "campaign",

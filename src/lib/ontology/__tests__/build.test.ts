@@ -172,3 +172,55 @@ describe("buildOntology", () => {
     });
   });
 });
+
+describe("the why behind each move", () => {
+  const o = buildOntology(fixture(), NOW);
+
+  it("gives every move a plain why", () => {
+    expect(o.moves.length).toBeGreaterThan(0);
+    for (const m of o.moves) {
+      expect(m.why, m.id).toBeTruthy();
+      expect(m.why!.length, m.id).toBeLessThan(160);
+    }
+  });
+
+  it("prices empty space as the rent it would bring", () => {
+    const raw = fixture();
+    const m = o.moves.find((x) => x.rule === "unsold-space");
+    if (!m) return;
+    const unit = raw.units.find((u) => o.objects.find((x) => x.address === m.subject)?.id === u.id)!;
+    const rent = (unit.total - unit.occupied) * (unit.webRate ?? unit.streetRate ?? 0);
+    expect(m.why).toContain(`$${rent.toLocaleString("en-US")} a month in rent`);
+  });
+
+  it("says who is waiting, for what, when there aren't enough answered leads to compare", () => {
+    const m = o.moves.find((x) => x.rule === "leads-waiting");
+    if (!m) return;
+    expect(m.why).toMatch(/still waiting|has waited \d+ days? since asking|answered within a day/);
+  });
+
+  it("compares answering quickly with answering late once there are enough leads", () => {
+    const raw = fixture();
+    const base = raw.leads[0];
+    const at = (h: number) => new Date(NOW.getTime() - (10 * 24 - h) * 3_600_000).toISOString();
+    const made = (i: number, hours: number, moved: boolean) => ({
+      ...base,
+      id: `c0000000-0000-0000-0000-0000000000${String(i).padStart(2, "0")}`,
+      name: `Lead ${i}`,
+      hasContact: true,
+      createdAt: at(0),
+      firstResponseAt: at(hours),
+      converted: moved,
+      matchedTenantId: null,
+      status: moved ? "moved_in" : "contacted",
+    });
+    raw.leads = [
+      ...raw.leads,
+      ...[0, 1, 2, 3].map((i) => made(i, 2, i < 3)),
+      ...[4, 5, 6, 7].map((i) => made(i, 48, i === 4)),
+    ];
+    const m = buildOntology(raw, NOW).moves.find((x) => x.rule === "leads-waiting");
+    if (!m) return;
+    expect(m.why).toContain("answered within a day moved in");
+  });
+});
