@@ -23,10 +23,14 @@ interface Made {
   replies: Record<string, string>;
   drafts: Record<string, string>;
   sequences: Record<string, unknown>[];
+  /** Setup in the sample: the steps saved, and whether it was finished. */
+  onboarding: { steps: Record<string, { completed: boolean; data: Record<string, unknown> }>; completedAt: string | null } | null;
+  /** The month's goal, once set in the sample's setup or settings. */
+  goal: number | null;
 }
 
 function blank(): Made {
-  return { links: [], posts: [], enrollments: [], pages: {}, replies: {}, drafts: {}, sequences: [] };
+  return { links: [], posts: [], enrollments: [], pages: {}, replies: {}, drafts: {}, sequences: [], onboarding: null, goal: null };
 }
 
 function read(): Made {
@@ -478,6 +482,37 @@ function nurture(url: URL, method: string, raw: string | undefined, now: Date): 
   return { status: 405, body: { error: "Not in the sample portal." } };
 }
 
+/* ─── setup and the goal ─── */
+
+function onboarding(method: string, raw: string | undefined, now: Date): Answer {
+  const made = read();
+  const record = made.onboarding ?? { steps: {}, completedAt: new Date(now.getTime() - 100 * DAY).toISOString() };
+  if (method === "GET") {
+    return ok({ onboarding: { accessCode: "demo", updatedAt: now.toISOString(), ...record }, completionPct: 100 });
+  }
+  if (method === "PATCH") {
+    const input = body(raw);
+    const step = typeof input.step === "string" ? input.step : null;
+    if (step && input.data && typeof input.data === "object") {
+      record.steps = { ...record.steps, [step]: { completed: true, data: input.data as Record<string, unknown> } };
+    }
+    if (input.finish) {
+      const goal = (record.steps.adPreferences?.data as Record<string, unknown> | undefined)?.primaryGoal;
+      if (!goal) return { status: 400, body: { error: "Pick what you want StorageAds to get you first." } };
+      record.completedAt = new Date().toISOString();
+    }
+    made.onboarding = record;
+    write(made);
+    return ok({ success: true, onboarding: { accessCode: "demo", updatedAt: new Date().toISOString(), ...record }, completionPct: 100 });
+  }
+  return { status: 405, body: { error: "Not in the sample portal." } };
+}
+
+/** The sample's goal for this month: the one set in its setup, else 12. */
+export function demoGoalTarget(): number {
+  return read().goal ?? 12;
+}
+
 /**
  * The sample's answer for a tool route, or null when the route is not one of
  * these tools (the caller then answers it, or says it is not in the sample).
@@ -511,6 +546,22 @@ export function demoToolAnswer(url: URL, method: string, raw: string | undefined
       return method === "GET" ? ok({ assets: [] }) : null;
     case "/api/nurture-sequences":
       return nurture(url, method, raw, now);
+    case "/api/client-onboarding":
+      return onboarding(method, raw, now);
+    case "/api/client-data": {
+      if (method !== "PATCH") return null;
+      const input = body(raw);
+      if (typeof input.monthlyGoal === "number" && input.monthlyGoal >= 0) {
+        const made = read();
+        made.goal = Math.floor(input.monthlyGoal);
+        write(made);
+      }
+      return ok({ success: true });
+    }
+    case "/api/portal-upload":
+      return method === "POST"
+        ? { status: 403, body: { error: "The sample portal doesn't import files. In your own portal a clean CSV imports in seconds." } }
+        : null;
     default:
       return null;
   }

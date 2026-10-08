@@ -280,7 +280,7 @@ export function CampaignStage({
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {draft.loading ? (
-          <p className="p-4 text-sm font-semibold text-[var(--ic-secondary)]">Opening the campaign…</p>
+          <div className="p-4 text-sm font-semibold text-[var(--ic-secondary)]">Opening the campaign…</div>
         ) : showList ? (
           <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
             <ReadOnlyFlow

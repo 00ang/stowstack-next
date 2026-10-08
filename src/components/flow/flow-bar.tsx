@@ -143,7 +143,7 @@ function Bar() {
           <span className="ic-label shrink-0 pt-1 text-[10.5px] text-[var(--ic-instruction)]">Next move</span>
           <div className="min-w-0">
             <div className="text-[16px] font-extrabold leading-tight text-[var(--ic-ink)]">{override.sentence}</div>
-            <div className="text-[13px] font-semibold leading-snug text-[var(--ic-secondary)]">{override.reason}</div>
+            <div className="line-clamp-2 text-[13px] font-semibold leading-snug text-[var(--ic-secondary)] sm:line-clamp-none">{override.reason}</div>
           </div>
         </div>
         {override.total != null && override.total > 0 && (
@@ -193,7 +193,8 @@ function Bar() {
         </span>
         <div className="min-w-0">
           <div className="text-[15px] font-extrabold leading-snug text-[var(--ic-ink)]">{chosen.sentence}</div>
-          <div className="text-[13px] font-semibold leading-snug text-[var(--ic-secondary)]">{chosen.reason}</div>
+          {/* On a phone the reason gives way to the page: two lines at most. */}
+          <div className="line-clamp-2 text-[13px] font-semibold leading-snug text-[var(--ic-secondary)] sm:line-clamp-none">{chosen.reason}</div>
         </div>
       </div>
       {chosen.here ? (

@@ -78,7 +78,7 @@ export const PORTAL_NAV_GROUPS: PortalNavGroup[] = [
  * action rather than a permanent destination.
  */
 export const PORTAL_ONBOARDING_ITEM: PortalNavItem = {
-  label: "Onboarding",
+  label: "Setup",
   href: "/portal/onboarding",
   icon: ClipboardCheck,
 };

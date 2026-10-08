@@ -90,14 +90,14 @@ export function FunnelInspector({
             </select>
           </label>
         </div>
-        <p className="mt-2 text-[13px] font-semibold text-[var(--ic-secondary)]">
+        <div className="mt-2 text-[13px] font-semibold text-[var(--ic-secondary)]">
           {ctx.movedIn30 ?? 0} move-ins in the last 30 days
           {ctx.sample && <span className="ic-label ml-1 border border-[var(--ic-instruction)] px-1 text-[9px]">Sample</span>}. Counted by
           move-in date.
-        </p>
+        </div>
         <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">Still needs you · {needs.length}</div>
         {needs.length === 0 ? (
-          <p className="mt-1 text-[13px] font-semibold text-[var(--ic-secondary)]">Nothing. Every function is ready.</p>
+          <div className="mt-1 text-[13px] font-semibold text-[var(--ic-secondary)]">Nothing. Every function is ready.</div>
         ) : (
           <ul>
             {needs.map((n) => (
@@ -247,7 +247,7 @@ export function FunnelInspector({
         </>
       )}
       <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">What publish does</div>
-      <p className="text-[13px] font-semibold">{def.publish(node)}</p>
+      <div className="text-[13px] font-semibold">{def.publish(node)}</div>
       <div className="ic-label mt-3 text-[10.5px] text-[var(--ic-secondary)]">
         {def.backend === "exists" ? "Works today" : "Partly built"}
       </div>
@@ -265,7 +265,7 @@ export function FunnelInspector({
         );
       })()}
       {def.paused && (
-        <p className="mt-2 text-[13px] font-extrabold text-[var(--ic-ink)]">Created paused. It is not live until you switch it on in Ads Manager.</p>
+        <div className="mt-2 text-[13px] font-extrabold text-[var(--ic-ink)]">Created paused. It is not live until you switch it on in Ads Manager.</div>
       )}
       <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">Change</div>
       <button type="button" onClick={onRemove} className="font-extrabold underline underline-offset-4">

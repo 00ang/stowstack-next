@@ -2,7 +2,7 @@ import type { ClientData, PortalSession } from "@/lib/portal-helpers";
 import { buildOntology } from "@/lib/ontology/build";
 import { DEMO_FACILITY_ID, demoRows } from "./demo-rows";
 import { demoFunnelsAnswer } from "./demo-funnels";
-import { clearDemoTools, demoToolAnswer } from "./demo-tools";
+import { clearDemoTools, demoGoalTarget, demoToolAnswer } from "./demo-tools";
 
 /**
  * The sample portal: /portal?demo opens the whole client portal on an invented
@@ -136,15 +136,12 @@ function answer(url: URL, method: string, rawBody?: string): Answer {
       return ok(buildOntology(demoRows(now), now));
     case "/api/attribution":
       return ok(attribution(url, now));
-    case "/api/client-onboarding":
-      return ok({
-        onboarding: { accessCode: "demo", updatedAt: iso(now, 100), completedAt: iso(now, 100), steps: {} },
-        completionPct: 100,
-      });
     case "/api/client-goals": {
       // The same shape /api/client-goals returns, for this month (UTC months, as it counts them).
       const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
-      return ok({ current: { month, target: 12, actual: 4, pct: 33 }, goals: [{ month, target: 12, actual: 4 }] });
+      const target = demoGoalTarget();
+      const pct = target > 0 ? Math.min(100, Math.round((4 / target) * 100)) : null;
+      return ok({ current: { month, target, actual: 4, pct }, goals: [{ month, target, actual: 4 }] });
     }
     case "/api/alert-history":
       return ok({

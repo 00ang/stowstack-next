@@ -50,7 +50,7 @@ interface FunnelRow {
 }
 
 /** The funnel rules' facts, with the month's goal as the campaign goal. */
-function useGoalContext(ontology: Ontology | null, pace: Pace | null, sample: boolean): FunnelContext {
+export function useGoalContext(ontology: Ontology | null, pace: Pace | null, sample: boolean): FunnelContext {
   return useMemo(() => {
     const base = funnelContextFromOntology(ontology, sample);
     if (pace && pace.target > 0) base.goal = { moveIns: pace.target, month: pace.monthName };
@@ -82,7 +82,7 @@ function PathLine({ graph }: { graph: FunnelGraph }) {
   );
 }
 
-function GoalPanel({
+export function GoalPanel({
   onStart,
   creating,
   error,
@@ -134,7 +134,7 @@ function GoalPanel({
           </span>
         </div>
         {sample && (
-          <p className="ic-label mt-3 text-[10px] text-[var(--ic-instruction)]">Sample facility · counts are sample</p>
+          <div className="ic-label mt-3 text-[10px] text-[var(--ic-instruction)]">Sample facility · counts are sample</div>
         )}
         {error && (
           <div role="alert" className="mt-3 border-l-2 border-[var(--color-red)] pl-3 text-[13px] font-semibold text-[var(--ic-ink)]">
@@ -218,14 +218,50 @@ function CampaignRow({ row }: { row: FunnelRow }) {
   );
 }
 
-export function CampaignsHome({ facilityId }: { facilityId: string }) {
+/**
+ * Build a campaign from a template and open its builder. The new campaign is
+ * the one being worked on from then on. `before` runs first (onboarding
+ * finishes itself there), so a failure stops before anything is created.
+ */
+export function useStartCampaign(facilityId: string) {
   const router = useRouter();
+  const flow = useFlow();
+  const [creating, setCreating] = useState<TemplateKey | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const start = useCallback(
+    async (key: TemplateKey, ctx: FunnelContext, before?: () => Promise<void>) => {
+      setCreating(key);
+      setError(null);
+      try {
+        if (before) await before();
+        const graph = buildTemplate(key, ctx);
+        const created = await adminFetch<{ id: string }>("/api/funnels", {
+          method: "POST",
+          body: JSON.stringify({ facilityId, name: graph.name, archetype: "custom", config: { graph } }),
+        });
+        if (!created?.id) throw new Error("no id");
+        flow?.setWorking({ id: created.id, name: graph.name ?? templateMeta(key).name, status: "draft", move: null });
+        router.push(campaignHref(created.id));
+      } catch (err) {
+        setError(
+          before && err instanceof Error && err.message
+            ? err.message
+            : "Couldn't start that campaign. Nothing was saved; try again.",
+        );
+        setCreating(null);
+      }
+    },
+    [facilityId, flow, router],
+  );
+  return { start, creating, error };
+}
+
+export function CampaignsHome({ facilityId }: { facilityId: string }) {
   const flow = useFlow();
   const sample = isPortalDemo();
   const params = useMemo(() => ({ facilityId }), [facilityId]);
   const { data: rows, loading, error, refetch } = useAdminFetch<FunnelRow[]>("/api/funnels", params);
-  const [creating, setCreating] = useState<TemplateKey | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const { start, creating, error: createError } = useStartCampaign(facilityId);
   // ?new=goal (the bar's "Start from your goal") opens the goal panel. Read
   // through the router so an in-app link sees its own URL, not the last page's.
   const askedForNew = useSearchParams().get("new") === "goal";
@@ -235,30 +271,12 @@ export function CampaignsHome({ facilityId }: { facilityId: string }) {
   const ctx = useGoalContext(flow?.ontology ?? null, flow?.pace ?? null, sample);
   const suggestion = suggestTemplate(ctx);
 
-  const start = useCallback(
-    async (key: TemplateKey) => {
-      setCreating(key);
-      setCreateError(null);
-      try {
-        const graph = buildTemplate(key, ctx);
-        const created = await adminFetch<{ id: string }>("/api/funnels", {
-          method: "POST",
-          body: JSON.stringify({ facilityId, name: graph.name, archetype: "custom", config: { graph } }),
-        });
-        if (!created?.id) throw new Error("no id");
-        flow?.setWorking({ id: created.id, name: graph.name ?? templateMeta(key).name, status: "draft", move: null });
-        router.push(campaignHref(created.id));
-      } catch {
-        setCreateError("Couldn't start that campaign. Nothing was saved; try again.");
-        setCreating(null);
-      }
-    },
-    [ctx, facilityId, flow, router],
-  );
 
   // With nothing being built, the bar's move on this page is the goal-first build.
-  const startRef = useRef(start);
-  startRef.current = start;
+  const startRef = useRef((key: TemplateKey) => start(key, ctx));
+  useEffect(() => {
+    startRef.current = (key: TemplateKey) => start(key, ctx);
+  });
   const setOverride = flow?.setOverride;
   const working = flow?.working ?? null;
   const reason = suggestion.because.join(" ");
@@ -310,7 +328,7 @@ export function CampaignsHome({ facilityId }: { facilityId: string }) {
       ) : (
         <>
           {(!hasRows || panelOpen) && (
-            <GoalPanel onStart={(k) => void start(k)} creating={creating} error={createError} compact={false} />
+            <GoalPanel onStart={(k) => void start(k, ctx)} creating={creating} error={createError} compact={false} />
           )}
           {hasRows && (
             <div role="region" aria-labelledby="campaign-list-heading">

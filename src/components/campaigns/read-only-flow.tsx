@@ -38,9 +38,9 @@ export function ReadOnlyFlow({
           Back to the canvas
         </button>
       )}
-      <p className="mt-3 border border-dashed border-[var(--ic-instruction)] bg-[var(--ic-soft)] px-3 py-2 text-[12.5px] font-semibold text-[var(--ic-secondary)]">
+      <div className="mt-3 border border-dashed border-[var(--ic-instruction)] bg-[var(--ic-soft)] px-3 py-2 text-[12.5px] font-semibold text-[var(--ic-secondary)]">
         Read-only on a phone. The next move below still works here; drag-and-connect editing needs a larger screen.
-      </p>
+      </div>
       <div className="mt-3">
         {order.map((n, idx) => {
           const def = defOf(n.type);

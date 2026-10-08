@@ -440,9 +440,9 @@ export function FunnelCanvas(props: CanvasProps) {
           <div className="pointer-events-auto max-w-sm border border-[var(--ic-ink)] bg-[var(--ic-pane)] p-4">
             <div className="ic-label text-[10.5px] text-[var(--ic-instruction)]">Empty campaign</div>
             <h3 className="mt-1 text-[16px] font-extrabold">Start from what you want to happen.</h3>
-            <p className="mt-1 text-[13px] font-semibold text-[var(--ic-secondary)]">
+            <div className="mt-1 text-[13px] font-semibold text-[var(--ic-secondary)]">
               Drag a function in from the left, or follow the next move below.
-            </p>
+            </div>
           </div>
         </div>
       )}

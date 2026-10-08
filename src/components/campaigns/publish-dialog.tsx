@@ -21,9 +21,9 @@ export function PublishDialog({
       <div className="max-h-[86vh] w-full max-w-xl overflow-y-auto border border-[var(--ic-ink)] bg-[var(--ic-pane)] p-5">
         <div className="ic-label text-[10.5px] text-[var(--ic-instruction)]">Publish · dry run</div>
         <h2 className="mt-1 text-[20px] font-extrabold">{graph.name}</h2>
-        <p className="text-[13px] font-semibold text-[var(--ic-secondary)]">
+        <div className="text-[13px] font-semibold text-[var(--ic-secondary)]">
           This is what would happen, function by function. Nothing below is sent.
-        </p>
+        </div>
         {blocking.length > 0 && (
           <div className="mt-3">
             <div className="ic-label text-[10.5px] text-[var(--ic-instruction)]">Blocking · {blocking.length}</div>
@@ -37,9 +37,9 @@ export function PublishDialog({
           </div>
         )}
         {!closed && (
-          <p className="mt-3 text-[13px] font-semibold">
+          <div className="mt-3 text-[13px] font-semibold">
             <b className="font-extrabold">The path to a move-in is open.</b> Nothing connects a channel to a move-in, so this campaign cannot be judged on move-ins.
-          </p>
+          </div>
         )}
         <ul className="mt-3 border-t border-[var(--ic-ink)]">
           {plan.map((step) => (
@@ -54,9 +54,9 @@ export function PublishDialog({
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-[12.5px] font-semibold text-[var(--ic-secondary)]">
+        <div className="mt-3 text-[12.5px] font-semibold text-[var(--ic-secondary)]">
           Ad campaigns are created paused. Nothing here marks a channel live.
-        </p>
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button
             type="button"

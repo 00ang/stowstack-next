@@ -150,6 +150,10 @@ function sanitizeStepData(step: string, data: StepData): StepData {
               0,
               Math.round(Number(u.availableCount) || 0)
             ),
+            // The short onboarding asks for the total too, so vacancy is real.
+            ...(u.totalCount != null
+              ? { totalCount: Math.max(0, Math.round(Number(u.totalCount) || 0)) }
+              : {}),
           })),
         specials: clampStr(data.specials, 500),
       };
@@ -268,12 +272,14 @@ export async function PATCH(req: NextRequest) {
     const code =
       url.searchParams.get("code") ?? url.searchParams.get("accessCode");
     const body = await req.json();
-    const { step, data } = body || {};
+    // `finish` ends the short onboarding (goal, facility, units). The five
+    // detailed steps stay optional brand details that sharpen the ads.
+    const { step, data, finish } = body || {};
 
-    if (!code || !step || !data) {
+    if (!code || (!finish && (!step || !data))) {
       return errorResponse("Missing code, step, or data", 400, origin);
     }
-    if (!VALID_STEPS.includes(step)) {
+    if (step && !VALID_STEPS.includes(step)) {
       return errorResponse("Invalid step", 400, origin);
     }
 
@@ -301,14 +307,26 @@ export async function PATCH(req: NextRequest) {
     }
 
     const steps = (row.steps as OnboardingSteps) || {};
-    const sanitized = sanitizeStepData(step, data);
-    steps[step] = {
-      completed: isStepComplete(step, sanitized),
-      data: sanitized,
-    };
+    if (step && data) {
+      const sanitized = sanitizeStepData(step, data);
+      steps[step] = {
+        completed: isStepComplete(step, sanitized),
+        data: sanitized,
+      };
+    }
 
+    // Finishing needs the one thing everything is aimed at: the goal.
+    const goalSet = !!(steps.adPreferences?.data as StepData | undefined)?.primaryGoal;
+    if (finish && !goalSet) {
+      return errorResponse("Pick what you want StorageAds to get you first.", 400, origin);
+    }
+
+    // Once finished, onboarding stays finished: a later save of an optional
+    // detail never reopens it.
     const allDone = VALID_STEPS.every((s) => steps[s]?.completed);
-    const completedAt = allDone ? new Date() : null;
+    const wasCompleted = !!row.completed_at;
+    const completedAt = row.completed_at ?? (finish || allDone ? new Date() : null);
+    const justCompleted = !wasCompleted && !!completedAt;
 
     await db.client_onboarding.update({
       where: { id: row.id },
@@ -330,8 +348,8 @@ export async function PATCH(req: NextRequest) {
       if (client && typed.length) await writeTypedUnitMix(client.facility_id, typed);
     }
 
-    // Notify admin when onboarding is fully complete
-    if (allDone && process.env.RESEND_API_KEY) {
+    // Tell the founders the moment onboarding is finished (once).
+    if (justCompleted && process.env.RESEND_API_KEY) {
       const client = await db.clients.findUnique({
         where: { id: row.client_id },
         select: { name: true, email: true, facility_name: true },
@@ -346,7 +364,7 @@ export async function PATCH(req: NextRequest) {
           html: `
               <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 500px; color: #141413;">
                 <h2 style="color: #141413; margin: 0 0 12px;">Onboarding Complete</h2>
-                <p><strong>${client.name}</strong> (${client.email}) has completed all 5 onboarding steps for <strong>${client.facility_name || "their facility"}</strong>.</p>
+                <p><strong>${client.name}</strong> (${client.email}) has finished onboarding for <strong>${client.facility_name || "their facility"}</strong>.</p>
                 <p style="margin-top: 16px;">Next steps:</p>
                 <ol>
                   <li>Review their onboarding data in the admin dashboard</li>

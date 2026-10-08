@@ -14,7 +14,7 @@ import { useFlow } from "@/components/flow/flow-context";
  * object graph the index and the tools use.
  *
  * Note: the site-wide `.urbit-landing` scope paints every <section> with the
- * page ground and sets every <p> to weight 300 (globals.css). These panels take
+ * page ground and sets every <div> to weight 300 (globals.css). These panels take
  * the same padding as the portal's cards, and text blocks are divs so the
  * weights set here are the weights you see.
  */

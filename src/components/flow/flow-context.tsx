@@ -46,7 +46,7 @@ interface FlowValue {
   /** The move the bar is showing, so a list beside it can leave it out. */
   shown: FlowMove | null;
   setShown: (move: FlowMove | null) => void;
-  /** Re-read the ontology now (a tool just made an object the next move should see). */
+  /** Re-read the ontology and the goal now (something just changed that the next move should see). */
   refresh: () => void;
 }
 
@@ -119,6 +119,8 @@ export function FlowProvider({
   const [override, setOverride] = useState<FlowOverride | null>(null);
   const [where, setWhere] = useState<Where>(initialWhere);
   const [shown, setShown] = useState<FlowMove | null>(null);
+  // Bumped by refresh() so the goal is re-read after it changes (onboarding, settings).
+  const [goalVersion, setGoalVersion] = useState(0);
 
   // The working campaign is per tab: read it after mount (sessionStorage is client-only).
   useEffect(() => {
@@ -144,7 +146,7 @@ export function FlowProvider({
     return () => {
       cancel = true;
     };
-  }, [authFetch, facilityId]);
+  }, [authFetch, facilityId, goalVersion]);
 
   const setWorking = useCallback(
     (next: WorkingOn | null) => {
@@ -162,6 +164,7 @@ export function FlowProvider({
   const refresh = useCallback(() => {
     clearOntologyCache();
     void reloadOntology();
+    setGoalVersion((v) => v + 1);
   }, [reloadOntology]);
 
   const today = new Date().toISOString().slice(0, 10);

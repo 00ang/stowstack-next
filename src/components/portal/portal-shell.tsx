@@ -431,9 +431,14 @@ function SampleBanner({ onLeave }: { onLeave: () => void }) {
         <span className="ic-label text-[10.5px]">
           Sample portal <span aria-hidden="true">·</span> a made-up facility <span aria-hidden="true">·</span> nothing is saved
         </span>
-        <button type="button" onClick={onLeave} className="text-[13px] font-bold underline underline-offset-4">
-          Leave the sample
-        </button>
+        <span className="flex items-center gap-4">
+          <Link href="/portal/onboarding" className="text-[13px] font-bold underline underline-offset-4">
+            Try setup
+          </Link>
+          <button type="button" onClick={onLeave} className="text-[13px] font-bold underline underline-offset-4">
+            Leave the sample
+          </button>
+        </span>
       </div>
     </div>
   );
