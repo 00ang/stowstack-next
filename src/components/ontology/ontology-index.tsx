@@ -95,21 +95,26 @@ export function OntologyIndex({ ontology, toolsBase = "/portal/tools" }: { ontol
 
       <FacilityInstrument summaries={ontology.summaries} selected={type} onSelect={selectType} />
 
-      <section aria-labelledby="index-type" ref={listRef} tabIndex={-1} className="outline-none">
-        <div className="ic-label text-[11px] text-[var(--ic-instruction)]">
-          {lane.label} <span aria-hidden="true">·</span> {lane.definition}
-        </div>
-        <div className="mt-2 flex items-start gap-3 border-b-2 border-[var(--ic-ink)] pb-3">
-          <TypeGlyph type={type} className="mt-1 h-6 w-6 shrink-0" />
-          <div className="min-w-0">
-            <h2 id="index-type" className="text-[22px] font-extrabold leading-tight text-[var(--ic-ink)]">
-              {def.plural} <span className="tabular-nums text-[var(--ic-selected)]">{summary.count}</span>
-            </h2>
-            <div className="mt-1 text-[14px] font-semibold text-[var(--ic-secondary)]">
-              {def.definition} {summary.reading.value} {summary.reading.unit}: {summary.reading.definition.charAt(0).toLowerCase() + summary.reading.definition.slice(1)}
+      <section aria-labelledby="index-type" ref={listRef} tabIndex={-1} className="min-w-0 overflow-x-hidden outline-none">
+        {/* Same inset as the object rows (px-3 / sm:px-4). The rule is its own
+            full-width edge so it lines up with the list, not past it. */}
+        <div className="px-3 sm:px-4">
+          <div className="ic-label text-[11px] text-[var(--ic-instruction)]">
+            {lane.label} <span aria-hidden="true">·</span> {lane.definition}
+          </div>
+          <div className="mt-2 flex min-w-0 items-start gap-3 pb-3">
+            <TypeGlyph type={type} className="mt-1 h-6 w-6 shrink-0" />
+            <div className="min-w-0">
+              <h2 id="index-type" className="text-[22px] font-extrabold leading-tight text-[var(--ic-ink)]">
+                {def.plural} <span className="tabular-nums text-[var(--ic-selected)]">{summary.count}</span>
+              </h2>
+              <div className="mt-1 break-words text-[14px] font-semibold text-[var(--ic-secondary)]">
+                {def.definition} {summary.reading.value} {summary.reading.unit}: {summary.reading.definition.charAt(0).toLowerCase() + summary.reading.definition.slice(1)}
+              </div>
             </div>
           </div>
         </div>
+        <div className="border-b-2 border-[var(--ic-ink)]" />
 
         {objects.length === 0 ? (
           <EmptyKind type={type} toolsBase={toolsBase} />
