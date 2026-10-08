@@ -19,6 +19,7 @@
 import { db } from "@/lib/db";
 import { attemptAndPersistLeadMatch } from "@/lib/lead-matching";
 import { phoneLast10 } from "./touch";
+import { askHowTheyHeard } from "./heard-ask";
 
 export interface RentRollContactRow {
   unit: string;
@@ -142,6 +143,18 @@ export async function matchCsvMoveIn(p: CsvMoveInPayload): Promise<CsvMatchOutco
     },
     { changedBy: "system:pms_csv" },
   );
+
+  // A new tenant is asked how they found the facility, when the owner has that on.
+  if (!existing) {
+    await askHowTheyHeard({
+      id: tenant.id,
+      facility_id: facilityId,
+      name: draft.name,
+      email: draft.email,
+      phone: draft.phone,
+      move_in_date: draft.move_in_date,
+    });
+  }
 
   return { outcome: result.status, tenantId: tenant.id, created: !existing };
 }

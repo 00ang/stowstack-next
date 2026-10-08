@@ -1,5 +1,6 @@
 import { demoRows, DEMO_FACILITY_ID } from "./demo-rows";
 import { demoPublishAnswer } from "./demo-publish";
+import { demoLedgerAnswer } from "./demo-ledger";
 
 /**
  * The facility tools in the sample portal: Landing Pages, Tracking Links,
@@ -59,6 +60,7 @@ export function clearDemoTools() {
   try {
     sessionStorage.removeItem(STORE);
     sessionStorage.removeItem("sa-demo-publish");
+    sessionStorage.removeItem("sa-demo-ledger");
   } catch {
     /* nothing stored */
   }
@@ -676,6 +678,8 @@ export function demoToolAnswer(url: URL, method: string, raw: string | undefined
       return creatives(url, method, raw, now);
     case "/api/funnels/publish":
       return demoPublishAnswer(url, method, raw, now);
+    case "/api/attribution/ledger":
+      return demoLedgerAnswer(url, method, raw, now);
     case "/api/funnels/flow": {
       if (method !== "GET") return null;
       // The sample's counts for one campaign, from the same rows: visits to its

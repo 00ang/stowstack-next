@@ -168,12 +168,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // A campaign published from the canvas tags its links with the canvas
+    // campaign's id (src/lib/campaign-publish). Give its spend the same tag, so
+    // spend and leads join on it in /api/attribution. Other campaigns keep the
+    // slug of their name.
+    const published = await db.publish_log.findMany({
+      where: { facility_id: facilityId, platform: "meta", status: "published" },
+      select: { request_payload: true, response_payload: true },
+    });
+    const funnelOf = new Map<string, string>();
+    for (const log of published) {
+      const funnelId = (log.request_payload as { funnelId?: unknown } | null)?.funnelId;
+      const campaignId = (log.response_payload as { campaignId?: unknown } | null)?.campaignId;
+      if (typeof funnelId === "string" && typeof campaignId === "string") funnelOf.set(campaignId, funnelId);
+    }
+
     let synced = 0;
     for (const row of rows) {
-      const utmCampaign = (row.campaign_name || "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "-");
+      const utmCampaign =
+        (row.campaign_id && funnelOf.get(String(row.campaign_id))) ||
+        (row.campaign_name || "")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "-");
 
       await db.$executeRaw`
         INSERT INTO campaign_spend (facility_id, platform, date, campaign_name, campaign_id, utm_campaign, spend, impressions, clicks, updated_at)
