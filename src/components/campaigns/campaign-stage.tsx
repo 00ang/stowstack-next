@@ -14,6 +14,7 @@ import {
 } from "@/lib/funnel-graph";
 import { funnelContextFromOntology, goalMonths } from "./context";
 import { NextMoveBar } from "./next-move-bar";
+import { ReadOnlyFlow } from "./read-only-flow";
 import { useCampaignDraft } from "./use-campaign-draft";
 import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
 
@@ -99,25 +100,16 @@ export function CampaignStage({
         </div>
       )}
 
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 overflow-x-hidden">
         {draft.loading ? (
           <p className="text-sm font-semibold text-[var(--ic-secondary)]">Opening the campaign…</p>
         ) : (
-          <ul className="space-y-2">
-            {draft.graph.nodes.map((n) => (
-              <li key={n.id}>
-                <button
-                  type="button"
-                  onClick={() => draft.setSelectedId(n.id)}
-                  className={`w-full border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2 text-left ${
-                    draft.selectedId === n.id ? "outline outline-2 outline-[var(--ic-selected)]" : ""
-                  }`}
-                >
-                  <span className="font-extrabold text-[var(--ic-ink)]">{n.type}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          <ReadOnlyFlow
+            graph={draft.graph}
+            ctx={ctx}
+            selectedId={draft.selectedId}
+            onSelect={draft.setSelectedId}
+          />
         )}
       </div>
 
