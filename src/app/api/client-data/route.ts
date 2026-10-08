@@ -270,6 +270,19 @@ export async function PATCH(req: NextRequest) {
       data: updateData,
     });
 
+    // The goal an owner sets is this month's goal too. /api/client-goals
+    // snapshots each month's target when the month's row is first read, so
+    // without this a goal set mid-month would not show until next month.
+    if (typeof updateData.monthly_goal === "number") {
+      const now = new Date();
+      const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      await db.client_goals.upsert({
+        where: { client_id_period_month: { client_id: client.id, period_month: month } },
+        update: { target: updateData.monthly_goal },
+        create: { client_id: client.id, period_month: month, target: updateData.monthly_goal, actual: 0 },
+      });
+    }
+
     return jsonResponse({ success: true }, 200, origin);
   } catch {
     return errorResponse("Internal error", 500, origin);

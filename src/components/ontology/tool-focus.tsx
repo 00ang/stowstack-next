@@ -74,7 +74,7 @@ export function FocusBar({ object, onClear, showIndexLink = true }: { object: On
           </Link>
         )}
       </div>
-      <div className="ic-label mt-3 text-[10px] text-[var(--ic-instruction)]">Opened from the index. Nothing changes until you save in the tool.</div>
+      <div className="ic-label mt-3 text-[10px] text-[var(--ic-instruction)]">Nothing changes until you save in the tool.</div>
     </div>
   );
 }

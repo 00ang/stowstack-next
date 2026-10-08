@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useToolFocus } from '@/components/ontology/tool-focus'
 import { Loader2, ChevronRight } from 'lucide-react'
 import type { AdVariation, Asset, ImageTemplate, GenerationJob, StudioStep } from './ad-studio/types'
 import { CopyStep } from './ad-studio/copy-step'
@@ -55,6 +56,9 @@ export default function AdStudio({ facilityId, adminKey, facilityName }: {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [jobs, setJobs] = useState<GenerationJob[]>([])
   const [loading, setLoading] = useState(true)
+  // Opened for an ad (portal ?focus=ads/…): that draft is the one selected.
+  const focus = useToolFocus()
+  const focusedAdId = useRef(focus?.type === 'ads' ? focus.id : null)
 
   // Fetch all data on mount
   useEffect(() => {
@@ -67,10 +71,11 @@ export default function AdStudio({ facilityId, adminKey, facilityName }: {
         setTemplates(imageData.templates)
       }
       if (creativeData.variations?.length) {
+        // ?variation= (a recreate or a Creative Studio handoff), else the ad in focus.
         const wanted =
-          typeof window !== 'undefined'
+          (typeof window !== 'undefined'
             ? new URLSearchParams(window.location.search).get('variation')
-            : null
+            : null) ?? (focusedAdId.current || null)
         // A recreate deep-link must land on that draft even when the source
         // platform is not Meta feed (Google proven ads persist as google_search).
         const metaVariations = creativeData.variations.filter(

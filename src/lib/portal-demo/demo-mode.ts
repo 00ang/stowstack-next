@@ -2,6 +2,7 @@ import type { ClientData, PortalSession } from "@/lib/portal-helpers";
 import { buildOntology } from "@/lib/ontology/build";
 import { DEMO_FACILITY_ID, demoRows } from "./demo-rows";
 import { demoFunnelsAnswer } from "./demo-funnels";
+import { clearDemoTools, demoGoalTarget, demoToolAnswer } from "./demo-tools";
 
 /**
  * The sample portal: /portal?demo opens the whole client portal on an invented
@@ -85,6 +86,7 @@ export function exitPortalDemo() {
   } catch {
     /* nothing to remove */
   }
+  clearDemoTools();
 }
 
 /* ─── the in-browser API ─── */
@@ -116,6 +118,10 @@ function answer(url: URL, method: string, rawBody?: string): Answer {
   const now = new Date();
 
   if (path === "/api/funnels") return demoFunnelsAnswer(url, method, rawBody, now);
+  // The facility tools the ontology hands off to: reads from the sample rows,
+  // writes kept in this tab (demo-tools).
+  const tool = demoToolAnswer(url, method, rawBody, now);
+  if (tool) return tool;
 
   // Reads that change nothing, even though they arrive as POST.
   if (path === "/api/client-data" && method === "POST") return ok({ client: DEMO_CLIENT });
@@ -130,13 +136,13 @@ function answer(url: URL, method: string, rawBody?: string): Answer {
       return ok(buildOntology(demoRows(now), now));
     case "/api/attribution":
       return ok(attribution(url, now));
-    case "/api/client-onboarding":
-      return ok({
-        onboarding: { accessCode: "demo", updatedAt: iso(now, 100), completedAt: iso(now, 100), steps: {} },
-        completionPct: 100,
-      });
-    case "/api/client-goals":
-      return ok({ current: { target: 8, actual: 4, pct: 50 } });
+    case "/api/client-goals": {
+      // The same shape /api/client-goals returns, for this month (UTC months, as it counts them).
+      const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+      const target = demoGoalTarget();
+      const pct = target > 0 ? Math.min(100, Math.round((4 / target) * 100)) : null;
+      return ok({ current: { month, target, actual: 4, pct }, goals: [{ month, target, actual: 4 }] });
+    }
     case "/api/alert-history":
       return ok({
         data: [

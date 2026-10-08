@@ -30,7 +30,7 @@ export function VariationActions({
         <button
           onClick={onApprove}
           disabled={saving || v.compliance_status === "failed"}
-          className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-40 transition-colors"
+          className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 disabled:bg-[var(--ic-soft)] disabled:text-[var(--ic-secondary)] transition-colors"
         >
           {saving ? "..." : "Approve"}
         </button>
@@ -55,7 +55,7 @@ export function VariationActions({
         <button
           onClick={onUnapprove}
           disabled={saving}
-          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--color-body-text)] hover:bg-[var(--color-light-gray)] disabled:opacity-40 transition-colors"
+          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--color-body-text)] hover:bg-[var(--color-light-gray)] disabled:bg-[var(--ic-soft)] disabled:text-[var(--ic-secondary)] transition-colors"
         >
           Unapprove
         </button>
@@ -64,7 +64,7 @@ export function VariationActions({
         onClick={onDelete}
         disabled={saving}
         aria-label="Delete variation"
-        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--color-mid-gray)] hover:text-red-400 hover:border-red-500/20 disabled:opacity-40 transition-colors ml-auto"
+        className="px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-subtle)] text-[var(--color-mid-gray)] hover:text-red-400 hover:border-red-500/20 disabled:bg-[var(--ic-soft)] disabled:text-[var(--ic-secondary)] transition-colors ml-auto"
       >
         <Trash2 size={12} />
       </button>

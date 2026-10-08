@@ -10,5 +10,5 @@ import { OwnerTools } from "@/components/owner-tools/owner-tools";
  */
 export default function PortalToolsPage() {
   const { client } = usePortal();
-  return <OwnerTools defaultFacilityId={client.facilityId} upgradeHref="/portal/messages" />;
+  return <OwnerTools defaultFacilityId={client.facilityId} upgradeHref="/portal/messages" campaignsBase="/portal/campaigns" />;
 }

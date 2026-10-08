@@ -15,8 +15,12 @@ import {
   type FunnelGraph,
   type NodeParams,
 } from "@/lib/funnel-graph";
+import Link from "next/link";
 import { goalMonths } from "./context";
 import { NodeIcon } from "./icons";
+
+/** Where a function's own tool opens, with the object it works on in focus. Absent where there is no tool. */
+export type ToolLinkFor = (nodeId: string) => { href: string; label: string } | null;
 
 export function FunnelInspector({
   graph,
@@ -27,6 +31,9 @@ export function FunnelInspector({
   onGoal,
   onConnect,
   onRemove,
+  onSelectNode,
+  toolLink,
+  technical = false,
 }: {
   graph: FunnelGraph;
   ctx: FunnelContext;
@@ -36,6 +43,11 @@ export function FunnelInspector({
   onGoal: (moveIns: number, month: string) => void;
   onConnect: (fromId: string, fromPort: number, toId: string, toPort: number) => void;
   onRemove: () => void;
+  /** Select a function from the campaign summary (its missing field is focused). */
+  onSelectNode?: (id: string) => void;
+  toolLink?: ToolLinkFor;
+  /** Show the route each function publishes through (the admin view). */
+  technical?: boolean;
 }) {
   const node = graph.nodes.find((n) => n.id === selectedId) ?? null;
   const rootRef = useRef<HTMLElement>(null);
@@ -78,19 +90,31 @@ export function FunnelInspector({
             </select>
           </label>
         </div>
-        <p className="mt-2 text-[13px] font-semibold text-[var(--ic-secondary)]">
+        <div className="mt-2 text-[13px] font-semibold text-[var(--ic-secondary)]">
           {ctx.movedIn30 ?? 0} move-ins in the last 30 days
           {ctx.sample && <span className="ic-label ml-1 border border-[var(--ic-instruction)] px-1 text-[9px]">Sample</span>}. Counted by
           move-in date.
-        </p>
+        </div>
         <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">Still needs you · {needs.length}</div>
         {needs.length === 0 ? (
-          <p className="mt-1 text-[13px] font-semibold text-[var(--ic-secondary)]">Nothing. Every function is ready.</p>
+          <div className="mt-1 text-[13px] font-semibold text-[var(--ic-secondary)]">Nothing. Every function is ready.</div>
         ) : (
           <ul>
             {needs.map((n) => (
-              <li key={n.id} className="border-b border-[var(--ic-dither)]/40 py-1.5 text-[13px] font-semibold">
-                <b className="font-extrabold">{defOf(n.type).title}</b> needs {readiness(graph, n).need}
+              <li key={n.id} className="border-b border-[var(--ic-dither)]/40">
+                {onSelectNode ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectNode(n.id)}
+                    className="w-full py-1.5 text-left text-[13px] font-semibold hover:underline hover:underline-offset-4"
+                  >
+                    <b className="font-extrabold">{defOf(n.type).title}</b> needs {readiness(graph, n).need}
+                  </button>
+                ) : (
+                  <span className="block py-1.5 text-[13px] font-semibold">
+                    <b className="font-extrabold">{defOf(n.type).title}</b> needs {readiness(graph, n).need}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
@@ -223,14 +247,25 @@ export function FunnelInspector({
         </>
       )}
       <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">What publish does</div>
-      <p className="text-[13px] font-semibold">{def.publish(node)}</p>
-      <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">Backend today</div>
-      <div className="mt-1 inline-block border border-[var(--ic-ink)] px-1.5 py-0.5 font-mono text-[10px] tracking-wider">
-        {def.backend === "exists" ? "EXISTS" : "PARTIAL"}
+      <div className="text-[13px] font-semibold">{def.publish(node)}</div>
+      <div className="ic-label mt-3 text-[10.5px] text-[var(--ic-secondary)]">
+        {def.backend === "exists" ? "Works today" : "Partly built"}
       </div>
-      <div className="mt-1 break-all font-mono text-[11px] text-[var(--ic-secondary)]">{def.endpoint}</div>
+      {technical && <div className="mt-1 break-all font-mono text-[11px] text-[var(--ic-secondary)]">{def.endpoint}</div>}
+      {(() => {
+        const link = toolLink?.(node.id);
+        if (!link) return null;
+        return (
+          <>
+            <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">Work on it</div>
+            <Link href={link.href} className="text-[13px] font-extrabold underline underline-offset-4">
+              {link.label}
+            </Link>
+          </>
+        );
+      })()}
       {def.paused && (
-        <p className="mt-2 text-[13px] font-extrabold text-[var(--ic-ink)]">Created paused. It is not live until you switch it on in Ads Manager.</p>
+        <div className="mt-2 text-[13px] font-extrabold text-[var(--ic-ink)]">Created paused. It is not live until you switch it on in Ads Manager.</div>
       )}
       <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">Change</div>
       <button type="button" onClick={onRemove} className="font-extrabold underline underline-offset-4">

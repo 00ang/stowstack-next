@@ -240,16 +240,19 @@ export function EnrollModal({
   enrollForm,
   setEnrollForm,
   enrollLead,
+  leadName,
 }: {
   showEnrollModal: string
   setShowEnrollModal: (id: string | null) => void
   enrollForm: { name: string; email: string; phone: string }
   setEnrollForm: React.Dispatch<React.SetStateAction<{ name: string; email: string; phone: string }>>
   enrollLead: (sequenceId: string) => void
+  /** Enrolling a known lead: contact comes from their record; the fields only override it. */
+  leadName?: string
 }) {
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-[var(--ic-ink)]/45 z-50 flex items-center justify-center p-4"
       onClick={() => setShowEnrollModal(null)}
     >
       <div
@@ -257,7 +260,12 @@ export function EnrollModal({
         onClick={e => e.stopPropagation()}
       >
         <div className="p-5 space-y-4">
-          <h3 className="font-semibold text-[var(--color-dark)]">Enroll Lead in Sequence</h3>
+          <h3 className="font-semibold text-[var(--color-dark)]">{leadName ? `Enroll ${leadName}` : "Enroll Lead in Sequence"}</h3>
+          {leadName && (
+            <p className="text-sm text-[var(--color-dark)]">
+              Their email and phone come from their lead record. Fill these in only to use different ones.
+            </p>
+          )}
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-[var(--color-mid-gray)]">Name</label>

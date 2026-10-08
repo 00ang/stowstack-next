@@ -90,4 +90,55 @@ describe("PATCH /api/client-onboarding", () => {
     // @ts-expect-error — inspecting the mock
     expect(mockDb.client_onboarding.update).toHaveBeenCalled();
   });
+
+  function withRow(row: Record<string, unknown>) {
+    // @ts-expect-error — db is a vi mock
+    mockDb.clients = {
+      findFirst: vi.fn().mockResolvedValue({ id: "c1", facility_id: "f1" }),
+      findUnique: vi.fn().mockResolvedValue({ name: "Jordan", email: "o@e.com", facility_name: "Maple" }),
+    };
+    // @ts-expect-error — db is a vi mock
+    mockDb.client_onboarding = {
+      findFirst: vi.fn().mockResolvedValue({ id: "ob1", client_id: "c1", completed_at: null, steps: {}, ...row }),
+      update: vi.fn().mockResolvedValue({}),
+    };
+  }
+
+  function patch(body: Record<string, unknown>) {
+    return PATCH(createMockRequest("/api/client-onboarding?code=AC&email=o@e.com", { method: "PATCH", body }));
+  }
+
+  it("won't finish before there is a goal", async () => {
+    withRow({});
+    const res = await patch({ finish: true });
+    expect(res.status).toBe(400);
+    // @ts-expect-error — inspecting the mock
+    expect(mockDb.client_onboarding.update).not.toHaveBeenCalled();
+  });
+
+  it("finishes the short onboarding once the goal is set", async () => {
+    withRow({ steps: { adPreferences: { completed: false, data: { primaryGoal: "fill-units" } } } });
+    const res = await patch({ finish: true });
+    expect(res.status).toBe(200);
+    expect((await res.json()).onboarding.completedAt).not.toBeNull();
+    // @ts-expect-error — inspecting the mock
+    expect(mockDb.client_onboarding.update.mock.calls[0][0].data.completed_at).toBeInstanceOf(Date);
+  });
+
+  it("saves the goal and finishes in one call", async () => {
+    withRow({});
+    const res = await patch({ step: "adPreferences", data: { primaryGoal: "lease-up" }, finish: true });
+    expect(res.status).toBe(200);
+    // @ts-expect-error — inspecting the mock
+    expect(mockDb.client_onboarding.update.mock.calls[0][0].data.completed_at).toBeInstanceOf(Date);
+  });
+
+  it("stays finished when an optional detail is saved later", async () => {
+    const done = new Date("2026-10-01T00:00:00Z");
+    withRow({ completed_at: done });
+    const res = await patch({ step: "competitorIntel", data: { differentiation: "" } });
+    expect(res.status).toBe(200);
+    // @ts-expect-error — inspecting the mock
+    expect(mockDb.client_onboarding.update.mock.calls[0][0].data.completed_at).toBe(done);
+  });
 });

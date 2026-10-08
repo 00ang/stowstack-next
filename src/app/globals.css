@@ -165,6 +165,9 @@
 .act-fill[data-fill="5"]:hover { background: var(--act-6); }
 .act-fill[data-fill="6"]:hover { background: var(--act-1); }
 .act-fill:focus-visible { outline: 2px solid var(--act-ink); outline-offset: 2px; }
+/* Disabled stays legible (Law #1): a soft fill and the secondary ink, never faded. */
+.act-fill:disabled,
+.act-fill:disabled:hover { background: var(--ic-soft); color: var(--ic-secondary); cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { .act-fill { transition: none; } }
 
 :root[data-palette="black"] {

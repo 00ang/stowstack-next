@@ -5,7 +5,10 @@ import { useCreativeStudio } from "./creative-studio/use-creative-studio";
 import { GenerationPanel } from "./creative-studio/generation-panel";
 import { FilterBar } from "./creative-studio/filter-bar";
 import { VariationCard } from "./creative-studio/variation-card";
-import { PLATFORM_ICONS, PLATFORM_LABELS } from "./creative-studio/types";
+import { PLATFORM_ICONS, PLATFORM_LABELS, type AdVariation } from "./creative-studio/types";
+import { useFlow } from "@/components/flow/flow-context";
+import { useHandoff } from "@/components/flow/use-handoff";
+import { campaignHref } from "@/lib/flow";
 
 export default function CreativeStudio({
   facilityId,
@@ -34,6 +37,30 @@ export default function CreativeStudio({
     approved,
     total,
   } = useCreativeStudio(facilityId, adminKey);
+  const working = useFlow()?.working ?? null;
+  const handoff = useHandoff();
+
+  // An approved ad hands off: back to the campaign it was written for, or on
+  // to the Ad Generator to put an image on it before it is published.
+  const onUpdate = (updated: AdVariation) => {
+    handleUpdate(updated);
+    if (updated.status !== "approved") return;
+    handoff(
+      working
+        ? {
+            sentence: "The ad is approved.",
+            reason: `It's ready for ${working.name}. Carry on with the campaign.`,
+            label: `Back to ${working.name}`,
+            href: campaignHref(working.id),
+          }
+        : {
+            sentence: "The ad is approved.",
+            reason: "Put an image on it in the Ad Generator, then publish. Ad campaigns are created paused.",
+            label: "Open it in the Ad Generator",
+            href: `/portal/tools?tool=ad-studio&variation=${encodeURIComponent(updated.id)}`,
+          },
+    );
+  };
 
   if (loading) {
     return (
@@ -46,9 +73,9 @@ export default function CreativeStudio({
   return (
     <div className="space-y-8">
       {error && (
-        <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
-          <p className="flex-1 text-sm text-red-300">{error}</p>
-          <button type="button" onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
+        <div role="alert" className="flex items-center gap-3 border-l-2 border-[var(--color-red)] bg-[var(--bg-elevated)] px-4 py-3">
+          <p className="flex-1 text-sm font-medium text-[var(--color-dark)]">{error}</p>
+          <button type="button" onClick={() => setError(null)} aria-label="Dismiss" className="text-[var(--color-dark)]">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -132,7 +159,7 @@ export default function CreativeStudio({
                             key={v.id}
                             v={v}
                             adminKey={adminKey}
-                            onUpdate={handleUpdate}
+                            onUpdate={onUpdate}
                             onDelete={handleDelete}
                           />
                         ))}

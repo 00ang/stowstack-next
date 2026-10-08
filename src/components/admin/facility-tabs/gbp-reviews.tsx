@@ -1,6 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { useToolFocus } from "@/components/ontology/tool-focus"
+import { useFlow } from "@/components/flow/flow-context"
+import { useHandoff } from "@/components/flow/use-handoff"
+import { campaignHref } from "@/lib/flow"
 import {
   Loader2,
   Star,
@@ -54,11 +58,19 @@ export default function GBPReviews({
   const [approvingFor, setApprovingFor] = useState<string | null>(null)
   const [reviewFilter, setReviewFilter] = useState("all")
   const [bulkGenerating, setBulkGenerating] = useState(false)
+  const [reviewError, setReviewError] = useState<string | null>(null)
+  // Opened for one review (portal ?focus=reviews/…): it leads the list, marked.
+  const focus = useToolFocus()
+  const focusId = focus?.type === "reviews" ? focus.id : null
+  const flow = useFlow()
+  const working = flow?.working ?? null
+  const handoff = useHandoff()
 
   // ── Review actions ──
 
   async function generateAIResponse(reviewId: string) {
     setGeneratingFor(reviewId)
+    setReviewError(null)
     try {
       const res = await fetch("/api/gbp-reviews?action=generate-response", {
         method: "POST",
@@ -68,8 +80,8 @@ export default function GBPReviews({
         },
         body: JSON.stringify({ reviewId }),
       })
-      const data = await res.json()
-      if (data.aiDraft) {
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.aiDraft) {
         setEditingDraft((prev) => ({ ...prev, [reviewId]: data.aiDraft }))
         setReviews((prev) =>
           prev.map((r) =>
@@ -78,9 +90,11 @@ export default function GBPReviews({
               : r
           )
         )
+      } else {
+        setReviewError(data.error || "Couldn't draft a reply. Try again, or write one yourself.")
       }
     } catch {
-      /* silent */
+      setReviewError("Couldn't reach StorageAds. Check your connection and try again.")
     }
     setGeneratingFor(null)
   }
@@ -107,8 +121,9 @@ export default function GBPReviews({
     const responseText = editingDraft[reviewId]
     if (!responseText?.trim()) return
     setApprovingFor(reviewId)
+    setReviewError(null)
     try {
-      await fetch("/api/gbp-reviews?action=approve-response", {
+      const res = await fetch("/api/gbp-reviews?action=approve-response", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -116,6 +131,12 @@ export default function GBPReviews({
         },
         body: JSON.stringify({ reviewId, responseText }),
       })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setReviewError(data.error || "Couldn't post the reply. Nothing was sent; try again.")
+        setApprovingFor(null)
+        return
+      }
       setReviews((prev) =>
         prev.map((r) =>
           r.id === reviewId
@@ -128,8 +149,37 @@ export default function GBPReviews({
         delete n[reviewId]
         return n
       })
+      // Hand off to the next review still waiting, by name, with it in focus.
+      const waitingReviews = reviews.filter((r) => r.id !== reviewId && r.response_status === "pending")
+      const next = waitingReviews[0]
+      const nextAddress = next
+        ? flow?.ontology?.objects.find((o) => o.type === "reviews" && o.id === next.id)?.address
+        : undefined
+      const waiting = waitingReviews.length
+      handoff(
+        next
+          ? {
+              sentence: "The reply is posted.",
+              reason: `${waiting} more ${waiting === 1 ? "review is" : "reviews are"} waiting. Replies show people a manager reads them.`,
+              label: `Reply to ${next.author_name ?? "the next one"}`,
+              href: nextAddress ? `/portal/tools?tool=gbp&focus=${nextAddress}` : "/portal/tools?tool=gbp",
+            }
+          : working
+            ? {
+                sentence: "Every review has a reply.",
+                reason: `Carry on with ${working.name}.`,
+                label: `Back to ${working.name}`,
+                href: campaignHref(working.id),
+              }
+            : {
+                sentence: "Every review has a reply.",
+                reason: "See what needs you next.",
+                label: "Back to the dashboard",
+                href: "/portal",
+              },
+      )
     } catch {
-      /* silent */
+      setReviewError("Couldn't reach StorageAds. Check your connection and try again.")
     }
     setApprovingFor(null)
   }
@@ -234,7 +284,7 @@ export default function GBPReviews({
                         rating >= 4
                           ? "bg-emerald-500"
                           : rating === 3
-                            ? "bg-amber-500"
+                            ? "bg-[var(--ic-secondary)]"
                             : "bg-red-500"
                       }`}
                       style={{ width: `${pct}%` }}
@@ -308,6 +358,12 @@ export default function GBPReviews({
         </div>
       </div>
 
+      {reviewError && (
+        <div role="alert" className="border-l-2 border-[var(--color-red)] pl-3 text-sm font-medium text-[var(--color-dark)]">
+          {reviewError}
+        </div>
+      )}
+
       {filteredReviews.length === 0 ? (
         <div className={card + " p-8 text-center"}>
           <MessageSquare
@@ -321,11 +377,17 @@ export default function GBPReviews({
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredReviews.map((review) => (
-            <div key={review.id} className={card + " p-4"}>
+          {(focusId
+            ? [...filteredReviews].sort((a, b) => (a.id === focusId ? -1 : b.id === focusId ? 1 : 0))
+            : filteredReviews
+          ).map((review) => (
+            <div
+              key={review.id}
+              className={`${card} p-4 ${review.id === focusId ? "border-l-[3px] border-l-[var(--ic-selected)]" : ""}`}
+            >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="text-amber-500 text-sm">
+                  <span className="text-[var(--ic-ink)] text-sm" aria-label={`${review.rating} of 5 stars`}>
                     {"\u2605".repeat(review.rating)}
                     {"\u2606".repeat(5 - review.rating)}
                   </span>

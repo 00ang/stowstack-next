@@ -16,13 +16,17 @@ export function NextMoves({
   ontology,
   limit = 5,
   toolsBase = "/portal/tools",
+  skipId = null,
 }: {
   ontology: Ontology;
   limit?: number;
   toolsBase?: string;
+  /** The move the portal's next-move bar is already showing; the list holds the rest. */
+  skipId?: string | null;
 }) {
-  const moves = ontology.moves.slice(0, limit);
-  const more = ontology.moves.length - moves.length;
+  const rest = skipId ? ontology.moves.filter((m) => m.id !== skipId) : ontology.moves;
+  const moves = rest.slice(0, limit);
+  const more = rest.length - moves.length;
   const names = new Map(ontology.objects.map((o) => [o.address, o]));
 
   if (moves.length === 0) {

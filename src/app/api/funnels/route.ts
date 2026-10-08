@@ -19,15 +19,20 @@ export async function OPTIONS(req: NextRequest) {
 /* ── GET: List funnels (by facility) or get single funnel ── */
 export async function GET(req: NextRequest) {
   const origin = getOrigin(req);
-  const denied = await requireFacilityAccess(req);
-  if (denied) return denied;
-
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   const facilityId = searchParams.get("facilityId");
 
   try {
     if (id) {
+      // One campaign: the access check is against the campaign's own facility,
+      // never a facilityId the caller supplies (which would let any session
+      // read another facility's campaign, leads included).
+      const owner = await db.funnels.findUnique({ where: { id }, select: { facility_id: true } });
+      const denied = await requireFacilityAccess(req, owner?.facility_id ?? null);
+      if (denied) return denied;
+      if (!owner) return errorResponse("Funnel not found", 404, origin);
+
       const funnel = await db.funnels.findUnique({
         where: { id },
         include: {
@@ -82,6 +87,10 @@ export async function GET(req: NextRequest) {
       if (!funnel) return errorResponse("Funnel not found", 404, origin);
       return jsonResponse(funnel, 200, origin);
     }
+
+    // The list: scoped to the ?facilityId= the caller asks for.
+    const denied = await requireFacilityAccess(req);
+    if (denied) return denied;
 
     if (!facilityId) {
       return errorResponse("facilityId is required", 400, origin);

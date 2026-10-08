@@ -254,10 +254,8 @@ export function MetaVariationCard({
             )}
 
             {v.feedback && (
-              <div className="p-3 rounded-lg border bg-red-500/5 border-red-500/20 text-red-300 text-sm">
-                <p className="font-medium text-xs uppercase tracking-wide mb-1">
-                  Feedback
-                </p>
+              <div className="border-l-2 border-[var(--color-red)] bg-[var(--bg-elevated)] p-3 text-sm font-medium text-[var(--color-dark)]">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wide">Reviewer&apos;s note</div>
                 {v.feedback}
               </div>
             )}

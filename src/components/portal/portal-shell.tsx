@@ -24,6 +24,9 @@ import { portalNavGroups, portalNavTitle, isNavItemActive } from "./portal-nav";
 import { haptic } from "@/lib/haptics";
 import { bootPortalDemo, isPortalDemo, tidyDemoUrl } from "@/lib/portal-demo/demo-mode";
 import { clearOntologyCache } from "@/components/ontology/use-ontology";
+import { FlowProvider, clearFlowSession } from "@/components/flow/flow-context";
+import { FlowBar, whereFrom } from "@/components/flow/flow-bar";
+import { surfaceOf } from "@/lib/flow";
 
 /* ─── context ─── */
 
@@ -279,7 +282,10 @@ function LoginForm({ onSuccess }: { onSuccess: (client: ClientData) => void }) {
 
 /* ─── sidebar ─── */
 
-function Sidebar({ client, mobileOpen, onClose, showOnboarding }: { client: ClientData; mobileOpen: boolean; onClose: () => void; showOnboarding: boolean }) {
+/** Short names for the narrow rail, so every item keeps a word under its icon. */
+const RAIL_LABELS: Record<string, string> = { "/portal/tools": "Tools" };
+
+function Sidebar({ client, mobileOpen, onClose, showOnboarding, rail }: { client: ClientData; mobileOpen: boolean; onClose: () => void; showOnboarding: boolean; rail: boolean }) {
   const pathname = usePathname();
   const groups = portalNavGroups(showOnboarding);
 
@@ -335,6 +341,43 @@ function Sidebar({ client, mobileOpen, onClose, showOnboarding }: { client: Clie
     </div>
   );
 
+  // The builder takes the window: the desktop nav narrows to a rail of icons with their names.
+  const railContent = (
+    <div className="flex h-full flex-col items-stretch">
+      <div className="flex h-16 shrink-0 items-center justify-center border-b border-[var(--border-subtle)]" title={client.facilityName}>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--color-dark)]/[0.06] text-sm font-semibold text-[var(--color-dark)]">
+          {firstName(client.name).charAt(0).toUpperCase()}
+        </div>
+      </div>
+      <nav aria-label="Portal" className="flex-1 overflow-y-auto px-1.5 py-3">
+        {groups.map((group, gi) => (
+          <ul key={group.label} className={`space-y-0.5 ${gi > 0 ? "mt-2 border-t border-[var(--border-subtle)] pt-2" : ""}`}>
+            {group.items.map((item) => {
+              const isActive = isNavItemActive(item.href, pathname);
+              const Icon = item.icon;
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-center text-[11px] font-semibold leading-tight transition-colors ${
+                      isActive
+                        ? "bg-[var(--color-dark)]/[0.08] text-[var(--color-dark)]"
+                        : "text-[var(--color-body-text)] hover:bg-[var(--color-light-gray)] hover:text-[var(--color-dark)]"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{RAIL_LABELS[item.href] ?? item.tabLabel ?? item.label}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        ))}
+      </nav>
+    </div>
+  );
+
   return (
     <>
       {mobileOpen && (
@@ -350,8 +393,8 @@ function Sidebar({ client, mobileOpen, onClose, showOnboarding }: { client: Clie
       >
         {content}
       </aside>
-      <aside className="hidden w-64 shrink-0 border-r border-[var(--border-subtle)] bg-[var(--color-light)] md:block">
-        {content}
+      <aside className={`hidden shrink-0 border-r border-[var(--border-subtle)] bg-[var(--color-light)] md:block ${rail ? "w-[84px]" : "w-64"}`}>
+        {rail ? railContent : content}
       </aside>
     </>
   );
@@ -388,9 +431,14 @@ function SampleBanner({ onLeave }: { onLeave: () => void }) {
         <span className="ic-label text-[10.5px]">
           Sample portal <span aria-hidden="true">·</span> a made-up facility <span aria-hidden="true">·</span> nothing is saved
         </span>
-        <button type="button" onClick={onLeave} className="text-[13px] font-bold underline underline-offset-4">
-          Leave the sample
-        </button>
+        <span className="flex items-center gap-4">
+          <Link href="/portal/onboarding" className="text-[13px] font-bold underline underline-offset-4">
+            Try setup
+          </Link>
+          <button type="button" onClick={onLeave} className="text-[13px] font-bold underline underline-offset-4">
+            Leave the sample
+          </button>
+        </span>
       </div>
     </div>
   );
@@ -399,6 +447,11 @@ function SampleBanner({ onLeave }: { onLeave: () => void }) {
 /* ─── main shell ─── */
 
 export function PortalShell({ children }: { children: React.ReactNode }) {
+  // Onboarding runs its own steps; the next-move bar waits until it is done.
+  const pathname = usePathname();
+  const onboarding = pathname.startsWith("/portal/onboarding");
+  // A campaign's builder takes the whole window: no page scroll, the nav as a rail.
+  const builder = surfaceOf(pathname) === "campaign";
   // Boot the sample portal first (/portal?demo) so the session it reads is the sample's.
   const [session, setSession] = useState<PortalSession | null>(() => {
     bootPortalDemo();
@@ -450,6 +503,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   const handleLogout = useCallback(() => {
     clearPortalSession();
     clearOntologyCache();
+    clearFlowSession();
     setDemo(false);
     // The portal login also opened the facility tools (httpOnly cookie, so
     // only the server can drop it). Best-effort: sign-out proceeds regardless.
@@ -509,20 +563,26 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
   return (
     <PortalCtx.Provider value={{ session, client, authFetch }}>
+      <FlowProvider facilityId={client.facilityId} authFetch={authFetch} initialWhere={whereFrom(typeof window === "undefined" ? "/portal" : window.location.pathname, typeof window === "undefined" ? null : new URLSearchParams(window.location.search))}>
       <a href="#portal-main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[60] focus:rounded-lg focus:bg-[var(--color-dark)] focus:px-3 focus:py-2 focus:text-sm focus:text-[var(--color-light)]">
         Skip to content
       </a>
       <div className="flex h-screen overflow-hidden bg-[var(--color-light)]">
-        <Sidebar client={client} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} showOnboarding={showOnboarding} />
+        <Sidebar client={client} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} showOnboarding={showOnboarding} rail={builder} />
         <div className="flex flex-1 flex-col overflow-hidden">
           <PortalHeader client={client} onToggle={() => { haptic("light"); setMobileOpen((v) => !v); }} onLogout={handleLogout} expanded={mobileOpen} toggleRef={toggleRef} />
-          <main id="portal-main" tabIndex={-1} className="flex-1 overflow-y-auto pb-16 md:pb-0">
+          <main id="portal-main" tabIndex={-1} className={builder ? "flex min-h-0 flex-1 flex-col overflow-hidden" : "min-h-0 flex-1 overflow-y-auto"}>
             {demo && <SampleBanner onLeave={handleLogout} />}
             {children}
           </main>
+          {/* The next move: every page, every tool. Sits above the phone's tab bar. */}
+          <div className={`${onboarding ? "hidden" : ""} shrink-0 pb-[calc(3.6rem+env(safe-area-inset-bottom))] md:pb-0`}>
+            <FlowBar />
+          </div>
         </div>
         <PortalBottomTabs onMore={() => { haptic("light"); setMobileOpen(true); }} />
       </div>
+      </FlowProvider>
     </PortalCtx.Provider>
   );
 }

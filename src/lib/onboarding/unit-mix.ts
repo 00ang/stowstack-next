@@ -6,6 +6,8 @@ export interface TypedUnitInput {
   size?: unknown;
   monthlyRate?: unknown;
   availableCount?: unknown;
+  /** How many of the size there are in all. When given, empty = availableCount of these. */
+  totalCount?: unknown;
 }
 
 export interface PmsUnitWrite {
@@ -32,9 +34,14 @@ function num(value: unknown): number {
 }
 
 /**
- * The sizes someone typed in onboarding, as rows for `facility_pms_units`.
- * Available count is the vacancy: total equals that count and occupied is 0,
- * so the ontology stops asking them to upload a unit mix.
+ * The sizes someone typed in onboarding, as rows for `facility_pms_units`, so
+ * the ontology stops asking them to upload a unit mix.
+ *
+ * With a total, the available count is the empty share of it (occupied is
+ * the rest). Without one (the original form only asked how many are open),
+ * the open count stands in for the total and nothing is counted occupied.
+ * A type that names its own size ("10x10 Climate") is the fuller name and
+ * is kept, so climate units stay climate in the unit mix.
  */
 export function typedUnitsToPms(units: TypedUnitInput[]): PmsUnitWrite[] {
   const used = new Set<string>();
@@ -43,7 +50,7 @@ export function typedUnitsToPms(units: TypedUnitInput[]): PmsUnitWrite[] {
     const type = text(unit.type);
     const size = text(unit.size);
     if (!type && !size) continue;
-    let unitType = size || type;
+    let unitType = SIZE.test(type) ? type : size || type;
     if (used.has(unitType.toLowerCase())) {
       const label = type && type.toLowerCase() !== unitType.toLowerCase() ? type : `${unitType}-2`;
       unitType = used.has(label.toLowerCase()) ? `${unitType}-${used.size + 1}` : label;
@@ -53,6 +60,7 @@ export function typedUnitsToPms(units: TypedUnitInput[]): PmsUnitWrite[] {
     const width = match ? Number(match[1]) : null;
     const depth = match ? Number(match[2]) : null;
     const available = Math.round(num(unit.availableCount));
+    const total = Math.round(num(unit.totalCount));
     const rate = num(unit.monthlyRate);
     rows.push({
       unit_type: unitType,
@@ -60,8 +68,8 @@ export function typedUnitsToPms(units: TypedUnitInput[]): PmsUnitWrite[] {
       width_ft: width,
       depth_ft: depth,
       sqft: width != null && depth != null ? width * depth : null,
-      total_count: available,
-      occupied_count: 0,
+      total_count: total > 0 ? Math.max(total, available) : available,
+      occupied_count: total > 0 ? Math.max(0, total - available) : 0,
       street_rate: rate || null,
       web_rate: rate || null,
     });

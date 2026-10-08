@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { Loader2, Link2, Search } from "lucide-react"
+import { useToolFocus } from "@/components/ontology/tool-focus"
+import { ActionFill } from "@/components/ontology/action-fill"
+import { useFlow } from "@/components/flow/flow-context"
+import { useHandoff } from "@/components/flow/use-handoff"
+import { campaignHref } from "@/lib/flow"
+import { slugify } from "@/lib/ontology/address"
 import type { UTMLink, LandingPageOption } from "./types"
 import UTMCreateForm from "./utm-create-form"
 import UTMStatsBar from "./utm-stats-bar"
@@ -30,6 +36,11 @@ export default function UTMLinks({
     utmContent: string
     utmTerm: string
   } | undefined>(undefined)
+  // Opened from a page (portal ?focus=pages/…): the form opens for that page,
+  // tagged with the campaign being built when there is one.
+  const focus = useToolFocus()
+  const working = useFlow()?.working ?? null
+  const handoff = useHandoff()
 
   useEffect(() => {
     Promise.all([
@@ -42,11 +53,25 @@ export default function UTMLinks({
     ])
       .then(([linksData, pagesData]) => {
         if (linksData.links) setLinks(linksData.links)
-        if (pagesData.pages) setLandingPages(pagesData.pages)
-        else if (pagesData.data) setLandingPages(pagesData.data)
+        const pages: LandingPageOption[] = pagesData.pages ?? pagesData.data ?? []
+        setLandingPages(pages)
+        if (focus?.type === "pages" && pages.some((p) => p.id === focus.id)) {
+          setFormInitialValues({
+            label: focus.name,
+            landingPageId: focus.id,
+            utmSource: "meta",
+            utmMedium: "paid_social",
+            utmCampaign: working ? slugify(working.name, "campaign") : "",
+            utmContent: "",
+            utmTerm: "",
+          })
+          setShowForm(true)
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
+    // The focus is read once, when the tool opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facilityId, adminKey])
 
   const filteredLinks = links
@@ -135,6 +160,21 @@ export default function UTMLinks({
             setLinks((prev) => [link as unknown as UTMLink, ...prev])
             setShowForm(false)
             setFormInitialValues(undefined)
+            handoff(
+              working
+                ? {
+                    sentence: "The link is ready.",
+                    reason: `Put it wherever ${working.name} sends people, then carry on with the campaign.`,
+                    label: `Back to ${working.name}`,
+                    href: campaignHref(working.id),
+                  }
+                : {
+                    sentence: "The link is ready.",
+                    reason: "A Google Business post is the quickest free place to use it.",
+                    label: "Write a Google post",
+                    href: "/portal/tools?tool=gbp",
+                  },
+            )
           }}
           onCancel={() => {
             setShowForm(false)
@@ -150,6 +190,9 @@ export default function UTMLinks({
           <p className="text-xs text-[var(--color-mid-gray)] mt-1">
             Create your first UTM link to start tracking campaign performance
           </p>
+          <ActionFill n={2} onClick={toggleForm} className="mt-4">
+            Make the first link
+          </ActionFill>
         </div>
       ) : filteredLinks.length === 0 ? (
         <div className="text-center py-8 text-[var(--color-mid-gray)]">

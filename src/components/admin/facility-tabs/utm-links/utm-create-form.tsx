@@ -43,6 +43,7 @@ export default function UTMCreateForm({
   const [utmContent, setUtmContent] = useState(initialValues?.utmContent || "")
   const [utmTerm, setUtmTerm] = useState(initialValues?.utmTerm || "")
   const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const inputCls =
     "w-full px-3 py-2 rounded-lg border text-sm bg-[var(--color-light)] border-[var(--border-subtle)] text-[var(--color-dark)] placeholder:text-[var(--color-mid-gray)] focus:border-[var(--color-gold)]/50 outline-none transition-all"
@@ -71,6 +72,7 @@ export default function UTMCreateForm({
   const handleCreate = async () => {
     if (!label.trim() || !utmSource || !utmMedium) return
     setCreating(true)
+    setError(null)
     try {
       const res = await fetch("/api/utm-links", {
         method: "POST",
@@ -89,12 +91,14 @@ export default function UTMCreateForm({
           utmTerm: utmTerm || undefined,
         }),
       })
-      const data = await res.json()
-      if (data.link) {
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.link) {
         onCreated(data.link)
+      } else {
+        setError(data.error || "Couldn't create the link. Nothing was saved; try again.")
       }
     } catch {
-      /* silent */
+      setError("Couldn't reach StorageAds. Check your connection and try again.")
     }
     setCreating(false)
   }
@@ -223,6 +227,12 @@ export default function UTMCreateForm({
           {buildPreviewUrl()}
         </div>
       </div>
+
+      {error && (
+        <div role="alert" className="border-l-2 border-[var(--color-red)] pl-3 text-sm font-medium text-[var(--color-dark)]">
+          {error}
+        </div>
+      )}
 
       <div className="flex gap-2">
         <button
