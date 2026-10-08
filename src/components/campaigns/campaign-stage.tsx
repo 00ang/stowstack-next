@@ -133,7 +133,9 @@ export function CampaignStage({
   useEffect(() => {
     if (!setOverride || draft.loading) return;
     setOverride({
-      move,
+      sentence: move.sentence,
+      reason: move.reason,
+      label: move.actionLabel,
       ready: counts.ready,
       total: counts.total,
       pathClosed: pathToMoveIn(draft.graph),

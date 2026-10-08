@@ -1,9 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { useOntology } from "@/components/ontology/use-ontology";
+import { clearOntologyCache, useOntology } from "@/components/ontology/use-ontology";
 import { goalPace, type FlowMove, type GoalState, type Pace, type Where, type WorkingOn } from "@/lib/flow";
-import type { NextMove } from "@/lib/funnel-graph";
 import type { Ontology } from "@/lib/ontology/types";
 
 /**
@@ -16,9 +15,16 @@ import type { Ontology } from "@/lib/ontology/types";
  * it survives page changes and reloads but never leaks between tabs or people.
  */
 
-/** A page that runs its own move (the campaign builder) hands it to the bar. */
+/**
+ * A page or tool that knows the next step better than the facility does hands
+ * it to the bar: the builder's own move, or a tool's handoff after it made
+ * something ("Make a tracking link for this page").
+ */
 export interface FlowOverride {
-  move: NextMove;
+  sentence: string;
+  reason: string;
+  label: string;
+  /** Readiness, when the override is a campaign's. */
   ready?: number;
   total?: number;
   pathClosed?: boolean;
@@ -40,6 +46,8 @@ interface FlowValue {
   /** The move the bar is showing, so a list beside it can leave it out. */
   shown: FlowMove | null;
   setShown: (move: FlowMove | null) => void;
+  /** Re-read the ontology now (a tool just made an object the next move should see). */
+  refresh: () => void;
 }
 
 const FlowCtx = createContext<FlowValue | null>(null);
@@ -150,6 +158,12 @@ export function FlowProvider({
   );
 
   // Pace changes by the day, not the render.
+  const reloadOntology = ontology.reload;
+  const refresh = useCallback(() => {
+    clearOntologyCache();
+    void reloadOntology();
+  }, [reloadOntology]);
+
   const today = new Date().toISOString().slice(0, 10);
   const pace = useMemo(() => goalPace(goal, new Date(`${today}T12:00:00Z`)), [goal, today]);
 
@@ -168,8 +182,9 @@ export function FlowProvider({
       setWhere,
       shown,
       setShown,
+      refresh,
     }),
-    [facilityId, ontology.data, ontology.loading, goal, pace, working, setWorking, override, where, shown],
+    [facilityId, ontology.data, ontology.loading, goal, pace, working, setWorking, override, where, shown, refresh],
   );
 
   return <FlowCtx.Provider value={value}>{children}</FlowCtx.Provider>;

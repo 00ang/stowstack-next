@@ -142,8 +142,8 @@ function Bar() {
         <div className="flex min-w-0 flex-1 basis-60 items-start gap-3">
           <span className="ic-label shrink-0 pt-1 text-[10.5px] text-[var(--ic-instruction)]">Next move</span>
           <div className="min-w-0">
-            <div className="text-[16px] font-extrabold leading-tight text-[var(--ic-ink)]">{override.move.sentence}</div>
-            <div className="text-[13px] font-semibold leading-snug text-[var(--ic-secondary)]">{override.move.reason}</div>
+            <div className="text-[16px] font-extrabold leading-tight text-[var(--ic-ink)]">{override.sentence}</div>
+            <div className="text-[13px] font-semibold leading-snug text-[var(--ic-secondary)]">{override.reason}</div>
           </div>
         </div>
         {override.total != null && override.total > 0 && (
@@ -156,8 +156,8 @@ function Bar() {
             path to move-in: {override.pathClosed ? "closed" : "open"}
           </div>
         )}
-        <ActionFill n={fillFor(override.move.actionLabel)} onClick={override.onDo}>
-          {override.move.actionLabel}
+        <ActionFill n={fillFor(override.label)} onClick={override.onDo}>
+          {override.label}
         </ActionFill>
       </footer>
     );

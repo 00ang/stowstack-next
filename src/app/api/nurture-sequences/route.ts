@@ -181,19 +181,39 @@ export async function POST(req: NextRequest) {
           origin
         );
       }
-      if (!contactEmail && !contactPhone) {
+      const denied = await requireFacilityAccess(req, facilityId);
+      if (denied) return denied;
+
+      // Enrolling a known lead: its contact details come from its own record,
+      // so the owner never retypes what StorageAds already holds. The lead must
+      // be this facility's.
+      let name = contactName;
+      let email = contactEmail;
+      let phone = contactPhone;
+      if (leadId) {
+        const lead = await db.partial_leads.findFirst({
+          where: { id: leadId, facility_id: facilityId },
+          select: { name: true, email: true, phone: true },
+        });
+        if (!lead) return errorResponse("Lead not found", 404, origin);
+        name = name || lead.name || undefined;
+        email = email || lead.email || undefined;
+        phone = phone || lead.phone || undefined;
+      }
+      if (!email && !phone) {
         return errorResponse(
-          "At least contactEmail or contactPhone required",
+          leadId
+            ? "This lead has no email or phone on file. Add one to enroll them."
+            : "At least contactEmail or contactPhone required",
           400,
           origin
         );
       }
-      const denied = await requireFacilityAccess(req, facilityId);
-      if (denied) return denied;
 
+      // The sequence must be this facility's too.
       const seqRows = await db.$queryRaw<
         Array<{ id: string; steps: unknown }>
-      >`SELECT * FROM nurture_sequences WHERE id = ${sequenceId}::uuid`;
+      >`SELECT * FROM nurture_sequences WHERE id = ${sequenceId}::uuid AND facility_id = ${facilityId}::uuid`;
       const seq = seqRows[0];
       if (!seq) {
         return errorResponse("Sequence not found", 404, origin);
@@ -216,7 +236,7 @@ export async function POST(req: NextRequest) {
         ) VALUES (
           ${sequenceId}, ${facilityId},
           ${leadId || null}, ${tenantId || null},
-          ${contactName || null}, ${contactEmail || null}, ${contactPhone || null},
+          ${name || null}, ${email || null}, ${phone || null},
           0, 'active', ${nextSendAt}::timestamptz,
           ${JSON.stringify(metadata || {})}::jsonb
         )

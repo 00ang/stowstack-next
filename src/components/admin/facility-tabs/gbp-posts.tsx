@@ -1,6 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { useToolFocus } from "@/components/ontology/tool-focus"
+import { useFlow } from "@/components/flow/flow-context"
+import { useHandoff } from "@/components/flow/use-handoff"
+import { campaignHref } from "@/lib/flow"
 import {
   Loader2,
   Send,
@@ -43,10 +47,18 @@ export default function GBPPosts({
   connection,
   loadAll,
 }: GBPPostsProps) {
+  // Opened from an object (portal ?focus=): the composer opens with it as the
+  // brief. An offer becomes an Offer post titled with the special's name.
+  const focus = useToolFocus()
+  const working = useFlow()?.working ?? null
+  const handoff = useHandoff()
+  const fromOffer = focus?.type === "offers"
+  const composeFor = !!focus && (fromOffer || focus.type === "units" || focus.type === "pages")
+
   // Post form state
-  const [showPostForm, setShowPostForm] = useState(false)
-  const [postType, setPostType] = useState("update")
-  const [postTitle, setPostTitle] = useState("")
+  const [showPostForm, setShowPostForm] = useState(composeFor)
+  const [postType, setPostType] = useState(fromOffer ? "offer" : "update")
+  const [postTitle, setPostTitle] = useState(fromOffer && focus ? focus.name : "")
   const [postBody, setPostBody] = useState("")
   const [postCta, setPostCta] = useState("")
   const [postCtaUrl, setPostCtaUrl] = useState("")
@@ -55,10 +67,12 @@ export default function GBPPosts({
   const [postScheduledAt, setPostScheduledAt] = useState("")
   const [submittingPost, setSubmittingPost] = useState(false)
   const [generatingPostAI, setGeneratingPostAI] = useState(false)
-  const [postAIPrompt, setPostAIPrompt] = useState("")
+  const [postAIPrompt, setPostAIPrompt] = useState(composeFor && focus ? focus.brief : "")
+  const [postError, setPostError] = useState<string | null>(null)
 
   async function generatePostWithAI() {
     setGeneratingPostAI(true)
+    setPostError(null)
     try {
       const res = await fetch("/api/gbp-posts?action=generate-content", {
         method: "POST",
@@ -72,13 +86,15 @@ export default function GBPPosts({
           promptContext: postAIPrompt,
         }),
       })
-      const data = await res.json()
-      if (data.generated) {
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.generated) {
         if (data.generated.title) setPostTitle(data.generated.title)
         if (data.generated.body) setPostBody(data.generated.body)
+      } else {
+        setPostError(data.error || "Couldn't write the post. Try again, or write it yourself below.")
       }
     } catch {
-      /* silent */
+      setPostError("Couldn't reach StorageAds. Check your connection and try again.")
     }
     setGeneratingPostAI(false)
   }
@@ -86,6 +102,7 @@ export default function GBPPosts({
   async function createPost(publish: boolean) {
     if (!postBody.trim()) return
     setSubmittingPost(true)
+    setPostError(null)
     try {
       const res = await fetch("/api/gbp-posts", {
         method: "POST",
@@ -117,9 +134,27 @@ export default function GBPPosts({
         setPostScheduledAt("")
         setPostAIPrompt("")
         await loadAll()
+        handoff(
+          working
+            ? {
+                sentence: publish ? "The post is up." : "The post is saved.",
+                reason: `It sends people to your page. Carry on with ${working.name}.`,
+                label: `Back to ${working.name}`,
+                href: campaignHref(working.id),
+              }
+            : {
+                sentence: publish ? "The post is up." : "The post is saved.",
+                reason: "See what needs you next.",
+                label: "Back to the dashboard",
+                href: "/portal",
+              },
+        )
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setPostError(data.error || "Couldn't save the post. Nothing was sent; try again.")
       }
     } catch {
-      /* silent */
+      setPostError("Couldn't reach StorageAds. Check your connection and try again.")
     }
     setSubmittingPost(false)
   }
@@ -146,6 +181,11 @@ export default function GBPPosts({
 
       {showPostForm && (
         <div className={card + " p-4 space-y-3"}>
+          {postError && (
+            <div role="alert" className="border-l-2 border-[var(--color-red)] pl-3 text-sm font-medium text-[var(--color-dark)]">
+              {postError}
+            </div>
+          )}
           {/* AI generation prompt */}
           <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
             <p className="text-xs font-medium mb-2 text-purple-400">

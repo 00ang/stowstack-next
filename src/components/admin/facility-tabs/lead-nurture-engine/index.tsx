@@ -1,6 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useToolFocus } from '@/components/ontology/tool-focus'
+import { useFlow } from '@/components/flow/flow-context'
+import { useHandoff } from '@/components/flow/use-handoff'
+import { campaignHref } from '@/lib/flow'
 import {
   Loader2, RefreshCw, Zap, Users, MessageSquare, X,
 } from 'lucide-react'
@@ -111,6 +115,12 @@ export default function LeadNurtureEngine({ facilityId, adminKey }: {
   const [expandedSeq, setExpandedSeq] = useState<string | null>(null)
   const [showEnrollModal, setShowEnrollModal] = useState<string | null>(null)
   const [enrollForm, setEnrollForm] = useState({ name: '', email: '', phone: '' })
+  // Opened for a lead (portal ?focus=leads/…): enrolling uses the contact on
+  // the lead's own record, so nothing is retyped.
+  const focus = useToolFocus()
+  const lead = focus?.type === 'leads' ? focus : null
+  const working = useFlow()?.working ?? null
+  const handoff = useHandoff()
 
   const fetchData = useCallback(async () => {
     try {
@@ -148,7 +158,7 @@ export default function LeadNurtureEngine({ facilityId, adminKey }: {
   }
 
   async function enrollLead(sequenceId: string) {
-    if (!enrollForm.email && !enrollForm.phone) {
+    if (!lead && !enrollForm.email && !enrollForm.phone) {
       setError('Email or phone required')
       return
     }
@@ -163,12 +173,33 @@ export default function LeadNurtureEngine({ facilityId, adminKey }: {
           contactName: enrollForm.name,
           contactEmail: enrollForm.email,
           contactPhone: enrollForm.phone,
+          leadId: lead?.id,
         }),
       })
-      if (!res.ok) throw new Error('Failed to enroll lead')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to enroll lead')
+      }
       setShowEnrollModal(null)
       setEnrollForm({ name: '', email: '', phone: '' })
       fetchData()
+      if (lead) {
+        handoff(
+          working
+            ? {
+                sentence: `${lead.name} is in the follow-up.`,
+                reason: `Texts and emails go out on schedule and stop when they reserve or move in. Carry on with ${working.name}.`,
+                label: `Back to ${working.name}`,
+                href: campaignHref(working.id),
+              }
+            : {
+                sentence: `${lead.name} is in the follow-up.`,
+                reason: 'Texts and emails go out on schedule and stop when they reserve or move in.',
+                label: 'See who else is waiting',
+                href: '/portal/index?t=leads',
+              },
+        )
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to enroll lead')
     }
@@ -214,11 +245,21 @@ export default function LeadNurtureEngine({ facilityId, adminKey }: {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 mb-4">
-          <p className="flex-1 text-sm text-red-300">{error}</p>
-          <button type="button" onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
+        <div role="alert" className="flex items-center gap-3 border-l-2 border-[var(--color-red)] bg-[var(--bg-elevated)] px-4 py-3 mb-4">
+          <p className="flex-1 text-sm font-medium text-[var(--color-dark)]">{error}</p>
+          <button type="button" onClick={() => setError(null)} aria-label="Dismiss" className="text-[var(--color-dark)]">
             <X className="h-4 w-4" />
           </button>
+        </div>
+      )}
+
+      {lead && (
+        <div className="border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-4 py-3">
+          <div className="ic-label text-[10.5px] text-[var(--ic-instruction)]">Following up with</div>
+          <div className="text-[18px] font-extrabold text-[var(--ic-ink)]">{lead.name}</div>
+          <div className="text-[13px] font-semibold text-[var(--ic-secondary)]">
+            Pick a sequence below and enroll them. Their email and phone come from their lead record.
+          </div>
         </div>
       )}
 
@@ -311,6 +352,7 @@ export default function LeadNurtureEngine({ facilityId, adminKey }: {
           enrollForm={enrollForm}
           setEnrollForm={setEnrollForm}
           enrollLead={enrollLead}
+          leadName={lead?.name}
         />
       )}
     </div>

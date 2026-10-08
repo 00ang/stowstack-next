@@ -69,7 +69,10 @@ export function useOntology(source: Source | null) {
     load();
   }, [load]);
 
-  return { data, loading, error, reload: () => load(true) };
+  // Stable, so callers can depend on it without re-running every render.
+  const reload = useCallback(() => load(true), [load]);
+
+  return { data, loading, error, reload };
 }
 
 function fresh(key: string): Ontology | null {

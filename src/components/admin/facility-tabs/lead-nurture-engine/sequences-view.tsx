@@ -167,32 +167,37 @@ export function SequencesView({
 
         return (
           <div key={seq.id} className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] overflow-hidden">
-            {/* Sequence header */}
-            <button
-              onClick={() => setExpandedSeq(isExpanded ? null : seq.id)}
-              className="w-full flex items-center gap-3 p-4 text-left"
-            >
-              <span className="text-lg">{trigger.icon}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="font-semibold text-sm text-[var(--color-dark)]">{seq.name}</h3>
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${seqStatus.bg} ${seqStatus.text}`}>
-                    {seqStatus.label}
-                  </span>
-                  <span className="text-xs text-[var(--color-mid-gray)]">{steps.length} steps</span>
-                </div>
-                <p className="text-xs text-[var(--color-mid-gray)] mt-0.5">
-                  {activeCount} active · {seqEnrollments.filter(e => e.status === 'converted').length} converted
-                </p>
-              </div>
+            {/* Sequence header: the expand toggle and Enroll are siblings (a button can't hold a button) */}
+            <div className="flex items-center gap-3 p-4">
               <button
-                onClick={(e) => { e.stopPropagation(); setShowEnrollModal(seq.id) }}
-                className="flex items-center gap-1 px-3 py-1.5 bg-[var(--color-gold)] text-[var(--color-light)] rounded-lg text-xs font-medium hover:bg-[var(--color-gold)]/80"
+                type="button"
+                onClick={() => setExpandedSeq(isExpanded ? null : seq.id)}
+                aria-expanded={isExpanded}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
+                <span className="text-lg">{trigger.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-semibold text-sm text-[var(--color-dark)]">{seq.name}</h3>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${seqStatus.bg} ${seqStatus.text}`}>
+                      {seqStatus.label}
+                    </span>
+                    <span className="text-xs text-[var(--color-mid-gray)]">{steps.length} steps</span>
+                  </div>
+                  <p className="text-xs text-[var(--color-mid-gray)] mt-0.5">
+                    {activeCount} active · {seqEnrollments.filter(e => e.status === 'converted').length} converted
+                  </p>
+                </div>
+                {isExpanded ? <ChevronUp size={16} className="text-[var(--color-mid-gray)]" /> : <ChevronDown size={16} className="text-[var(--color-mid-gray)]" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowEnrollModal(seq.id)}
+                className="flex shrink-0 items-center gap-1 px-3 py-1.5 bg-[var(--color-gold)] text-[var(--color-light)] rounded-lg text-xs font-medium hover:bg-[var(--color-gold)]/80"
               >
                 <Plus size={12} /> Enroll
               </button>
-              {isExpanded ? <ChevronUp size={16} className="text-[var(--color-mid-gray)]" /> : <ChevronDown size={16} className="text-[var(--color-mid-gray)]" />}
-            </button>
+            </div>
 
             {/* Expanded: step timeline + enrollments */}
             {isExpanded && (

@@ -1,6 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { useToolFocus } from "@/components/ontology/tool-focus"
+import { useHandoff } from "@/components/flow/use-handoff"
+import { slugify as addressSlug } from "@/lib/ontology/address"
 import {
   type LPSection,
   type LandingPageRecord,
@@ -29,6 +32,11 @@ export default function LandingPageBuilder({
   const [error, setError] = useState<string | null>(null)
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [generating, setGenerating] = useState(false)
+  // Opened from an object (portal ?focus=): a page opens itself; an ad
+  // becomes the ad a generated page is matched to.
+  const focus = useToolFocus()
+  const handoff = useHandoff()
+  const openedFocus = useRef(false)
 
   const fetchPages = useCallback(async () => {
     try {
@@ -51,6 +59,24 @@ export default function LandingPageBuilder({
   useEffect(() => {
     fetchPages()
   }, [fetchPages])
+
+  useEffect(() => {
+    if (openedFocus.current || focus?.type !== "pages") return
+    openedFocus.current = true
+    fetch(`/api/landing-pages?id=${encodeURIComponent(focus.id)}`, {
+      headers: { "X-Admin-Key": adminKey },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load page")
+        return res.json()
+      })
+      .then((data) => {
+        if (data?.page) setEditingPage(data.page)
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : "Unknown error")
+      })
+  }, [focus, adminKey])
 
   function slugify(str: string) {
     return str
@@ -184,6 +210,15 @@ export default function LandingPageBuilder({
         published_at: new Date().toISOString(),
       })
       fetchPages()
+      const slug = editingPage.slug
+      if (slug) {
+        handoff({
+          sentence: `/lp/${slug} is live.`,
+          reason: "Give it a tracking link for each way in, so every move-in shows where it came from.",
+          label: "Make a tracking link",
+          href: `/portal/tools?tool=utm-links&focus=pages/${addressSlug(slug, "page")}`,
+        })
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Unknown error")
     } finally {
@@ -234,6 +269,7 @@ export default function LandingPageBuilder({
           facilityId,
           funnelStage,
           archetypeKey: archetypeKey || null,
+          adVariationId: focus?.type === "ads" ? focus.id : null,
         }),
       })
       const data = await res.json()

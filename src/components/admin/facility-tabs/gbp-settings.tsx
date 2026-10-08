@@ -225,7 +225,7 @@ export default function GBPSettings({
                   {log.status === "success" ? (
                     <CheckCircle2 size={14} className="text-emerald-500" />
                   ) : log.status === "partial" ? (
-                    <AlertCircle size={14} className="text-amber-500" />
+                    <AlertCircle size={14} className="text-[var(--ic-secondary)]" />
                   ) : (
                     <AlertCircle size={14} className="text-red-500" />
                   )}

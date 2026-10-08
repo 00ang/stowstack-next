@@ -2,6 +2,7 @@ import type { ClientData, PortalSession } from "@/lib/portal-helpers";
 import { buildOntology } from "@/lib/ontology/build";
 import { DEMO_FACILITY_ID, demoRows } from "./demo-rows";
 import { demoFunnelsAnswer } from "./demo-funnels";
+import { clearDemoTools, demoToolAnswer } from "./demo-tools";
 
 /**
  * The sample portal: /portal?demo opens the whole client portal on an invented
@@ -85,6 +86,7 @@ export function exitPortalDemo() {
   } catch {
     /* nothing to remove */
   }
+  clearDemoTools();
 }
 
 /* ─── the in-browser API ─── */
@@ -116,6 +118,10 @@ function answer(url: URL, method: string, rawBody?: string): Answer {
   const now = new Date();
 
   if (path === "/api/funnels") return demoFunnelsAnswer(url, method, rawBody, now);
+  // The facility tools the ontology hands off to: reads from the sample rows,
+  // writes kept in this tab (demo-tools).
+  const tool = demoToolAnswer(url, method, rawBody, now);
+  if (tool) return tool;
 
   // Reads that change nothing, even though they arrive as POST.
   if (path === "/api/client-data" && method === "POST") return ok({ client: DEMO_CLIENT });

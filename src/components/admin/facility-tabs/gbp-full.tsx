@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useToolFocus } from "@/components/ontology/tool-focus"
 import {
   Loader2,
   MapPin,
@@ -52,7 +53,9 @@ export default function GBPFull({
   facilityId: string
   adminKey: string
 }) {
-  const [section, setSection] = useState<Section>("posts")
+  // Opened for a review (portal ?focus=reviews/…): start on Reviews.
+  const focus = useToolFocus()
+  const [section, setSection] = useState<Section>(focus?.type === "reviews" ? "reviews" : "posts")
   const [connection, setConnection] = useState<GBPConnection | null>(null)
   const [posts, setPosts] = useState<GBPPost[]>([])
   const [reviews, setReviews] = useState<GBPReview[]>([])
@@ -222,7 +225,7 @@ export default function GBPFull({
             )}
             {connection?.status === "pending_location_selection" && (
               <div className="w-full mt-3">
-                <p className="text-xs text-amber-400 mb-2">
+                <p className="text-xs font-semibold text-[var(--color-dark)] mb-2">
                   Multiple locations found. Select one:
                 </p>
                 <div className="space-y-2">
@@ -310,7 +313,7 @@ export default function GBPFull({
           >
             <Icon size={13} /> {label}
             {badge > 0 && (
-              <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-amber-500 text-white">
+              <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--ic-selected)] text-white">
                 {badge}
               </span>
             )}

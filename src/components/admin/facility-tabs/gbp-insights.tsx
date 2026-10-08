@@ -156,7 +156,7 @@ export default function GBPInsights({
                 label: "Direction Requests",
                 value: insightsSummary.direction_clicks,
                 icon: Navigation,
-                color: "text-amber-400",
+                color: "text-[var(--onto-tours)]",
               },
               {
                 label: "Phone Calls",

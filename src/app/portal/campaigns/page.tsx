@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePortal } from "@/components/portal/portal-shell";
 import { CampaignsHome } from "@/components/campaigns/campaigns-home";
 import { CampaignPerformance } from "@/components/portal/campaign-performance";
@@ -12,7 +13,9 @@ export default function CampaignsPage() {
   const { client } = usePortal();
   return (
     <>
-      <CampaignsHome facilityId={client.facilityId} />
+      <Suspense fallback={null}>
+        <CampaignsHome facilityId={client.facilityId} />
+      </Suspense>
       <CampaignPerformance />
     </>
   );

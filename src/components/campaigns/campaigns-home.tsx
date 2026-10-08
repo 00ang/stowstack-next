@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { adminFetch, useAdminFetch } from "@/hooks/use-admin-fetch";
 import { ActionFill } from "@/components/ontology/action-fill";
@@ -226,9 +226,11 @@ export function CampaignsHome({ facilityId }: { facilityId: string }) {
   const { data: rows, loading, error, refetch } = useAdminFetch<FunnelRow[]>("/api/funnels", params);
   const [creating, setCreating] = useState<TemplateKey | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
-  const [panelOpen, setPanelOpen] = useState(() =>
-    typeof window === "undefined" ? false : new URLSearchParams(window.location.search).get("new") === "goal",
-  );
+  // ?new=goal (the bar's "Start from your goal") opens the goal panel. Read
+  // through the router so an in-app link sees its own URL, not the last page's.
+  const askedForNew = useSearchParams().get("new") === "goal";
+  const [panelOpenByHand, setPanelOpen] = useState(false);
+  const panelOpen = panelOpenByHand || askedForNew;
 
   const ctx = useGoalContext(flow?.ontology ?? null, flow?.pace ?? null, sample);
   const suggestion = suggestTemplate(ctx);
@@ -267,12 +269,9 @@ export function CampaignsHome({ facilityId }: { facilityId: string }) {
       return;
     }
     setOverride({
-      move: {
-        sentence: `Build "${templateMeta(suggestion.key).name}".`,
-        reason,
-        actionLabel: "Build it",
-        action: { kind: "templates" },
-      },
+      sentence: `Build "${templateMeta(suggestion.key).name}".`,
+      reason,
+      label: "Build it",
       onDo: () => void startRef.current(suggestion.key),
     });
   }, [setOverride, working, suggestion.key, reason]);
