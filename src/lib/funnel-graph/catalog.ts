@@ -459,6 +459,10 @@ export function optionList(
   }
 }
 
+function vacancyLine(empty: number, total: number): string {
+  return `${empty.toLocaleString("en-US")} empty of ${total.toLocaleString("en-US")}`;
+}
+
 const WHO: Record<string, string> = {
   movers: "movers nearby",
   past: "past leads",
@@ -469,11 +473,18 @@ export function nodeReading(node: FunnelNode, ctx: FunnelContext): string {
   const units = ctx.units ?? [];
   switch (node.type) {
     case "units": {
-      const picked = list(node.params.sizes)
+      const pickedKeys = list(node.params.sizes);
+      if (!pickedKeys.length) return "No sizes picked";
+      if (ctx.unitsSummary && ctx.unitsSummary.total > 0) {
+        return vacancyLine(ctx.unitsSummary.empty, ctx.unitsSummary.total);
+      }
+      const picked = pickedKeys
         .map((k) => units.find((u) => u.key === k))
         .filter((u): u is NonNullable<typeof u> => !!u);
-      if (!picked.length) return list(node.params.sizes).length ? `${list(node.params.sizes).length} sizes picked` : "No sizes picked";
+      if (!picked.length) return `${pickedKeys.length} size${pickedKeys.length === 1 ? "" : "s"} picked`;
       const empty = picked.reduce((a, u) => a + u.empty, 0);
+      const total = picked.reduce((a, u) => a + (u.total ?? 0), 0);
+      if (total > 0) return vacancyLine(empty, total);
       return `${empty} empty across ${picked.length} size${picked.length === 1 ? "" : "s"}`;
     }
     case "offer": {

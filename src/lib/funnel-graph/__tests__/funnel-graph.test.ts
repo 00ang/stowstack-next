@@ -459,6 +459,15 @@ describe("readings and options", () => {
       expect(filled.length).toBeGreaterThan(0);
     }
     expect(nodeReading(node("units", "u", { sizes: ["10x10", "10x20"] }), ctx)).toMatch(/empty across 2 sizes/);
+    expect(nodeReading(node("units", "u", { sizes: ["10x10"] }), { ...ctx, unitsSummary: { empty: 54, total: 322 } })).toBe("54 empty of 322");
+    expect(
+      nodeReading(node("units", "u", { sizes: ["10x10", "10x20"] }), {
+        units: [
+          { key: "10x10", name: "10x10", empty: 18, total: 80 },
+          { key: "10x20", name: "10x20", empty: 6, total: 30 },
+        ],
+      }),
+    ).toBe("24 empty of 110");
     expect(nodeReading(node("units", "u", { sizes: ["missing"] }), ctx)).toMatch(/1 size/);
     expect(nodeReading(node("offer", "o", { offer: "climate-fall" }), ctx)).toMatch(/15%/);
     expect(nodeReading(node("reserve", "r", { src: "hold" }), ctx)).toMatch(/no payment/i);
@@ -689,7 +698,7 @@ describe("edges of the rules", () => {
 
   it("describes each template and retargets an offer the facility does not run", () => {
     expect(templateBlurb("drive", ctx)).toMatch(/10x10 drive-up has 18 empty/);
-    expect(templateBlurb("drive")).toMatch(/10x10 drive-up has 18 empty/);
+    expect(templateBlurb("drive")).toMatch(/sitting empty/);
     expect(templateBlurb("lease")).toMatch(/Meta and Google/);
     expect(templateBlurb("shoulder")).toMatch(/Climate/);
     expect(templateMeta("lease").name).toBe("Lease-up a new facility");

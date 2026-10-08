@@ -190,7 +190,7 @@ export function templateBlurb(key: TemplateKey, ctx: FunnelContext = {}): string
     const drive = (ctx.units ?? []).filter((u) => u.driveUp && u.empty > 0);
     const sizes = drive.length
       ? drive.map((u) => `${u.name} has ${u.empty} empty`).join(", ")
-      : "10x10 drive-up has 18 empty, 10x20 has 6, 10x15 has 4";
+      : "Drive-up sizes that are sitting empty";
     return `${sizes}. A proven ad on Meta, then a page where people reserve or get a text back.`;
   }
   if (key === "lease") {

@@ -79,7 +79,12 @@ export interface FunnelContext {
   facilityName?: string;
   goal?: FunnelGoal;
   movedIn30?: number;
-  units?: { key: string; name: string; empty: number; driveUp?: boolean; climate?: boolean }[];
+  units?: { key: string; name: string; empty: number; total?: number; driveUp?: boolean; climate?: boolean }[];
+  /**
+   * Vacant units across every size, the same count the index header cites.
+   * A campaign's Units reading uses this instead of summing a subset.
+   */
+  unitsSummary?: { empty: number; total: number };
   offers?: { key: string; name: string; deal: string; active: boolean }[];
   provenAds?: { key: string; line: string }[];
   /** Connected ad accounts, if known. */
