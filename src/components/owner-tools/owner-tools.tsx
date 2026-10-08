@@ -9,6 +9,7 @@ import {
   type ComponentType,
 } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Loader2,
   AlertCircle,
@@ -137,12 +138,14 @@ function ToolContent({
   onUpdate,
   upgradeHref,
   openTool,
+  campaignsHref,
 }: {
   tool: string;
   facility: ToolFacility;
   onUpdate: () => void;
   upgradeHref: string;
   openTool: (key: string, params?: Record<string, string>) => void;
+  campaignsHref?: string;
 }) {
   const adminKey = ""; // owner mode
   const props = { facilityId: facility.id, adminKey, facilityName: facility.name };
@@ -171,7 +174,8 @@ function ToolContent({
       {tool === "tiktok" && <TikTokCreator {...props} />}
       {tool === "video" &&
         (facility.videoEnabled ? <VideoGenerator {...props} /> : <VideoUpgrade href={upgradeHref} />)}
-      {tool === "funnels" && <FacilityFunnels {...props} />}
+      {tool === "funnels" &&
+        (campaignsHref ? <GoToCampaigns href={campaignsHref} /> : <FacilityFunnels {...props} />)}
       {tool === "landing-pages" && <LandingPageBuilder {...props} />}
       {tool === "utm-links" && <UTMLinks {...props} />}
       {tool === "gbp" && <GBPFull {...props} />}
@@ -184,6 +188,19 @@ function ToolContent({
       {tool === "pms" && <PmsDashboard {...props} />}
       {tool === "call-tracking" && <CallTracking {...props} />}
     </Suspense>
+  );
+}
+
+/** In the portal, campaigns have a page of their own; the tool forwards there. */
+function GoToCampaigns({ href }: { href: string }) {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace(href);
+  }, [href, router]);
+  return (
+    <div className="flex items-center justify-center py-24 text-[var(--color-body-text)]">
+      <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Opening Campaigns…
+    </div>
   );
 }
 
@@ -211,11 +228,14 @@ function VideoUpgrade({ href }: { href: string }) {
 export function OwnerTools({
   defaultFacilityId,
   upgradeHref,
+  campaignsBase,
 }: {
   /** Facility to open first (e.g. the portal client's own). */
   defaultFacilityId?: string;
   /** Where the video upgrade prompt sends the owner. */
   upgradeHref: string;
+  /** Where campaigns live as pages of their own (the portal); the Campaigns tool forwards there. */
+  campaignsBase?: string;
 }) {
   const [facilities, setFacilities] = useState<ToolFacility[]>([]);
   const [facilityId, setFacilityId] = useState<string | null>(null);
@@ -411,6 +431,13 @@ export function OwnerTools({
               onUpdate={load}
               upgradeHref={upgradeHref}
               openTool={pickTool}
+              campaignsHref={
+                campaignsBase
+                  ? focused?.type === "campaigns"
+                    ? `${campaignsBase}/${encodeURIComponent(focused.id)}`
+                    : campaignsBase
+                  : undefined
+              }
             />
           </ToolFocusProvider>
         )}

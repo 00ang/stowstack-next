@@ -59,5 +59,8 @@ export { toPublishPlan } from "./publish-plan";
 export { funnelGraphSchema, readGraph, writeGraph } from "./schema";
 export { TEMPLATE_KEYS, buildTemplate, templateBlurb, templateMeta } from "./templates";
 export type { TemplateKey } from "./templates";
+export { suggestTemplate, LEASE_UP_VACANCY } from "./suggest";
+export { NODE_TOOL, nodeSubject } from "./tools";
+export type { Suggestion } from "./suggest";
 export { graphFromRecord } from "./from-record";
 export type { FunnelRecord } from "./from-record";

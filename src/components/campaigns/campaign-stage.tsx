@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useOntology } from "@/components/ontology/use-ontology";
 import { ActionFill } from "@/components/ontology/action-fill";
 import {
+  NODE_TOOL,
   canConnect,
   defOf,
   nextMove,
+  nodeSubject,
   pathToMoveIn,
   placeAfter,
   readyCount,
@@ -17,14 +19,20 @@ import {
   type NodeType,
 } from "@/lib/funnel-graph";
 import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
+import { useFlow } from "@/components/flow/flow-context";
 import { funnelContextFromOntology, goalMonths } from "./context";
-import { FunnelCanvas, placeFunction } from "./funnel-canvas";
-import { FunnelInspector } from "./inspector";
+import { FunnelCanvas, placeFrom, placeFunction } from "./funnel-canvas";
+import { FunnelInspector, type ToolLinkFor } from "./inspector";
+import { actionHref } from "@/lib/ontology/href";
 import { NextMoveBar } from "./next-move-bar";
 import { FunnelPalette } from "./palette";
 import { PublishDialog } from "./publish-dialog";
 import { ReadOnlyFlow } from "./read-only-flow";
 import { useCampaignDraft } from "./use-campaign-draft";
+
+/** Frameless, square, and each one its own fill (no two neighbours match). */
+const TOOL_BUTTON =
+  "act-fill inline-flex h-8 items-center px-2.5 text-[12px] font-extrabold";
 
 function useNarrow() {
   const [narrow, setNarrow] = useState(false);
@@ -46,15 +54,28 @@ export function CampaignStage({
   facilityId,
   funnelId,
   onBack,
+  fill = false,
 }: {
   facilityId: string;
   funnelId: string;
   onBack: () => void;
+  /** A page of its own (/portal/campaigns/[id]): fill the space instead of the tool panel's. */
+  fill?: boolean;
 }) {
   const sample = isPortalDemo();
   const narrow = useNarrow();
-  const ontology = useOntology({ kind: "manage", facilityId });
-  const ctx = useMemo(() => funnelContextFromOntology(ontology.data, sample), [ontology.data, sample]);
+  // In the portal the thread already holds this facility's ontology; reuse it.
+  const flow = useFlow();
+  const shared = flow && flow.facilityId === facilityId ? flow : null;
+  const own = useOntology(shared ? null : { kind: "manage", facilityId });
+  const ontologyData = shared ? shared.ontology : own.data;
+  const pace = shared?.pace ?? null;
+  const ctx = useMemo(() => {
+    const base = funnelContextFromOntology(ontologyData, sample);
+    // The month's goal is the campaign's default goal.
+    if (pace && pace.target > 0) base.goal = { moveIns: pace.target, month: pace.monthName };
+    return base;
+  }, [ontologyData, sample, pace]);
   const draft = useCampaignDraft(funnelId, ctx);
   const [readOnly, setReadOnly] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -63,6 +84,14 @@ export function CampaignStage({
   const [edgeId, setEdgeId] = useState<string | null>(null);
   const move = nextMove(draft.graph, ctx);
   const counts = readyCount(draft.graph);
+  // In the portal, a function opens its own tool with the object it works on in focus.
+  const toolLink: ToolLinkFor = (nodeId) => {
+    const node = draft.graph.nodes.find((n) => n.id === nodeId);
+    const target = node ? NODE_TOOL[node.type] : undefined;
+    if (!node || !target) return null;
+    const subject = nodeSubject(draft.graph, node, ontologyData?.objects ?? []);
+    return { href: actionHref({ label: target.label, tool: target.tool }, subject?.address ?? null), label: target.label };
+  };
   const months = goalMonths();
   const showList = narrow || readOnly;
 
@@ -93,6 +122,47 @@ export function CampaignStage({
     const added = next.nodes[next.nodes.length - 1];
     if (added) draft.setSelectedId(added.id);
   }
+
+  // Hand the move to the portal's next-move bar, and remember this as the
+  // campaign being built so every other page can point back to it.
+  const runRef = useRef(run);
+  runRef.current = run;
+  const setOverride = shared?.setOverride;
+  const setWorking = shared?.setWorking;
+  const moveKey = `${move.sentence}|${move.actionLabel}|${counts.ready}/${counts.total}|${pathToMoveIn(draft.graph)}`;
+  useEffect(() => {
+    if (!setOverride || draft.loading) return;
+    setOverride({
+      move,
+      ready: counts.ready,
+      total: counts.total,
+      pathClosed: pathToMoveIn(draft.graph),
+      onDo: () => runRef.current(move.action),
+    });
+    // moveKey stands for move, counts and path, which are rebuilt each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moveKey, setOverride, draft.loading]);
+  useEffect(() => () => setOverride?.(null), [setOverride]);
+  useEffect(() => {
+    if (!setWorking || draft.loading || !draft.graph.name) return;
+    setWorking({ id: funnelId, name: draft.graph.name, status: draft.graph.status, move });
+    // moveKey stands for move.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setWorking, funnelId, draft.loading, draft.graph.name, draft.graph.status, moveKey]);
+
+  // Arriving from the bar on another page (?do=next): take the move it offered, once.
+  const ranFromUrl = useRef(false);
+  useEffect(() => {
+    if (ranFromUrl.current || draft.loading || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("do") !== "next") return;
+    ranFromUrl.current = true;
+    url.searchParams.delete("do");
+    window.history.replaceState(null, "", url);
+    runRef.current(move.action);
+    // Runs once, after the campaign has loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft.loading]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -137,9 +207,11 @@ export function CampaignStage({
   return (
     <div
       className={
-        narrow
-          ? "-mx-4 flex h-[calc(100dvh-14.5rem)] min-h-0 flex-col overflow-hidden"
-          : "-mx-4 -my-5 flex h-[calc(100dvh-7.5rem)] min-h-[520px] flex-col overflow-hidden md:-mx-6 md:-my-6"
+        fill
+          ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+          : narrow
+            ? "-mx-4 flex h-[calc(100dvh-14.5rem)] min-h-0 flex-col overflow-hidden"
+            : "-mx-4 -my-5 flex h-[calc(100dvh-7.5rem)] min-h-[520px] flex-col overflow-hidden md:-mx-6 md:-my-6"
       }
     >
       <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-2 border-b border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2 sm:px-4">
@@ -174,18 +246,18 @@ export function CampaignStage({
         </label>
         {!narrow && (
           <>
-            <button type="button" className="border border-[var(--ic-ink)] px-2 py-1 text-[12px] font-extrabold" onClick={draft.undo} disabled={!draft.canUndo}>
+            <button type="button" data-fill="3" className={TOOL_BUTTON} onClick={draft.undo} disabled={!draft.canUndo}>
               Undo
             </button>
-            <button type="button" className="border border-[var(--ic-ink)] px-2 py-1 text-[12px] font-extrabold" onClick={draft.redo} disabled={!draft.canRedo}>
+            <button type="button" data-fill="4" className={TOOL_BUTTON} onClick={draft.redo} disabled={!draft.canRedo}>
               Redo
             </button>
-            <button type="button" className="border border-[var(--ic-ink)] px-2 py-1 text-[12px] font-extrabold" onClick={() => setReadOnly((v) => !v)}>
-              {readOnly ? "Edit view" : "Read-only"}
+            <button type="button" data-fill="5" className={TOOL_BUTTON} onClick={() => setReadOnly((v) => !v)}>
+              {readOnly ? "Edit view" : "Step list"}
             </button>
           </>
         )}
-        <button type="button" className="border border-[var(--ic-ink)] px-2 py-1 text-[12px] font-extrabold" onClick={() => setTemplatesOpen(true)}>
+        <button type="button" data-fill="6" className={TOOL_BUTTON} onClick={() => setTemplatesOpen(true)}>
           Templates
         </button>
         <ActionFill n={1} onClick={() => setPublishOpen(true)}>
@@ -238,6 +310,15 @@ export function CampaignStage({
                   const added = next.nodes[next.nodes.length - 1];
                   if (added) draft.setSelectedId(added.id);
                 }}
+                onAddFrom={(type, x, y, fromId, fromPort) => {
+                  const next = placeFrom(draft.graph, type, x, y, fromId, fromPort);
+                  draft.commit(next);
+                  const added = next.nodes[next.nodes.length - 1];
+                  if (added) draft.setSelectedId(added.id);
+                }}
+                suggestFor={(fromId) =>
+                  move.action.kind === "add" && move.action.connects.some((c) => c.fromId === fromId) ? move.action.node.type : null
+                }
                 onRefuse={draft.setNotice}
               />
             </div>
@@ -253,6 +334,12 @@ export function CampaignStage({
                 if (reason) draft.setNotice(reason);
               }}
               onRemove={() => draft.removeSelected(null)}
+              onSelectNode={(id) => {
+                draft.setSelectedId(id);
+                setFocusField(true);
+              }}
+              toolLink={shared ? toolLink : undefined}
+              technical={!shared}
             />
           </>
         )}
@@ -265,13 +352,16 @@ export function CampaignStage({
         {draft.graph.status === "published" && <span>Ads created paused</span>}
       </div>
 
-      <NextMoveBar
-        move={move}
-        ready={counts.ready}
-        total={counts.total}
-        pathClosed={pathToMoveIn(draft.graph)}
-        onDo={() => run(move.action)}
-      />
+      {/* In the portal the move rides the portal's own bar; the admin keeps this one. */}
+      {!shared && (
+        <NextMoveBar
+          move={move}
+          ready={counts.ready}
+          total={counts.total}
+          pathClosed={pathToMoveIn(draft.graph)}
+          onDo={() => run(move.action)}
+        />
+      )}
 
       {templatesOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--ic-ink)]/45 p-4" role="dialog" aria-modal="true">
