@@ -160,7 +160,7 @@ function toolLabel(tool: string): string {
   const labels: Record<string, string> = {
     occupancy: "Occupancy",
     revenue: "Revenue",
-    funnels: "Campaign Builder",
+    funnels: "Campaigns",
     "ad-studio": "Ad Generator",
     "landing-pages": "Landing Pages",
     "utm-links": "Tracking Links",

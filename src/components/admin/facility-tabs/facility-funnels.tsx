@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import Link from "next/link";
 import { useAdminFetch, adminFetch } from "@/hooks/use-admin-fetch";
 import {
   GitBranch,
@@ -57,6 +56,7 @@ export default function FacilityFunnels({
 }) {
   const [generating, setGenerating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const { data: funnels, loading, refetch } = useAdminFetch<FunnelSummary[]>(
     "/api/funnels",
@@ -82,6 +82,8 @@ export default function FacilityFunnels({
     [facilityId, refetch]
   );
 
+  const open = funnels?.find((f) => f.id === openId) ?? null;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -94,9 +96,9 @@ export default function FacilityFunnels({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold text-[var(--color-dark)]">Funnels</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-dark)]">Campaigns</h2>
           <p className="text-sm text-[var(--color-body-text)] break-words">
-            Complete ad-to-move-in paths for {facilityName}
+            Ad-to-move-in paths for {facilityName}
           </p>
         </div>
         <button
@@ -104,33 +106,53 @@ export default function FacilityFunnels({
           className="inline-flex shrink-0 items-center gap-2 px-3 py-2 text-sm font-medium bg-[var(--color-dark)] text-[var(--color-light)] rounded-lg hover:opacity-90 transition-opacity"
         >
           <Plus size={14} />
-          <span className="hidden sm:inline">New Funnel</span>
+          <span className="hidden sm:inline">New campaign</span>
           <span className="sm:hidden">New</span>
         </button>
       </div>
 
-      {!funnels?.length ? (
+      {open ? (
+        <div className="rounded-xl border border-black/[0.08] bg-white p-4">
+          <button
+            type="button"
+            onClick={() => setOpenId(null)}
+            className="mb-3 text-sm font-medium text-[var(--color-dark)] underline underline-offset-4"
+          >
+            Back to campaigns
+          </button>
+          <h3 className="font-medium text-[var(--color-dark)]">{open.name}</h3>
+          <p className="mt-1 text-xs text-[var(--color-body-text)]">
+            {ARCHETYPE_LABELS[open.archetype || "custom"]} · {open.status}
+          </p>
+          <p className="mt-3 text-sm text-[var(--color-body-text)]">
+            {open.ad_variations.length} ad{open.ad_variations.length === 1 ? "" : "s"} → {open.landing_pages.length} page
+            {open.landing_pages.length === 1 ? "" : "s"} → {open._count.partial_leads} lead
+            {open._count.partial_leads === 1 ? "" : "s"}
+          </p>
+        </div>
+      ) : !funnels?.length ? (
         <div className="rounded-xl border border-black/[0.08] bg-[var(--color-light)] p-10 text-center">
           <GitBranch size={36} className="mx-auto text-[var(--color-mid-gray)] mb-3" />
-          <p className="text-[var(--color-dark)] font-medium mb-1">No funnels yet</p>
+          <p className="text-[var(--color-dark)] font-medium mb-1">No campaigns yet</p>
           <p className="text-sm text-[var(--color-body-text)] mb-4">
-            Generate a complete funnel — ad, landing page, and drip — in one click.
+            Start one from a goal. An ad, a page, and a follow-up come with it.
           </p>
           <button
             onClick={() => setShowCreate(true)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--color-dark)] text-[var(--color-light)] rounded-lg"
           >
             <Sparkles size={14} />
-            Create First Funnel
+            New campaign
           </button>
         </div>
       ) : (
         <div className="space-y-3">
           {funnels.map((funnel) => (
-            <Link
+            <button
               key={funnel.id}
-              href={`/admin/funnels/${funnel.id}`}
-              className="group block rounded-xl border border-black/[0.08] bg-white p-4 hover:border-black/[0.16] transition-colors"
+              type="button"
+              onClick={() => setOpenId(funnel.id)}
+              className="group block w-full rounded-xl border border-black/[0.08] bg-white p-4 text-left hover:border-black/[0.16] transition-colors"
             >
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -164,7 +186,7 @@ export default function FacilityFunnels({
                   <Users size={10} /> {funnel._count.partial_leads} lead{funnel._count.partial_leads !== 1 ? "s" : ""}
                 </span>
               </div>
-            </Link>
+            </button>
           ))}
         </div>
       )}
@@ -174,7 +196,7 @@ export default function FacilityFunnels({
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-semibold text-[var(--color-dark)] mb-1 break-words">
-              Generate Funnel for {facilityName}
+              New campaign for {facilityName}
             </h2>
             <p className="text-sm text-[var(--color-body-text)] mb-5">
               Pick an archetype. We generate the ad, landing page, drip sequence, and recovery flow.

@@ -11,7 +11,7 @@ const FacilityFunnels = dynamic(
 export default function ChannelsFunnelsPage() {
   return (
     <FacilityToolPage
-      title="Funnels"
+      title="Campaigns"
       render={(p) => (
         <FacilityFunnels
           {...{ facilityId: p.facilityId, adminKey: p.adminKey, facilityName: p.facilityName }}
