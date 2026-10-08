@@ -58,6 +58,8 @@ const isPublicRoute = createRouteMatcher([
   "/blog(.*)",
   "/lp/(.*)",
   "/walkin/(.*)",
+  // A new tenant's one-tap "how did you find us" (signed link, no account).
+  "/heard",
   "/audit",
   "/audit/(.*)",
   "/audit-tool",
@@ -94,6 +96,12 @@ export function isCsrfExempt(req: NextRequest): boolean {
   if (path === "/api/consumer-lead") return true;
   if (path === "/api/diagnostic-intake") return true;
   if (path === "/api/facility-lookup") return true;
+  // The landing page's own Ask form, the tour booked from its thank-you, and the
+  // one-tap "how did you find us" (credential: the signed token in the body).
+  // Same model as /api/consumer-lead: public, no session, per-IP rate limited.
+  if (path === "/api/lead-capture") return true;
+  if (path === "/api/tour" && req.method === "POST") return true;
+  if (path === "/api/heard") return true;
   // Public anonymous tracking beacons fired from landing pages / embeds.
   // No session, fire-and-forget from the browser (failures are swallowed
   // client-side), abuse bounded by per-IP rate limits at the route level.

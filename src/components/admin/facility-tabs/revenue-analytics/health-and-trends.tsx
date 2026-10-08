@@ -49,7 +49,7 @@ function RevenueTrend({ revenueHistory, expanded, onToggle }: {
           <div className="flex gap-1">
             {revenueHistory.map((m, i) => (
               <div key={i} className="flex-1 text-center">
-                {i % 3 === 0 && <span className="text-[9px] text-[var(--color-mid-gray)]">{m.month.slice(0, 3)} &apos;{String(m.year).slice(2)}</span>}
+                {i % 3 === 0 && <span className="text-[9px] text-[var(--color-mid-gray)]">{m.month.slice(0, 3)} ’{String(m.year).slice(2)}</span>}
               </div>
             ))}
           </div>

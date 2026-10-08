@@ -76,7 +76,7 @@ export function PublishDialog({
         )}
         {!closed && (
           <div className="mt-3 text-[13.5px] font-semibold">
-            <b className="font-extrabold">Nothing reaches a move-in yet.</b> It can still publish; it just can&apos;t be judged on move-ins.
+            <b className="font-extrabold">Nothing reaches a move-in yet.</b> It can still publish; it just can’t be judged on move-ins.
           </div>
         )}
 

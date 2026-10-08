@@ -255,7 +255,7 @@ export default function SettingsPage() {
           <h3 className="mb-4 text-sm font-semibold text-[var(--color-dark)]">Notifications</h3>
           {!supported ? (
             <p className="text-xs text-[var(--color-mid-gray)]">
-              Push notifications aren&apos;t supported in this browser. Install the app to your home
+              Push notifications aren’t supported in this browser. Install the app to your home
               screen to enable them.
             </p>
           ) : (

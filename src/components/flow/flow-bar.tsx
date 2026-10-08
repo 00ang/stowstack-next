@@ -203,7 +203,7 @@ function Bar() {
       </div>
       {chosen.here ? (
         <span className="ic-label shrink-0 border border-[var(--ic-ink)] px-2.5 py-2 text-[11px] text-[var(--ic-ink)]">
-          You&apos;re on it
+          You’re on it
         </span>
       ) : (
         <ActionFill href={chosen.href} n={fillFor(chosen.id)} className="shrink-0">

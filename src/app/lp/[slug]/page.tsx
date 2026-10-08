@@ -735,7 +735,7 @@ function AskChapter({
               {hasReserve ? "Not ready to reserve?" : "Ask about a unit"}
             </span>
             <h2 className="mt-2 text-2xl md:text-4xl font-bold leading-snug tracking-tight text-[#141413]">
-              Leave your number. We&apos;ll get back to you.
+              Leave your number. We’ll get back to you.
             </h2>
             <div className="mt-6 grid gap-4">
               <div>
@@ -973,7 +973,7 @@ function ExitIntentPopup({
           ) : (
             <>
               <h3 className="text-xl font-semibold text-[#141413] mb-2">
-                Wait, don&apos;t lose your spot!
+                Wait, don’t lose your spot!
               </h3>
               <p className="text-sm text-[#6a6560] mb-5">
                 Enter your email and we will save your progress. Plus, we will
@@ -1231,7 +1231,7 @@ export default function LandingPageRoute() {
           Page Not Found
         </h1>
         <p className="text-[#6a6560] mb-6">
-          This landing page doesn&apos;t exist or hasn&apos;t been published
+          This landing page doesn’t exist or hasn’t been published
           yet.
         </p>
         <Link
