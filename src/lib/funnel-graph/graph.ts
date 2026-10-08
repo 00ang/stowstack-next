@@ -159,7 +159,7 @@ export function connect(
 
 /** First free slot to the right of `src`, or the canvas origin. */
 export function placeAfter(graph: FunnelGraph, src: FunnelNode | undefined, dy = 0): [number, number] {
-  let x = src ? src.x + 236 : 40;
+  const x = src ? src.x + 236 : 40;
   let y = src ? src.y + dy : 50;
   while (graph.nodes.some((n) => Math.abs(n.x - x) < 205 && Math.abs(n.y - y) < 170)) y += 190;
   return [x, y];

@@ -575,7 +575,7 @@ describe("edges of the rules", () => {
     const meta = drive.nodes.find((n) => n.type === "meta")!;
     const page = drive.nodes.find((n) => n.type === "page")!;
     const proven = drive.nodes.find((n) => n.type === "proven")!;
-    let graph = addNode(drive, "google", meta.x, meta.y + 190, { budget: "15" }, "g").graph;
+    const graph = addNode(drive, "google", meta.x, meta.y + 190, { budget: "15" }, "g").graph;
     const fed = connect(graph, proven.id, 0, "g", 0);
     expect(fed.ok).toBe(true);
     if (!fed.ok) return;

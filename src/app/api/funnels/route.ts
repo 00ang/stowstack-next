@@ -8,6 +8,7 @@ import {
   requireFacilityAccess,
 } from "@/lib/api-helpers";
 import { funnelConfigToDripSteps } from "@/lib/drip-sequences";
+import { funnelGraphSchema } from "@/lib/funnel-graph/schema";
 
 export const maxDuration = 60;
 
@@ -182,7 +183,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, name, status, config, dailyBudget, targetAudience } = body;
+    const { id, name, status, config, dailyBudget, targetAudience, graph } = body;
 
     if (!id) return errorResponse("id is required", 400, origin);
 
@@ -204,6 +205,15 @@ export async function PATCH(req: NextRequest) {
       }
     }
     if (config !== undefined) data.config = config;
+    if (graph !== undefined) {
+      const parsed = funnelGraphSchema.safeParse(graph);
+      if (!parsed.success) return errorResponse("Campaign graph is not valid", 400, origin);
+      const prev =
+        existing.config && typeof existing.config === "object" && !Array.isArray(existing.config)
+          ? (existing.config as Record<string, unknown>)
+          : {};
+      data.config = { ...prev, graph: parsed.data };
+    }
     if (dailyBudget !== undefined) data.daily_budget = dailyBudget;
     if (targetAudience !== undefined) data.target_audience = targetAudience;
 

@@ -18,6 +18,7 @@ import {
   type TemplateKey,
 } from "@/lib/funnel-graph";
 import type { FunnelRecord } from "@/lib/funnel-graph";
+import { layoutGraph } from "./layout";
 
 const LOCAL = "sa-campaign-graph";
 
@@ -76,10 +77,11 @@ export function useCampaignDraft(funnelId: string | null, ctx: FunnelContext) {
     setLoading(true);
     const cached = readLocal(funnelId);
     adminFetch<FunnelPayload>(`/api/funnels?id=${encodeURIComponent(funnelId)}`)
-      .then((row) => {
+      .then(async (row) => {
         if (cancel) return;
         const stored = readGraph(row.config);
-        const next = cached ?? stored ?? graphFromRecord(row);
+        let next = cached ?? stored ?? graphFromRecord(row);
+        if (!cached && !stored) next = await layoutGraph(next);
         if (!next.goal && ctx.goal) next.goal = ctx.goal;
         setGraph(next);
         setPast([]);
@@ -203,8 +205,9 @@ export function useCampaignDraft(funnelId: string | null, ctx: FunnelContext) {
   );
 
   const loadTemplate = useCallback(
-    (key: TemplateKey) => {
-      const next = buildTemplate(key, { ...ctx, goal: graphRef.current.goal ?? ctx.goal });
+    async (key: TemplateKey) => {
+      const built = buildTemplate(key, { ...ctx, goal: graphRef.current.goal ?? ctx.goal });
+      const next = await layoutGraph(built);
       setPast([]);
       setFuture([]);
       dirty.current = true;

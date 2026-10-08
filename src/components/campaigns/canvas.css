@@ -1,0 +1,36 @@
+/* Square ports and ink wires. The default React Flow theme is not loaded. */
+.funnel-canvas .react-flow__handle {
+  width: 11px;
+  height: 11px;
+  border-radius: 0;
+  border: 1px solid var(--ic-ink);
+}
+.funnel-canvas .react-flow__handle.valid {
+  outline: 3px solid var(--ic-selected);
+  outline-offset: 1px;
+  opacity: 1;
+}
+.funnel-canvas .react-flow__handle.connectingto:not(.valid),
+.funnel-canvas .react-flow__handle.invalid {
+  opacity: 0.28;
+}
+.funnel-canvas .react-flow__edge-path {
+  stroke: var(--ic-ink);
+  stroke-width: 1.5;
+}
+.funnel-canvas .react-flow__edge.selected .react-flow__edge-path,
+.funnel-canvas .react-flow__edge:focus .react-flow__edge-path {
+  stroke: var(--ic-selected);
+  stroke-width: 2.5;
+}
+.funnel-canvas .react-flow__attribution {
+  display: none;
+}
+.funnel-canvas .react-flow__node {
+  cursor: grab;
+}
+.funnel-canvas .react-flow__controls-button {
+  border-radius: 0;
+  border: 1px solid var(--ic-ink);
+  background: var(--ic-pane);
+}

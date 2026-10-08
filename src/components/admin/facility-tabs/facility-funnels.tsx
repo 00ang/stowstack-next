@@ -14,13 +14,9 @@ import {
   ChevronRight,
   Eye,
   FileText,
-  MousePointerClick,
   Users,
   Loader2,
   Sparkles,
-  Mail,
-  Smartphone,
-  ExternalLink,
 } from "lucide-react";
 
 interface FunnelSummary {
@@ -53,7 +49,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function FacilityFunnels({
   facilityId,
-  adminKey,
+  adminKey: _adminKey,
   facilityName,
 }: {
   facilityId: string;

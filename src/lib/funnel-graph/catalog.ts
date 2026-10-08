@@ -1,4 +1,4 @@
-import type { FunnelContext, FunnelNode, Lane, NodeParams, NodeType, PortType } from "./types";
+import type { FunnelContext, FunnelNode, Lane, NodeType, PortType } from "./types";
 
 export interface PortIn {
   port: PortType;
