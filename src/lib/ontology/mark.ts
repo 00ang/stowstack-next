@@ -1,32 +1,32 @@
 /**
- * Object marks: one small glyph per object, generated from its address, so
- * the same object carries the same mark on every screen.
+ * Object marks: one small geometric glyph per object, generated from its
+ * address, so the same object carries the same mark on every screen.
  *
- * The structure follows the sigil system studied in reference library entry
- * 006: a 2×2 grid of discrete cells, each one shape from a fixed vocabulary at
- * one of four rotations. Their designers dropped overlapping primitives as
- * "too difficult to read and differentiate"; discrete cells survive small.
+ * The structure follows the sigil system the reference library studies
+ * (entry 006): a 2×2 grid of discrete, non-overlapping cells, each cell one
+ * shape from a fixed vocabulary at one of four rotations. Their designers
+ * tried overlapping primitives first and dropped them as "too difficult to
+ * read and differentiate"; discrete cells survive being drawn at 16px.
  *
- * The drawing follows entry 008 (Instrument Calm, the facility identity marks
- * he loved): a heavy square frame holding four line-drawn cells, in ink. The
- * vocabulary comes from the buildings the product is about: a door arch,
- * roll-up slats, a lot of small units, a gable peak. Shape says which one;
- * the label beside it says what kind.
+ * The vocabulary is ours, drawn from the buildings the product is about: a
+ * roll-up door's slats, the arc of a door swing, a ramp, an aisle, a stair, a
+ * keypad light. The colour is not part of the mark: the object's type supplies
+ * it, so shape says *which one* and hue says *what kind*.
  */
 
 /** Shapes a cell can hold. Order is part of the contract: changing it changes every mark. */
 export const MARK_GLYPHS = [
-  "arch",
+  "block",
   "slats",
-  "ring",
-  "target",
-  "box",
-  "cross",
-  "diamond",
-  "peak",
-  "cup",
-  "lots",
-  "lines",
+  "swing",
+  "ramp",
+  "half",
+  "arch",
+  "light",
+  "aisle",
+  "stair",
+  "band",
+  "notch",
   "open",
 ] as const;
 
@@ -81,21 +81,21 @@ export function markFor(address: string): MarkSpec {
 }
 
 /**
- * Each glyph as stroke paths in a 10×10 cell, drawn upright (turn 0). Strokes,
- * not fills: the marks are line glyphs. Every shape keeps a margin inside its
- * cell so four cells never touch each other or the frame.
+ * Each glyph as SVG path data in a 10×10 cell, drawn upright (turn 0).
+ * Shapes stay inside their cell and never touch the far edges by accident, so
+ * four cells read as one figure without bleeding into each other.
  */
 export const GLYPH_PATHS: Record<MarkGlyph, string> = {
-  arch: "M2 7.5V5.5A3 3 0 0 1 8 5.5V7.5",
-  slats: "M2 3H8M2 5H8M2 7H8",
-  ring: "M8 5A3 3 0 1 1 2 5A3 3 0 1 1 8 5Z",
-  target: "M8.2 5A3.2 3.2 0 1 1 1.8 5A3.2 3.2 0 1 1 8.2 5ZM6.4 5A1.4 1.4 0 1 1 3.6 5A1.4 1.4 0 1 1 6.4 5Z",
-  box: "M2.5 2.5H7.5V7.5H2.5Z",
-  cross: "M2.5 2.5L7.5 7.5M7.5 2.5L2.5 7.5",
-  diamond: "M5 1.8L8.2 5L5 8.2L1.8 5Z",
-  peak: "M2 8L5 2L8 8",
-  cup: "M2 3A3 3 0 0 0 8 3",
-  lots: "M2 2H4.4V4.4H2ZM5.6 2H8V4.4H5.6ZM2 5.6H4.4V8H2ZM5.6 5.6H8V8H5.6Z",
-  lines: "M2 3.8H8M2 6.2H8",
+  block: "M0 0H10V10H0Z",
+  slats: "M0 0H10V2.6H0ZM0 3.7H10V6.3H0ZM0 7.4H10V10H0Z",
+  swing: "M0 10V0A10 10 0 0 1 10 10Z",
+  ramp: "M0 0V10H10Z",
+  half: "M0 0H5V10H0Z",
+  arch: "M0 10A5 5 0 0 1 10 10Z",
+  light: "M5 1.8A3.2 3.2 0 1 1 4.99 1.8Z",
+  aisle: "M0 0H10V2.2H0ZM0 7.8H10V10H0Z",
+  stair: "M0 6.67H10V10H0ZM0 3.33H6.67V6.67H0ZM0 0H3.33V3.33H0Z",
+  band: "M0 0A10 10 0 0 1 10 10H6A6 6 0 0 0 0 4Z",
+  notch: "M0 0H5V5H10V10H0Z",
   open: "",
 };

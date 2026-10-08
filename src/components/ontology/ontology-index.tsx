@@ -6,7 +6,7 @@ import { LANES, TYPE_DEFS, TYPE_ORDER, typeOfAddress } from "@/lib/ontology/regi
 import type { ObjectTypeKey, Ontology, OntologyObject } from "@/lib/ontology/types";
 import { FacilityInstrument } from "./facility-instrument";
 import { ObjectMark, TypeGlyph } from "./object-mark";
-import { IcButton } from "./ic-button";
+import { ActionFill } from "./action-fill";
 import { actionHref } from "./use-ontology";
 
 /**
@@ -16,8 +16,9 @@ import { actionHref } from "./use-ontology";
  * open one of them, see the page they came from.
  *
  * State lives in the URL (?t=units, ?o=units/10x10-climate) so any object can
- * be linked to, and the back button behaves. Drawn in Instrument Calm (library
- * entry 008): white panes, ink, mono-caps labels, navy for what's selected.
+ * be linked to, and the back button behaves. Structure from Instrument Calm
+ * (library entry 008): white panes, ink hairlines, mono-caps labels, navy for
+ * what's selected. Colour and marks are each kind's own (Angelo's choice).
  */
 export function OntologyIndex({ ontology, toolsBase = "/portal/tools" }: { ontology: Ontology; toolsBase?: string }) {
   const byAddress = useMemo(() => new Map(ontology.objects.map((o) => [o.address, o])), [ontology]);
@@ -147,9 +148,9 @@ function EmptyKind({ type, toolsBase }: { type: ObjectTypeKey; toolsBase: string
     <div className="py-8">
       <div className="text-[15px] font-semibold text-[var(--ic-secondary)]">No {def.plural.toLowerCase()} yet.</div>
       {action && (
-        <IcButton href={action.href} className="mt-3">
+        <ActionFill href={action.href} n={0} className="mt-3">
           {action.label}
-        </IcButton>
+        </ActionFill>
       )}
     </div>
   );
@@ -198,9 +199,9 @@ function ObjectRow({
         aria-controls={`${id}-detail`}
         className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors duration-[240ms] hover:bg-[var(--ic-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--ic-selected)] sm:px-4"
       >
-        <ObjectMark address={object.address} size={28} />
+        <ObjectMark address={object.address} type={object.type} size={28} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-bold text-[var(--ic-ink)]">{object.name}</span>
+          <span className="block truncate text-[15px] font-extrabold text-[var(--ic-ink)]">{object.name}</span>
           <span className="ic-label block truncate text-[10.5px] normal-case tracking-[0.02em] text-[var(--ic-instruction)]">{object.address}</span>
         </span>
         {moves.length > 0 && (
@@ -230,7 +231,7 @@ function ObjectRow({
                       {i === moves.length - 1 ? "└" : "├"}
                     </span>
                     <span>
-                      <span className="block text-[14px] font-bold text-[var(--ic-ink)]">{m.sentence}</span>
+                      <span className="block text-[14px] font-extrabold text-[var(--ic-ink)]">{m.sentence}</span>
                       <span className="block text-[13px] font-semibold text-[var(--ic-secondary)]">{m.reason}</span>
                     </span>
                   </li>
@@ -254,9 +255,9 @@ function ObjectRow({
 
           <div className="flex flex-wrap items-center gap-2.5">
             {object.actions.map((a, i) => (
-              <IcButton key={a.label} href={actionHref(a, object.address, toolsBase)} variant={i === 0 ? "primary" : "secondary"}>
+              <ActionFill key={a.label} href={actionHref(a, object.address, toolsBase)} n={i}>
                 {a.label}
-              </IcButton>
+              </ActionFill>
             ))}
             <CopyAddress address={object.address} />
           </div>
@@ -296,7 +297,7 @@ function Links({
                   onClick={() => goTo(o.address)}
                   className="inline-flex max-w-[16rem] items-center gap-2 text-left text-[13px] font-bold text-[var(--ic-ink)] underline decoration-[var(--ic-ink)]/30 underline-offset-4 hover:decoration-[var(--ic-ink)]"
                 >
-                  <ObjectMark address={o.address} size={20} />
+                  <ObjectMark address={o.address} type={o.type} size={20} />
                   <span className="truncate">{o.name}</span>
                 </button>
               </li>

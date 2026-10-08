@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { TYPE_DEFS } from "@/lib/ontology/registry";
 import type { ObjectTypeKey, TypeSummary } from "@/lib/ontology/types";
+import { TypeGlyph } from "./object-mark";
 import { indexHref } from "./use-ontology";
 
 /**
  * The facility as an instrument: one square pane per kind of object, each
  * showing one true reading. Grammar measured from the reference (library entry
  * 006): square panes, a 1px hard hairline, the gap a seventh of the pane, the
- * label top-left at a 7% inset, the reading bottom-left. Drawn in Instrument
- * Calm (entry 008): white panes on the cool ground, ink, mono-caps units, and
- * navy only for the pane that is selected.
+ * label top-left at a 7% inset, the reading bottom-left. The panes, hairlines
+ * and mono-caps units are Instrument Calm's (entry 008); the colour is each
+ * kind's own identity hue, which Angelo chose over the ink-only scheme.
  *
  * Each pane is a door into the index, not a KPI: it names a kind of thing you
- * own, and the number is how many of them are doing their job.
+ * own, and the number is how many of them are doing their job. The selected
+ * pane takes a navy frame and a navy reading.
  */
 export function FacilityInstrument({
   summaries,
@@ -51,9 +53,12 @@ function Pane({
     <>
       {/* Never truncated (Law #1): a long name wraps rather than losing letters. */}
       <span className="text-[12px] font-bold leading-tight sm:text-[13px]">{def.plural}</span>
-      <span className="mt-auto block leading-none">
+      <span className="flex flex-1 items-center justify-center py-1">
+        <TypeGlyph type={summary.type} className="h-6 w-6" />
+      </span>
+      <span className="block leading-none">
         <span
-          className={`block text-[22px] font-extrabold tabular-nums tracking-tight sm:text-[26px] ${
+          className={`block text-[20px] font-extrabold tabular-nums tracking-tight sm:text-[22px] ${
             selected ? "text-[var(--ic-selected)]" : ""
           }`}
         >

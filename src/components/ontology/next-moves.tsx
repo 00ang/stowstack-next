@@ -3,13 +3,14 @@
 import Link from "next/link";
 import type { Move, Ontology } from "@/lib/ontology/types";
 import { ObjectMark } from "./object-mark";
-import { IcButton } from "./ic-button";
+import { ActionFill } from "./action-fill";
 import { actionHref, indexHref } from "./use-ontology";
 
 /**
  * What the links reveal, one sentence each, with one way to close it. Calm by
- * construction: no badge, no red, nothing animated. When there is nothing to
- * do, it says so and gets out of the way.
+ * construction: no badge, no red, nothing animated. Each row carries its
+ * object's mark in the kind's colour, and its action takes the next of the six
+ * fills, so no two buttons beside each other match (Law #3).
  */
 export function NextMoves({
   ontology,
@@ -35,8 +36,8 @@ export function NextMoves({
   return (
     <div className="border-t-2 border-[var(--ic-ink)]">
       <ol>
-        {moves.map((m) => (
-          <MoveRow key={m.id} move={m} known={names.has(m.subject)} toolsBase={toolsBase} />
+        {moves.map((m, i) => (
+          <MoveRow key={m.id} move={m} n={i} known={names.has(m.subject)} toolsBase={toolsBase} />
         ))}
       </ol>
       {more > 0 && (
@@ -52,25 +53,25 @@ export function NextMoves({
   );
 }
 
-function MoveRow({ move, known, toolsBase }: { move: Move; known: boolean; toolsBase: string }) {
+function MoveRow({ move, n, known, toolsBase }: { move: Move; n: number; known: boolean; toolsBase: string }) {
   return (
     <li className="flex flex-col gap-3 border-b border-[var(--ic-ink)]/20 py-4 sm:flex-row sm:items-center sm:gap-4">
       <div className="flex min-w-0 flex-1 items-start gap-3">
         {known ? (
           <Link href={indexHref(move.subject)} className="mt-0.5" aria-label="Open in the index">
-            <ObjectMark address={move.subject} size={28} />
+            <ObjectMark address={move.subject} type={move.type} size={28} />
           </Link>
         ) : (
-          <ObjectMark address={move.subject} size={28} className="mt-0.5" />
+          <ObjectMark address={move.subject} type={move.type} size={28} className="mt-0.5" />
         )}
         <div className="min-w-0">
-          <div className="text-[15px] font-bold leading-snug text-[var(--ic-ink)]">{move.sentence}</div>
+          <div className="text-[15px] font-extrabold leading-snug text-[var(--ic-ink)]">{move.sentence}</div>
           <div className="mt-1 text-[13px] font-semibold leading-snug text-[var(--ic-secondary)]">{move.reason}</div>
         </div>
       </div>
-      <IcButton href={actionHref(move.action, known ? move.subject : null, toolsBase)} className="self-start sm:self-center">
+      <ActionFill href={actionHref(move.action, known ? move.subject : null, toolsBase)} n={n} className="self-start sm:self-center">
         {move.action.label}
-      </IcButton>
+      </ActionFill>
     </li>
   );
 }

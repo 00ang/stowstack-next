@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono } from "next/font/google";
+import { IBM_Plex_Mono, Manrope } from "next/font/google";
 import { PortalShell } from "@/components/portal/portal-shell";
 
 export const metadata: Metadata = {
@@ -8,8 +8,18 @@ export const metadata: Metadata = {
     "Access your StorageAds dashboard: attribution, campaign performance, and facility analytics.",
 };
 
-// Instrument Calm labels (mono caps). Scoped to the portal: the rest of the
-// site stays Manrope-only. Read through `.ic-label` in globals.css.
+// Manrope is the StorageAds face, but the root layout never loads it: every
+// "Manrope" in globals.css points at `--font-manrope`, which nothing defines,
+// so the site falls back to each visitor's system font. The portal loads it
+// here and re-points the site's face tokens at it, inside the portal only.
+// IBM Plex Mono carries the mono-caps labels (`.ic-label`, library entry 008).
+const manrope = Manrope({
+  weight: ["500", "600", "700", "800"],
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
 const plexMono = IBM_Plex_Mono({
   weight: ["500", "600"],
   subsets: ["latin"],
@@ -17,13 +27,18 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
+const face = 'var(--font-manrope), "Manrope", system-ui, sans-serif';
+
 export default function PortalLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className={`${plexMono.variable} contents`}>
+    <div
+      className={`${manrope.variable} ${plexMono.variable} contents`}
+      style={{ "--mono": face, "--serif": face, fontFamily: face } as React.CSSProperties}
+    >
       <PortalShell>{children}</PortalShell>
     </div>
   );
