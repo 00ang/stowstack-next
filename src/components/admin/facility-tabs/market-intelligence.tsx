@@ -1,6 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useToolFocus } from '@/components/ontology/tool-focus'
+import { useFlow } from '@/components/flow/flow-context'
+import { ActionFill } from '@/components/ontology/action-fill'
+import { actionHref } from '@/lib/ontology/href'
 import {
   Loader2, Star, MapPin, ExternalLink, Users, DollarSign,
   Calendar, Save, Shield, Heart, TrendingUp, ScanSearch,
@@ -86,7 +90,7 @@ function StarRating({ rating }: { rating: number | null }) {
   const full = Math.floor(rating)
   const half = rating - full >= 0.5
   return (
-    <span className="inline-flex items-center gap-0.5 text-amber-500 text-sm font-semibold">
+    <span className="inline-flex items-center gap-0.5 text-[var(--color-dark)] text-sm font-semibold">
       {Array.from({ length: full }, (_, i) => <Star key={i} size={12} fill="currentColor" />)}
       {half && <Star size={12} fill="currentColor" className="opacity-50" />}
       <span className="ml-0.5">{rating}</span>
@@ -107,6 +111,10 @@ export default function MarketIntelligence({ facilityId, adminKey }: {
   const [savingNotes, setSavingNotes] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Opened for one competitor (portal ?focus=competitors/…). Hooks stay above
+  // the early returns below.
+  const focus = useToolFocus()
+  const ontology = useFlow()?.ontology ?? null
 
   useEffect(() => {
     fetch(`/api/market-intel?facilityId=${facilityId}`, {
@@ -175,7 +183,30 @@ export default function MarketIntelligence({ facilityId, adminKey }: {
     )
   }
 
-  const competitors = intel?.competitors || []
+  // Opened for one competitor (portal ?focus=competitors/…): it leads the list,
+  // marked, with what to do about it.
+  const focusName = focus?.type === 'competitors' ? focus.name : null
+  const competitors = [...(intel?.competitors || [])].sort((a, b) =>
+    a.name === focusName ? -1 : b.name === focusName ? 1 : 0
+  )
+  // The answers: an ad for the size they undercut, and the running offer on Google.
+  const answers = (() => {
+    if (!focus || !focusName) return []
+    const unit = focus.links.find((l) => l.startsWith('units/')) ?? null
+    const unitName = unit ? ontology?.objects.find((o) => o.address === unit)?.name ?? null : null
+    const offer = ontology?.objects.find(
+      (o) => o.type === 'offers' && o.status !== 'ended' && (!unit || o.links.includes(unit))
+    )
+    const list: { label: string; href: string }[] = []
+    list.push({
+      label: unitName ? `Write an ad for your ${unitName}` : 'Write an ad that answers it',
+      href: actionHref({ label: '', tool: 'creative-studio' }, unit),
+    })
+    if (offer) {
+      list.push({ label: `Post ${offer.name} on Google`, href: actionHref({ label: '', tool: 'gbp' }, offer.address) })
+    }
+    return list
+  })()
   const demandDrivers = intel?.demand_drivers || []
   const demographics = intel?.demographics || {}
   const hasDemographics = demographics.population || demographics.median_income
@@ -264,16 +295,34 @@ export default function MarketIntelligence({ facilityId, adminKey }: {
                 <span className="text-xs text-[var(--color-mid-gray)]">
                   {competitors.length} competitor{competitors.length !== 1 ? 's' : ''} within 15 miles
                   {avgRating > 0 ? `, avg rating ${avgRating}` : ''}
-                  {avgRating > 0 && <Star size={10} className="inline ml-0.5 text-amber-500" fill="currentColor" />}
+                  {avgRating > 0 && <Star size={10} className="inline ml-0.5 text-[var(--color-dark)]" fill="currentColor" />}
                 </span>
               )}
             </div>
+            {focusName && (
+              <div className="mb-3 border border-[var(--ic-ink)] bg-[var(--ic-pane)] p-4">
+                <div className="ic-label text-[10.5px] text-[var(--ic-instruction)]">Answer it</div>
+                <div className="mt-1 text-[15px] font-bold leading-snug text-[var(--ic-ink)]">{focus?.brief}</div>
+                {answers.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {answers.map((a, i) => (
+                      <ActionFill key={a.href} href={a.href} n={i}>
+                        {a.label}
+                      </ActionFill>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {competitors.length === 0 ? (
               <p className="text-sm text-[var(--color-body-text)]">No competitors found nearby.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {competitors.map((c, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-[var(--color-light-gray)]">
+                  <div
+                    key={i}
+                    className={`p-3 rounded-lg bg-[var(--color-light-gray)] ${c.name === focusName ? 'border-l-[3px] border-l-[var(--ic-selected)]' : ''}`}
+                  >
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate text-[var(--color-dark)]">{c.name}</p>

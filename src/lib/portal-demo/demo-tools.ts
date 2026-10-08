@@ -27,10 +27,13 @@ interface Made {
   onboarding: { steps: Record<string, { completed: boolean; data: Record<string, unknown> }>; completedAt: string | null } | null;
   /** The month's goal, once set in the sample's setup or settings. */
   goal: number | null;
+  /** Ads written in the sample, and changes to its ads (status, copy). */
+  creatives: Record<string, unknown>[];
+  creativeEdits: Record<string, Record<string, unknown>>;
 }
 
 function blank(): Made {
-  return { links: [], posts: [], enrollments: [], pages: {}, replies: {}, drafts: {}, sequences: [], onboarding: null, goal: null };
+  return { links: [], posts: [], enrollments: [], pages: {}, replies: {}, drafts: {}, sequences: [], onboarding: null, goal: null, creatives: [], creativeEdits: {} };
 }
 
 function read(): Made {
@@ -482,6 +485,127 @@ function nurture(url: URL, method: string, raw: string | undefined, now: Date): 
   return { status: 405, body: { error: "Not in the sample portal." } };
 }
 
+/* ─── creative studio ─── */
+
+const ANGLE_LABELS: Record<string, string> = {
+  convenience: "Easy Move",
+  social_proof: "Trusted Choice",
+  urgency: "Last Chance",
+  lifestyle: "Fresh Start",
+  proximity: "Close By",
+  price: "Fair Price",
+};
+
+function creativeRow(ad: ReturnType<typeof demoRows>["ads"][number], edit: Record<string, unknown> | undefined) {
+  const google = ad.platform === "google_search";
+  const content = google
+    ? {
+        name: ad.headline,
+        headlines: [{ text: ad.headline }, { text: "Storage on Maple Street" }, { text: "Reserve online today" }],
+        descriptions: [{ text: ad.text }],
+        finalUrl: "https://storageads.com/lp/maple-fall-move",
+        sitelinks: [],
+      }
+    : {
+        angle: ad.angle ?? "",
+        angleLabel: (ad.angle && ANGLE_LABELS[ad.angle]) || ad.angle || "",
+        primaryText: ad.text,
+        headline: ad.headline,
+        description: "Reserve online in two minutes.",
+        cta: "LEARN_MORE",
+        targetingNote: "Within 5 miles, people moving soon",
+      };
+  return {
+    id: ad.id,
+    facility_id: DEMO_FACILITY_ID,
+    brief_id: null,
+    created_at: ad.createdAt,
+    platform: ad.platform,
+    format: google ? "rsa" : "single_image",
+    angle: ad.angle,
+    content_json: content,
+    asset_urls: null,
+    status: ad.status,
+    feedback: null,
+    version: 1,
+    compliance_status: "passed",
+    compliance_flags: null,
+    ...(edit ?? {}),
+  };
+}
+
+/** A sample "generation": two Meta drafts written from the direction, without a model. */
+function writtenFromDirection(direction: string, now: Date) {
+  const rows = demoRows(now);
+  const size = /(\d+\s*[x×]\s*\d+(?:\s*climate)?)/i.exec(direction)?.[1]?.replace(/\s*[x×]\s*/, "x") ?? "10x10";
+  const unit = rows.units.find((u) => u.unitType.toLowerCase() === size.toLowerCase());
+  const price = unit ? `$${unit.webRate} a month online` : "a fair price";
+  const at = new Date().toISOString();
+  // Climate units are inside the building: never "drive right up".
+  const climate = /climate/i.test(size);
+  const plain = size.replace(/\s*climate/i, "");
+  return (
+    climate
+      ? [
+          { angle: "convenience", headline: `A climate-controlled ${plain}, inside and dry`, text: `Climate-controlled ${plain} units on Maple Street, ${price}. Reserve online in two minutes.` },
+          { angle: "urgency", headline: `Climate ${plain}s are going this month`, text: `Moving soon? There are still climate-controlled ${plain} units open on Maple Street at ${price}. Hold one online today.` },
+        ]
+      : [
+          { angle: "convenience", headline: `A ${size} you can drive right up to`, text: `${size} units open on Maple Street, ${price}. Reserve online in two minutes; the gate opens at 6am.` },
+          { angle: "urgency", headline: `${size}s are going this month`, text: `Moving soon? There are still ${size} units open on Maple Street at ${price}. Hold one online today.` },
+        ]
+  ).map((c, i) => ({
+    id: newId(`demo-ad-${i}`),
+    facility_id: DEMO_FACILITY_ID,
+    brief_id: null,
+    created_at: at,
+    platform: "meta_feed",
+    format: "single_image",
+    angle: c.angle,
+    content_json: {
+      angle: c.angle,
+      angleLabel: ANGLE_LABELS[c.angle],
+      primaryText: c.text,
+      headline: c.headline,
+      description: "Reserve online in two minutes.",
+      cta: "LEARN_MORE",
+      targetingNote: "Within 5 miles, people moving soon",
+    },
+    asset_urls: null,
+    status: "draft",
+    feedback: null,
+    version: 1,
+    compliance_status: "passed",
+    compliance_flags: null,
+  }));
+}
+
+function creatives(url: URL, method: string, raw: string | undefined, now: Date): Answer {
+  const made = read();
+  const base = demoRows(now).ads.map((ad) => creativeRow(ad, made.creativeEdits[ad.id]));
+  const all = [...made.creatives.map((c) => ({ ...c, ...(made.creativeEdits[String(c.id)] ?? {}) })), ...base];
+  if (method === "GET") return ok({ variations: all });
+  const input = body(raw);
+  if (method === "POST") {
+    const written = writtenFromDirection(String(input.feedback ?? ""), now);
+    made.creatives = [...written, ...made.creatives];
+    write(made);
+    return ok({ variations: written }, 201);
+  }
+  if (method === "PATCH") {
+    const id = String(input.variationId ?? "");
+    const current = all.find((v) => v.id === id);
+    if (!current) return { status: 404, body: { error: "Ad not found" } };
+    const { variationId: _ignored, ...changes } = input;
+    void _ignored;
+    made.creativeEdits[id] = { ...(made.creativeEdits[id] ?? {}), ...changes };
+    write(made);
+    return ok({ variation: { ...current, ...made.creativeEdits[id] } });
+  }
+  if (method === "DELETE") return ok({ ok: true });
+  return { status: 405, body: { error: "Not in the sample portal." } };
+}
+
 /* ─── setup and the goal ─── */
 
 function onboarding(method: string, raw: string | undefined, now: Date): Answer {
@@ -546,6 +670,35 @@ export function demoToolAnswer(url: URL, method: string, raw: string | undefined
       return method === "GET" ? ok({ assets: [] }) : null;
     case "/api/nurture-sequences":
       return nurture(url, method, raw, now);
+    case "/api/facility-creatives":
+      return creatives(url, method, raw, now);
+    case "/api/market-intel": {
+      if (method !== "GET") return ok({ ok: true });
+      const rows = demoRows(now);
+      return ok({
+        intel: {
+          id: "demo-intel",
+          facility_id: DEMO_FACILITY_ID,
+          last_scanned: new Date(now.getTime() - 6 * DAY).toISOString(),
+          competitors: rows.competitors.map((c) => ({
+            name: c.name,
+            address: "Springfield, IL",
+            rating: c.rating,
+            reviewCount: c.reviewCount ?? 0,
+            distance_miles: c.distanceMiles,
+            mapsUrl: null,
+            website: c.website,
+            source: "sample",
+            units: c.units,
+            promotions: c.promotions.map((text) => ({ text })),
+          })),
+          demand_drivers: [],
+          demographics: { zip: "62701", population: 31200, median_income: 61800, renter_pct: 41, source: "sample" },
+          manual_notes: null,
+          operator_overrides: {},
+        },
+      });
+    }
     case "/api/client-onboarding":
       return onboarding(method, raw, now);
     case "/api/client-data": {
