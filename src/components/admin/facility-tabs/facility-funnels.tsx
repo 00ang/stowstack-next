@@ -1,21 +1,22 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import Link from "next/link";
+import { useMemo, useState, useCallback } from "react";
 import { useAdminFetch, adminFetch } from "@/hooks/use-admin-fetch";
+import { useOntology } from "@/components/ontology/use-ontology";
+import { emptyGraph, nextMove, buildTemplate, TEMPLATE_KEYS, templateBlurb, templateMeta, type TemplateKey } from "@/lib/funnel-graph";
+import { funnelContextFromOntology } from "@/components/campaigns/context";
+import { NextMoveBar } from "@/components/campaigns/next-move-bar";
+import { CampaignStage } from "@/components/campaigns/campaign-stage";
+import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
 import {
   GitBranch,
   Plus,
   ChevronRight,
   Eye,
   FileText,
-  MousePointerClick,
   Users,
   Loader2,
   Sparkles,
-  Mail,
-  Smartphone,
-  ExternalLink,
 } from "lucide-react";
 
 interface FunnelSummary {
@@ -48,7 +49,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function FacilityFunnels({
   facilityId,
-  adminKey,
+  adminKey: _adminKey,
   facilityName,
 }: {
   facilityId: string;
@@ -57,6 +58,8 @@ export default function FacilityFunnels({
 }) {
   const [generating, setGenerating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const { data: funnels, loading, refetch } = useAdminFetch<FunnelSummary[]>(
     "/api/funnels",
@@ -82,6 +85,26 @@ export default function FacilityFunnels({
     [facilityId, refetch]
   );
 
+  const open = funnels?.find((f) => f.id === openId) ?? null;
+  const sample = isPortalDemo();
+  const ontology = useOntology(openId ? null : { kind: "manage", facilityId });
+  const ctx = useMemo(() => funnelContextFromOntology(ontology.data, sample), [ontology.data, sample]);
+  const listMove = nextMove(emptyGraph({ goal: ctx.goal ?? null }), ctx);
+
+  const startTemplate = useCallback(
+    async (key: TemplateKey) => {
+      const graph = buildTemplate(key, ctx);
+      const created = await adminFetch<{ id: string }>("/api/funnels", {
+        method: "POST",
+        body: JSON.stringify({ facilityId, name: graph.name, archetype: "custom", config: { graph } }),
+      });
+      setShowCreate(false);
+      setOpenId(created.id);
+      refetch();
+    },
+    [ctx, facilityId, refetch],
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -94,9 +117,9 @@ export default function FacilityFunnels({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h2 className="text-lg font-semibold text-[var(--color-dark)]">Funnels</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-dark)]">Campaigns</h2>
           <p className="text-sm text-[var(--color-body-text)] break-words">
-            Complete ad-to-move-in paths for {facilityName}
+            Ad-to-move-in paths for {facilityName}
           </p>
         </div>
         <button
@@ -104,33 +127,36 @@ export default function FacilityFunnels({
           className="inline-flex shrink-0 items-center gap-2 px-3 py-2 text-sm font-medium bg-[var(--color-dark)] text-[var(--color-light)] rounded-lg hover:opacity-90 transition-opacity"
         >
           <Plus size={14} />
-          <span className="hidden sm:inline">New Funnel</span>
+          <span className="hidden sm:inline">New campaign</span>
           <span className="sm:hidden">New</span>
         </button>
       </div>
 
-      {!funnels?.length ? (
+      {open ? (
+        <CampaignStage facilityId={facilityId} funnelId={open.id} onBack={() => setOpenId(null)} />
+      ) : !funnels?.length ? (
         <div className="rounded-xl border border-black/[0.08] bg-[var(--color-light)] p-10 text-center">
           <GitBranch size={36} className="mx-auto text-[var(--color-mid-gray)] mb-3" />
-          <p className="text-[var(--color-dark)] font-medium mb-1">No funnels yet</p>
+          <p className="text-[var(--color-dark)] font-medium mb-1">No campaigns yet</p>
           <p className="text-sm text-[var(--color-body-text)] mb-4">
-            Generate a complete funnel — ad, landing page, and drip — in one click.
+            Start one from a goal. An ad, a page, and a follow-up come with it.
           </p>
           <button
             onClick={() => setShowCreate(true)}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium bg-[var(--color-dark)] text-[var(--color-light)] rounded-lg"
           >
             <Sparkles size={14} />
-            Create First Funnel
+            New campaign
           </button>
         </div>
       ) : (
         <div className="space-y-3">
           {funnels.map((funnel) => (
-            <Link
+            <button
               key={funnel.id}
-              href={`/admin/funnels/${funnel.id}`}
-              className="group block rounded-xl border border-black/[0.08] bg-white p-4 hover:border-black/[0.16] transition-colors"
+              type="button"
+              onClick={() => setOpenId(funnel.id)}
+              className="group block w-full rounded-xl border border-black/[0.08] bg-white p-4 text-left hover:border-black/[0.16] transition-colors"
             >
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -164,9 +190,35 @@ export default function FacilityFunnels({
                   <Users size={10} /> {funnel._count.partial_leads} lead{funnel._count.partial_leads !== 1 ? "s" : ""}
                 </span>
               </div>
-            </Link>
+            </button>
           ))}
         </div>
+      )}
+
+      {!open && (
+        <>
+          {showTemplates && (
+            <div className="space-y-2">
+              {TEMPLATE_KEYS.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setShowTemplates(false);
+                    void startTemplate(key).catch(() => {});
+                  }}
+                  className="block w-full border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2 text-left"
+                >
+                  <span className="font-extrabold text-[var(--ic-ink)]">{templateMeta(key).name}</span>
+                  <span className="mt-1 block text-[13px] font-semibold text-[var(--ic-secondary)]">{templateBlurb(key, ctx)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="sticky bottom-0 z-10 -mx-4 mt-4 md:-mx-6">
+            <NextMoveBar move={listMove} onDo={() => setShowTemplates(true)} />
+          </div>
+        </>
       )}
 
       {/* Create modal */}
@@ -174,7 +226,7 @@ export default function FacilityFunnels({
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl max-w-lg w-full p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-semibold text-[var(--color-dark)] mb-1 break-words">
-              Generate Funnel for {facilityName}
+              New campaign for {facilityName}
             </h2>
             <p className="text-sm text-[var(--color-body-text)] mb-5">
               Pick an archetype. We generate the ad, landing page, drip sequence, and recovery flow.

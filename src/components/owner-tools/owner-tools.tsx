@@ -97,7 +97,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
   {
     title: "Marketing",
     tools: [
-      { key: "funnels", label: "Campaign Builder", icon: GitBranch },
+      { key: "funnels", label: "Campaigns", icon: GitBranch },
       { key: "landing-pages", label: "Landing Pages", icon: FileText },
       { key: "utm-links", label: "Tracking Links", icon: Link2 },
       { key: "gbp", label: "Google Business", icon: Globe },

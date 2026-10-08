@@ -10,6 +10,7 @@ import {
 import { COOKIE_NAME, HEADER_NAME } from "@/lib/manage-session";
 import { selfBaseUrl } from "@/lib/self-url";
 import { funnelConfigToDripSteps } from "@/lib/drip-sequences";
+import { recoveryDay3Message } from "@/lib/funnels/recovery-copy";
 import { ARCHETYPE_FUNNELS } from "@/components/admin/facility-tabs/ad-studio/types";
 
 export const maxDuration = 120;
@@ -227,11 +228,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Recovery sequence (standard 1hr/24hr/72hr)
+    // Recovery sequence (standard 1hr/24hr/72hr). The day-3 line names a
+    // special only when this facility is running one.
+    const runningOffers = await db.facility_pms_specials.findMany({
+      where: { facility_id: facilityId, active: true },
+      select: { name: true, description: true, active: true },
+      orderBy: { created_at: "desc" },
+      take: 20,
+    });
     const recoverySteps = funnelConfigToDripSteps([
       { channel: "email", message: "You were looking at units — still interested?", timing: "Hour 1" },
       { channel: "sms", message: `Don't lose your spot at ${facility.name}. Reserve now.`, timing: "Hour 24" },
-      { channel: "email", message: `Special offer: first month free at ${facility.name}.`, timing: "Hour 72" },
+      { channel: "email", message: recoveryDay3Message(facility.name, runningOffers), timing: "Hour 72" },
     ]);
     await db.drip_sequence_templates.create({
       data: {

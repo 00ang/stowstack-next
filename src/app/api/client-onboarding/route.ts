@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { writeTypedUnitMix, type TypedUnitInput } from "@/lib/onboarding/unit-mix";
 import {
   jsonResponse,
   errorResponse,
@@ -317,6 +318,17 @@ export async function PATCH(req: NextRequest) {
         updated_at: new Date(),
       },
     });
+
+    // Typed sizes have to land in the unit mix. Otherwise finishing
+    // onboarding still leaves "Upload your unit mix" on the facility.
+    if (step === "unitMix" && steps.unitMix?.completed) {
+      const client = await db.clients.findUnique({
+        where: { id: row.client_id },
+        select: { facility_id: true },
+      });
+      const typed = (steps.unitMix.data as { units?: TypedUnitInput[] }).units ?? [];
+      if (client && typed.length) await writeTypedUnitMix(client.facility_id, typed);
+    }
 
     // Notify admin when onboarding is fully complete
     if (allDone && process.env.RESEND_API_KEY) {

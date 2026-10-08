@@ -1,6 +1,7 @@
 import type { ClientData, PortalSession } from "@/lib/portal-helpers";
 import { buildOntology } from "@/lib/ontology/build";
 import { DEMO_FACILITY_ID, demoRows } from "./demo-rows";
+import { demoFunnelsAnswer } from "./demo-funnels";
 
 /**
  * The sample portal: /portal?demo opens the whole client portal on an invented
@@ -101,7 +102,8 @@ function installDemoFetch() {
       return realFetch(input, init);
     }
     const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
-    const { status, body } = answer(url, method);
+    const rawBody = typeof init?.body === "string" ? init.body : undefined;
+    const { status, body } = answer(url, method, rawBody);
     return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
   };
 }
@@ -109,9 +111,11 @@ function installDemoFetch() {
 type Answer = { status: number; body: unknown };
 const ok = (body: unknown): Answer => ({ status: 200, body });
 
-function answer(url: URL, method: string): Answer {
+function answer(url: URL, method: string, rawBody?: string): Answer {
   const path = url.pathname;
   const now = new Date();
+
+  if (path === "/api/funnels") return demoFunnelsAnswer(url, method, rawBody, now);
 
   // Reads that change nothing, even though they arrive as POST.
   if (path === "/api/client-data" && method === "POST") return ok({ client: DEMO_CLIENT });
