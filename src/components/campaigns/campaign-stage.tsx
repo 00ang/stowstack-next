@@ -135,13 +135,22 @@ export function CampaignStage({
   }, [draft, edgeId, showList]);
 
   return (
-    <div className="-mx-4 -my-5 flex h-[calc(100dvh-7.5rem)] min-h-[520px] flex-col overflow-hidden md:-mx-6 md:-my-6">
-      <div className="flex flex-wrap items-center gap-2 border-b border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2">
-        <button type="button" onClick={onBack} className="text-[13px] font-extrabold underline underline-offset-4">
-          Campaigns
-        </button>
-        <span className="text-[var(--ic-instruction)]">›</span>
-        <h2 className="min-w-0 flex-1 truncate text-[15px] font-extrabold">{draft.graph.name ?? "Campaign"}</h2>
+    <div
+      className={
+        narrow
+          ? "-mx-4 flex h-[calc(100dvh-14.5rem)] min-h-0 flex-col overflow-hidden"
+          : "-mx-4 -my-5 flex h-[calc(100dvh-7.5rem)] min-h-[520px] flex-col overflow-hidden md:-mx-6 md:-my-6"
+      }
+    >
+      <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-2 border-b border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2 sm:px-4">
+        <div className="flex min-w-0 basis-full items-center gap-2 sm:basis-auto sm:flex-1">
+          <button type="button" onClick={onBack} className="shrink-0 text-[13px] font-extrabold underline underline-offset-4">
+            Campaigns
+          </button>
+          <span className="shrink-0 text-[var(--ic-instruction)]">›</span>
+          <h2 className="min-w-0 text-[15px] font-extrabold leading-snug sm:truncate">{draft.graph.name ?? "Campaign"}</h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
         <label className="flex items-center gap-1 border border-[var(--ic-ink)] px-2 py-0.5">
           <span className="ic-label text-[10px] text-[var(--ic-instruction)]">Goal</span>
           <input
@@ -183,10 +192,11 @@ export function CampaignStage({
           Publish
         </ActionFill>
         {draft.saving && <span className="ic-label text-[10px] text-[var(--ic-instruction)]">Saving</span>}
+        </div>
       </div>
 
       {draft.notice && (
-        <div role="status" className="flex items-start justify-between gap-3 bg-[var(--ic-ink)] px-3 py-2 text-[13px] font-semibold text-[var(--ic-pane)]">
+        <div role="status" className="flex shrink-0 items-start justify-between gap-3 bg-[var(--ic-ink)] px-3 py-2 text-[13px] font-semibold text-[var(--ic-pane)] sm:px-4">
           <span>{draft.notice}</span>
           <button type="button" className="underline" onClick={() => draft.setNotice(null)}>
             Dismiss
@@ -248,7 +258,7 @@ export function CampaignStage({
         )}
       </div>
 
-      <div className="ic-label flex items-center justify-between border-t border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-1 text-[10.5px] text-[var(--ic-secondary)]">
+      <div className="ic-label flex shrink-0 items-center justify-between gap-3 border-t border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-1 text-[10.5px] text-[var(--ic-secondary)] sm:px-4">
         <span>
           {counts.ready} of {counts.total} ready · path to move-in: {pathToMoveIn(draft.graph) ? "closed" : "open"}
         </span>

@@ -27,7 +27,7 @@ export function ReadOnlyFlow({
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
 
   return (
-    <div className="mx-auto w-full max-w-[560px] overflow-x-hidden px-1 py-2">
+    <div className="mx-auto w-full max-w-[560px] overflow-x-hidden px-3 py-3 sm:px-4">
       <div className="ic-label text-[10.5px] text-[var(--ic-instruction)]">Campaign · read-only</div>
       <h2 className="mt-1 text-[22px] font-extrabold leading-tight text-[var(--ic-ink)]">{graph.name ?? "Campaign"}</h2>
       <div className="ic-label mt-1 text-[10.5px] text-[var(--ic-secondary)]">
