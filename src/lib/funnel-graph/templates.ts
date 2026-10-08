@@ -6,7 +6,7 @@ import type { FunnelContext, FunnelGraph, NodeParams, NodeType } from "./types";
  * Lease-up and shoulder season also close on cost per move-in, so each
  * template satisfies validateGraph.
  *
- * Columns and rows are the prototype's grid (236 × 190).
+ * Columns are 300 apart (220 wide, an 80 gap a wire's count fits in); rows 190.
  */
 
 export const TEMPLATE_KEYS = ["drive", "lease", "shoulder"] as const;
@@ -139,7 +139,7 @@ export function buildTemplate(key: TemplateKey, ctx: FunnelContext = {}): Funnel
         {
           id,
           type,
-          x: 40 + col * 236,
+          x: 40 + col * 300,
           y: 50 + row * 190,
           params: nodeParams,
           ...(type === "page" ? { slug: slugFor(spec.name, graph.nodes.some((n) => n.type === "page"), id) } : {}),

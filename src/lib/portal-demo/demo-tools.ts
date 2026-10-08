@@ -672,6 +672,34 @@ export function demoToolAnswer(url: URL, method: string, raw: string | undefined
       return nurture(url, method, raw, now);
     case "/api/facility-creatives":
       return creatives(url, method, raw, now);
+    case "/api/funnels/flow": {
+      if (method !== "GET") return null;
+      // The sample's counts for one campaign, from the same rows: visits to its
+      // pages (split by channel in fixed sample shares, since the sample rows
+      // carry no channel per visit), then what happened to its leads.
+      const rows = demoRows(now);
+      const id = url.searchParams.get("id") ?? "";
+      const pages = rows.pages.filter((p) => p.funnelId === id);
+      const pageIds = new Set(pages.map((p) => p.id));
+      const total = pages.reduce((n, p) => n + p.visits30, 0);
+      const meta = Math.round(total * 0.6);
+      const gbp = Math.round(total * 0.25);
+      const google = Math.round(total * 0.1);
+      const leads = rows.leads.filter((l) => l.funnelId === id || (l.landingPageId && pageIds.has(l.landingPageId)));
+      const leadIds = new Set(leads.map((l) => l.id));
+      return ok({
+        counts: {
+          days: 30,
+          visits: { meta, google, gbp, tiktok: 0, other: Math.max(0, total - meta - gbp - google) },
+          leads: leads.length,
+          answered: leads.filter((l) => l.firstResponseAt).length,
+          enrolled: leads.filter((l) => l.firstResponseAt && l.status !== "moved_in" && l.status !== "lost").length,
+          toured: new Set(rows.tours.filter((t) => t.leadId && leadIds.has(t.leadId)).map((t) => t.leadId)).size,
+          holds: leads.filter((l) => l.status === "reserved").length,
+          moveIns: leads.filter((l) => l.status === "moved_in" || l.converted).length,
+        },
+      });
+    }
     case "/api/market-intel": {
       if (method !== "GET") return ok({ ok: true });
       const rows = demoRows(now);

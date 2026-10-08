@@ -256,6 +256,8 @@ interface CanvasProps {
   onRefuse: (reason: string) => void;
   /** The function the next move would add after `fromId`, if any. */
   suggestFor: (fromId: string) => NodeType | null;
+  /** Live counts per wire (edge id → "240 visits"), when the campaign has any. */
+  edgeLabels?: Record<string, string>;
 }
 
 function CanvasInner({
@@ -269,6 +271,7 @@ function CanvasInner({
   onAddFrom,
   onRefuse,
   suggestFor,
+  edgeLabels,
   wrapper,
 }: CanvasProps & { wrapper: HTMLDivElement | null }) {
   const flow = useReactFlow();
@@ -317,14 +320,27 @@ function CanvasInner({
   const nodes = useMemo(() => nodeData(graph, ctx, openPlus), [graph, ctx, openPlus]);
   const edges = useMemo(
     () =>
-      graph.edges.map((e) => ({
-        id: e.id,
-        source: e.from,
-        target: e.to,
-        sourceHandle: `out-${e.fromPort}`,
-        targetHandle: `in-${e.toPort}`,
-      })),
-    [graph.edges],
+      graph.edges.map((e) => {
+        const label = edgeLabels?.[e.id];
+        return {
+          id: e.id,
+          source: e.from,
+          target: e.to,
+          sourceHandle: `out-${e.fromPort}`,
+          targetHandle: `in-${e.toPort}`,
+          // What flowed along this wire in the window, on a white tab so it reads over the grid.
+          ...(label
+            ? {
+                label,
+                labelStyle: { fontFamily: "var(--font-plex-mono), ui-monospace, monospace", fontSize: 11, fontWeight: 600, fill: "#121214" },
+                labelBgStyle: { fill: "#FFFFFF", stroke: "#121214", strokeWidth: 1 },
+                labelBgPadding: [6, 3] as [number, number],
+                labelShowBg: true,
+              }
+            : {}),
+        };
+      }),
+    [graph.edges, edgeLabels],
   );
 
   const isValid = useCallback(

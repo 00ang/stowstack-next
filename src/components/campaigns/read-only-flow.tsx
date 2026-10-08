@@ -14,6 +14,7 @@ export function ReadOnlyFlow({
   onSelect,
   showBack,
   onBackToCanvas,
+  edgeLabels,
 }: {
   graph: FunnelGraph;
   ctx: FunnelContext;
@@ -21,6 +22,8 @@ export function ReadOnlyFlow({
   onSelect: (id: string) => void;
   showBack?: boolean;
   onBackToCanvas?: () => void;
+  /** Live counts per wire, shown on the connector between steps. */
+  edgeLabels?: Record<string, string>;
 }) {
   const order = topo(graph);
   const counts = readyCount(graph);
@@ -34,7 +37,7 @@ export function ReadOnlyFlow({
         {counts.ready} of {counts.total} ready · path to move-in {pathToMoveIn(graph) ? "closed" : "open"}
       </div>
       {showBack && onBackToCanvas && (
-        <button type="button" onClick={onBackToCanvas} className="mt-3 border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2 text-[13px] font-extrabold">
+        <button type="button" onClick={onBackToCanvas} data-fill="3" className="act-fill mt-3 px-3 py-2 text-[13px] font-extrabold">
           Back to the canvas
         </button>
       )}
@@ -92,6 +95,7 @@ export function ReadOnlyFlow({
               {main ? (
                 <div className="ic-label ml-5 border-l-2 border-[var(--ic-ink)] py-1 pl-3 text-[10px] text-[var(--ic-secondary)]">
                   {PORTS[defOf(n.type).outputs[main.fromPort]].label}
+                  {edgeLabels?.[main.id] && <span className="text-[var(--ic-ink)]"> · {edgeLabels[main.id]}</span>}
                 </div>
               ) : idx < order.length - 1 ? (
                 <div className="h-2" />

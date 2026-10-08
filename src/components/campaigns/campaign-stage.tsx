@@ -5,6 +5,9 @@ import { useOntology } from "@/components/ontology/use-ontology";
 import { ActionFill } from "@/components/ontology/action-fill";
 import {
   NODE_TOOL,
+  edgeCounts,
+  isEmptyFlow,
+  type FlowCounts,
   canConnect,
   defOf,
   nextMove,
@@ -29,6 +32,27 @@ import { FunnelPalette } from "./palette";
 import { PublishDialog } from "./publish-dialog";
 import { ReadOnlyFlow } from "./read-only-flow";
 import { useCampaignDraft } from "./use-campaign-draft";
+
+/** What flowed through the campaign in the last 30 days, for the counts on its wires. */
+function useFlowCounts(funnelId: string): FlowCounts | null {
+  const [counts, setCounts] = useState<FlowCounts | null>(null);
+  useEffect(() => {
+    let cancel = false;
+    fetch(`/api/funnels/flow?id=${encodeURIComponent(funnelId)}&days=30`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json: { counts?: FlowCounts } | null) => {
+        if (!cancel) setCounts(json?.counts ?? null);
+      })
+      .catch(() => {
+        // Counts are a reading on the wires; without them the canvas still works.
+        if (!cancel) setCounts(null);
+      });
+    return () => {
+      cancel = true;
+    };
+  }, [funnelId]);
+  return counts;
+}
 
 /** Frameless, square, and each one its own fill (no two neighbours match). */
 const TOOL_BUTTON =
@@ -77,6 +101,11 @@ export function CampaignStage({
     return base;
   }, [ontologyData, sample, pace]);
   const draft = useCampaignDraft(funnelId, ctx);
+  const flowCounts = useFlowCounts(funnelId);
+  const edgeLabels = useMemo(
+    () => (isEmptyFlow(flowCounts) ? undefined : edgeCounts(draft.graph, flowCounts)),
+    [flowCounts, draft.graph],
+  );
   const [readOnly, setReadOnly] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -290,6 +319,7 @@ export function CampaignStage({
               onSelect={draft.setSelectedId}
               showBack={!narrow && readOnly}
               onBackToCanvas={() => setReadOnly(false)}
+              edgeLabels={edgeLabels}
             />
           </div>
         ) : (
@@ -322,6 +352,7 @@ export function CampaignStage({
                   move.action.kind === "add" && move.action.connects.some((c) => c.fromId === fromId) ? move.action.node.type : null
                 }
                 onRefuse={draft.setNotice}
+                edgeLabels={edgeLabels}
               />
             </div>
             <FunnelInspector
@@ -350,6 +381,13 @@ export function CampaignStage({
       <div className="ic-label flex shrink-0 items-center justify-between gap-3 border-t border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-1 text-[10.5px] text-[var(--ic-secondary)] sm:px-4">
         <span>
           {counts.ready} of {counts.total} ready · path to move-in: {pathToMoveIn(draft.graph) ? "closed" : "open"}
+          {edgeLabels && (
+            <>
+              {" "}
+              · counts: last {flowCounts?.days} days
+              {sample ? " · sample" : ""}
+            </>
+          )}
         </span>
         {draft.graph.status === "published" && <span>Ads created paused</span>}
       </div>
