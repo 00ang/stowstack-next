@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useAdminFetch, adminFetch } from "@/hooks/use-admin-fetch";
+import { useOntology } from "@/components/ontology/use-ontology";
+import { emptyGraph, nextMove, buildTemplate, TEMPLATE_KEYS, templateBlurb, templateMeta, type TemplateKey } from "@/lib/funnel-graph";
+import { funnelContextFromOntology } from "@/components/campaigns/context";
+import { NextMoveBar } from "@/components/campaigns/next-move-bar";
+import { CampaignStage } from "@/components/campaigns/campaign-stage";
+import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
 import {
   GitBranch,
   Plus,
@@ -57,6 +63,7 @@ export default function FacilityFunnels({
   const [generating, setGenerating] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const { data: funnels, loading, refetch } = useAdminFetch<FunnelSummary[]>(
     "/api/funnels",
@@ -83,6 +90,24 @@ export default function FacilityFunnels({
   );
 
   const open = funnels?.find((f) => f.id === openId) ?? null;
+  const sample = isPortalDemo();
+  const ontology = useOntology(openId ? null : { kind: "manage", facilityId });
+  const ctx = useMemo(() => funnelContextFromOntology(ontology.data, sample), [ontology.data, sample]);
+  const listMove = nextMove(emptyGraph({ goal: ctx.goal ?? null }), ctx);
+
+  const startTemplate = useCallback(
+    async (key: TemplateKey) => {
+      const graph = buildTemplate(key, ctx);
+      const created = await adminFetch<{ id: string }>("/api/funnels", {
+        method: "POST",
+        body: JSON.stringify({ facilityId, name: graph.name, archetype: "custom", config: { graph } }),
+      });
+      setShowCreate(false);
+      setOpenId(created.id);
+      refetch();
+    },
+    [ctx, facilityId, refetch],
+  );
 
   if (loading) {
     return (
@@ -112,24 +137,7 @@ export default function FacilityFunnels({
       </div>
 
       {open ? (
-        <div className="rounded-xl border border-black/[0.08] bg-white p-4">
-          <button
-            type="button"
-            onClick={() => setOpenId(null)}
-            className="mb-3 text-sm font-medium text-[var(--color-dark)] underline underline-offset-4"
-          >
-            Back to campaigns
-          </button>
-          <h3 className="font-medium text-[var(--color-dark)]">{open.name}</h3>
-          <p className="mt-1 text-xs text-[var(--color-body-text)]">
-            {ARCHETYPE_LABELS[open.archetype || "custom"]} · {open.status}
-          </p>
-          <p className="mt-3 text-sm text-[var(--color-body-text)]">
-            {open.ad_variations.length} ad{open.ad_variations.length === 1 ? "" : "s"} → {open.landing_pages.length} page
-            {open.landing_pages.length === 1 ? "" : "s"} → {open._count.partial_leads} lead
-            {open._count.partial_leads === 1 ? "" : "s"}
-          </p>
-        </div>
+        <CampaignStage facilityId={facilityId} funnelId={open.id} onBack={() => setOpenId(null)} />
       ) : !funnels?.length ? (
         <div className="rounded-xl border border-black/[0.08] bg-[var(--color-light)] p-10 text-center">
           <GitBranch size={36} className="mx-auto text-[var(--color-mid-gray)] mb-3" />
@@ -189,6 +197,32 @@ export default function FacilityFunnels({
             </button>
           ))}
         </div>
+      )}
+
+      {!open && (
+        <>
+          {showTemplates && (
+            <div className="space-y-2">
+              {TEMPLATE_KEYS.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setShowTemplates(false);
+                    void startTemplate(key).catch(() => {});
+                  }}
+                  className="block w-full border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2 text-left"
+                >
+                  <span className="font-extrabold text-[var(--ic-ink)]">{templateMeta(key).name}</span>
+                  <span className="mt-1 block text-[13px] font-semibold text-[var(--ic-secondary)]">{templateBlurb(key, ctx)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="sticky bottom-0 z-10 -mx-4 mt-4 md:-mx-6">
+            <NextMoveBar move={listMove} onDo={() => setShowTemplates(true)} />
+          </div>
+        </>
       )}
 
       {/* Create modal */}
