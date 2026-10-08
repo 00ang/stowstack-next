@@ -695,17 +695,23 @@ function AskChapter({
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { leadId?: string; error?: string };
-      if (!res.ok) throw new Error(data.error || "That didn't go through. Please try again.");
+      if (!res.ok) {
+        // The server's own words (a bad email, say); anything else gets ours.
+        setError(data.error || "That didn't go through. Please try again.");
+        return;
+      }
       setLeadId(data.leadId ?? null);
       setSent(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "That didn't go through. Please try again.");
+    } catch {
+      setError("That didn't go through. Check your connection and try again.");
     } finally {
       setSending(false);
     }
   };
 
   const first = name.trim().split(/\s+/)[0];
+  // Inline: the site's global input rule would otherwise set 13px.
+  const fieldSize = { fontSize: 16 } as const;
   const field =
     "w-full px-4 py-3.5 rounded-xl border border-[#141413]/20 bg-[#E0E0E5] text-[16px] font-medium text-[#141413] placeholder:text-[#141413]/45 focus:outline-none focus:ring-2 focus:ring-[#141413]/35";
   const label = "block text-[13px] font-semibold text-[#141413] mb-1.5";
@@ -718,14 +724,14 @@ function AskChapter({
             <h2 className="text-2xl md:text-4xl font-bold leading-snug tracking-tight text-[#141413]">
               Thanks{first ? `, ${first}` : ""}.
             </h2>
-            <p className="mt-2 text-[16px] font-medium text-[#141413]/80">
+            <div className="mt-2 text-[16px] font-medium text-[#141413]/80">
               {facilityName || "We"} {facilityName ? "has" : "have"} your number and will be in touch shortly.
-            </p>
+            </div>
             {tour && <TourPicker page={page} name={name} phone={phone} size={size} leadId={leadId} />}
           </div>
         ) : (
           <form onSubmit={submit} noValidate={false}>
-            <span className="text-[11px] tracking-[0.22em] uppercase font-semibold text-[#6a6560]">
+            <span className="text-[11px] tracking-[0.22em] uppercase font-bold text-[#141413]/80">
               {hasReserve ? "Not ready to reserve?" : "Ask about a unit"}
             </span>
             <h2 className="mt-2 text-2xl md:text-4xl font-bold leading-snug tracking-tight text-[#141413]">
@@ -734,22 +740,22 @@ function AskChapter({
             <div className="mt-6 grid gap-4">
               <div>
                 <label htmlFor="ask-name" className={label}>Name</label>
-                <input id="ask-name" className={field} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
+                <input id="ask-name" className={field} style={fieldSize} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="ask-phone" className={label}>Phone</label>
-                  <input id="ask-phone" className={field} value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" required />
+                  <input id="ask-phone" className={field} style={fieldSize} value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" required />
                 </div>
                 <div>
                   <label htmlFor="ask-email" className={label}>Email</label>
-                  <input id="ask-email" className={field} value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" required />
+                  <input id="ask-email" className={field} style={fieldSize} value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" required />
                 </div>
               </div>
               {sizes.length > 0 && (
                 <div>
                   <label htmlFor="ask-size" className={label}>Size</label>
-                  <select id="ask-size" className={field} value={size} onChange={(e) => setSize(e.target.value)}>
+                  <select id="ask-size" className={field} style={fieldSize} value={size} onChange={(e) => setSize(e.target.value)}>
                     <option value="">Not sure yet</option>
                     {sizes.map((s) => (
                       <option key={s} value={s}>{s}</option>
@@ -779,9 +785,9 @@ function AskChapter({
               </fieldset>
             </div>
             {error && (
-              <p role="alert" className="mt-4 border-l-4 border-[#A12A2A] pl-3 text-[15px] font-semibold text-[#141413]">
+              <div role="alert" className="mt-4 border-l-4 border-[#A12A2A] pl-3 text-[15px] font-semibold text-[#141413]">
                 {error}
-              </p>
+              </div>
             )}
             <button
               type="submit"
@@ -791,9 +797,9 @@ function AskChapter({
               {sending ? <Loader2 size={17} className="animate-spin" /> : null}
               {sending ? "Sending" : "Ask about a unit"}
             </button>
-            <p className="mt-3 text-[13px] font-medium text-[#6a6560]">
+            <div className="mt-3 text-[13px] font-semibold text-[#141413]/80">
               By sending this you agree to a text or call about storage. Reply STOP to opt out.
-            </p>
+            </div>
           </form>
         )}
       </div>
@@ -853,9 +859,9 @@ function TourPicker({
 
   if (state === "booked") {
     return (
-      <p className="mt-6 border-l-4 border-[#2F6B3F] pl-3 text-[16px] font-semibold text-[#141413]">
+      <div className="mt-6 border-l-4 border-[#2F6B3F] pl-3 text-[16px] font-semibold text-[#141413]">
         Booked for {new Date(at).toLocaleString([], { weekday: "long", hour: "numeric", minute: "2-digit" })}. {message}
-      </p>
+      </div>
     );
   }
   return (
@@ -868,6 +874,7 @@ function TourPicker({
         <input
           id="tour-at"
           type="datetime-local"
+          style={{ fontSize: 16 }}
           value={at}
           onChange={(e) => setAt(e.target.value)}
           className="flex-1 px-4 py-3.5 rounded-xl border border-[#141413]/20 bg-[#E0E0E5] text-[16px] font-medium text-[#141413] focus:outline-none focus:ring-2 focus:ring-[#141413]/35"
@@ -882,9 +889,9 @@ function TourPicker({
         </button>
       </div>
       {message && (
-        <p role="alert" className="mt-3 border-l-4 border-[#A12A2A] pl-3 text-[15px] font-semibold text-[#141413]">
+        <div role="alert" className="mt-3 border-l-4 border-[#A12A2A] pl-3 text-[15px] font-semibold text-[#141413]">
           {message}
-        </p>
+        </div>
       )}
     </form>
   );
