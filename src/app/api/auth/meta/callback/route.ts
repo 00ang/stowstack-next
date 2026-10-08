@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { verifyOAuthState } from "@/lib/oauth-state";
+import { returnUrl, safeReturnTo } from "@/lib/oauth-return";
 
 export const maxDuration = 15;
 
@@ -18,10 +19,8 @@ function getBaseUrl(): string {
   );
 }
 
-function redirectError(message: string): NextResponse {
-  return NextResponse.redirect(
-    `${getBaseUrl()}/?auth=error&platform=meta&message=${encodeURIComponent(message)}`
-  );
+function redirectError(message: string, returnTo: string | null = null): NextResponse {
+  return NextResponse.redirect(returnUrl(getBaseUrl(), returnTo, { auth: "error", platform: "meta", message }));
 }
 
 export async function GET(request: NextRequest) {
@@ -35,24 +34,28 @@ export async function GET(request: NextRequest) {
   const errorDescription = url.searchParams.get("error_description");
 
   if (error) {
-    return redirectError(errorDescription || error);
+    // Cancelled or refused on the platform's side: back to where the owner started, if the state says.
+    const early = state ? verifyOAuthState<{ returnTo?: string }>(state) : null;
+    return redirectError(errorDescription || error, safeReturnTo(early?.returnTo));
   }
 
   if (!code || !state) {
     return redirectError("Missing authorization code");
   }
 
-  const parsed = verifyOAuthState<{ facilityId?: string }>(state);
+  const parsed = verifyOAuthState<{ facilityId?: string; returnTo?: string }>(state);
   if (!parsed?.facilityId) {
     return redirectError("Invalid state parameter");
   }
   const facilityId = parsed.facilityId;
+  // Errors from here on go back to where the owner started, too.
+  const back = safeReturnTo(parsed.returnTo);
 
   const appId = process.env.META_APP_ID;
   const appSecret = process.env.META_APP_SECRET;
 
   if (!appId || !appSecret) {
-    return redirectError("Meta app not configured");
+    return redirectError("Meta app not configured", back);
   }
 
   const baseUrl = getBaseUrl();
@@ -65,7 +68,7 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenRes.json();
 
     if (tokenData.error) {
-      return redirectError(tokenData.error.message);
+      return redirectError(tokenData.error.message, back);
     }
 
     const longLivedRes = await fetch(
@@ -131,9 +134,9 @@ export async function GET(request: NextRequest) {
         updated_at = NOW()
     `;
 
-    return NextResponse.redirect(`${baseUrl}/?auth=success&platform=meta`);
+    return NextResponse.redirect(returnUrl(baseUrl, safeReturnTo(parsed.returnTo), { auth: "success", platform: "meta" }));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return redirectError(message);
+    return redirectError(message, back);
   }
 }

@@ -10,9 +10,11 @@ import {
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { signOAuthState } from "@/lib/oauth-state";
+import { safeReturnTo } from "@/lib/oauth-return";
 import { parseWriteBackSettings, readWriteBackSettings } from "@/lib/attribution/connection-settings";
 
-function getOAuthUrl(platform: string, facilityId: string): string | null {
+/** `returnTo`: the app path the owner started from, carried in the signed state. */
+function getOAuthUrl(platform: string, facilityId: string, returnTo: string | null = null): string | null {
   const baseUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_ENV === "production"
@@ -22,7 +24,7 @@ function getOAuthUrl(platform: string, facilityId: string): string | null {
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000");
 
-  const state = signOAuthState({ facilityId, platform });
+  const state = signOAuthState({ facilityId, platform, ...(returnTo ? { returnTo } : {}) });
 
   if (platform === "meta") {
     const appId = process.env.META_APP_ID;
@@ -71,6 +73,8 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url);
   const facilityId = url.searchParams.get("facilityId");
+  // Where the connect flow should come back to (Publish Ads, wherever it was opened).
+  const returnTo = safeReturnTo(url.searchParams.get("returnTo"));
   if (!facilityId) return errorResponse("facilityId required", 400, origin);
 
   try {
@@ -99,7 +103,7 @@ export async function GET(req: NextRequest) {
         description:
           "Publish ads to Facebook Feed, Instagram Feed, and Instagram Stories",
         configured: !!process.env.META_APP_ID,
-        connectUrl: getOAuthUrl("meta", facilityId),
+        connectUrl: getOAuthUrl("meta", facilityId, returnTo),
         icon: "meta",
       },
       {
@@ -107,7 +111,7 @@ export async function GET(req: NextRequest) {
         name: "Google Ads",
         description: "Publish Search and Display ads to Google Ads",
         configured: !!process.env.GOOGLE_ADS_CLIENT_ID,
-        connectUrl: getOAuthUrl("google_ads", facilityId),
+        connectUrl: getOAuthUrl("google_ads", facilityId, returnTo),
         icon: "google",
       },
       {
@@ -116,7 +120,7 @@ export async function GET(req: NextRequest) {
         description:
           "Post organic content to target local audiences on TikTok",
         configured: !!process.env.TIKTOK_CLIENT_KEY,
-        connectUrl: getOAuthUrl("tiktok", facilityId),
+        connectUrl: getOAuthUrl("tiktok", facilityId, returnTo),
         icon: "tiktok",
       },
     ];

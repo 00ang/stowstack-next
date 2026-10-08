@@ -782,7 +782,8 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
         staleDrafts.length === 1 ? "An ad draft has sat for over a week." : `${plural(staleDrafts.length, "ad draft")} have sat for over a week.`,
       reason: `The oldest was written ${monthDay(staleDrafts[0].at)}.`,
       why: staleDrafts.length === 1 ? "Written, and never shown to anyone." : "Written, and none of them shown to anyone.",
-      action: { label: "Review drafts", tool: "ad-publisher" },
+      // Drafts are approved in Creative Studio; Publish Ads only shows approved ads.
+      action: { label: "Review drafts", tool: "creative-studio" },
     });
   }
 

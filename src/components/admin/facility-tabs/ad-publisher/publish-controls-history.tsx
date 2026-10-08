@@ -262,26 +262,26 @@ export function PublishControls({
         </p>
 
         {publishError && (
-          <div className="flex items-start gap-2 p-3 rounded-lg border bg-red-500/5 border-red-500/20">
+          <div role="alert" className="flex items-start gap-2 border-l-2 border-[var(--color-red)] bg-[var(--bg-elevated)] p-3">
             <XCircle
               size={14}
-              className="text-red-400 mt-0.5 shrink-0"
+              className="text-[var(--color-red)] mt-0.5 shrink-0"
             />
             <div>
-              <p className="font-medium text-xs text-red-400 mb-0.5">
-                Publish Failed
-              </p>
-              <p className="text-xs text-red-300">{publishError}</p>
+              <div className="font-semibold text-xs text-[var(--color-dark)] mb-0.5">
+                Publish failed
+              </div>
+              <div className="text-xs font-medium text-[var(--color-dark)]">{publishError}</div>
             </div>
           </div>
         )}
         {publishSuccess && (
-          <div className="flex items-start gap-2 p-3 rounded-lg border bg-emerald-500/5 border-emerald-500/20">
+          <div role="status" className="flex items-start gap-2 border-l-2 border-[var(--color-green)] bg-[var(--bg-elevated)] p-3">
             <CheckCircle2
               size={14}
-              className="text-emerald-400 mt-0.5 shrink-0"
+              className="text-[var(--color-green)] mt-0.5 shrink-0"
             />
-            <p className="text-xs text-emerald-300">{publishSuccess}</p>
+            <div className="text-xs font-semibold text-[var(--color-dark)]">{publishSuccess}</div>
           </div>
         )}
       </div>

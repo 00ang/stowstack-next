@@ -715,12 +715,19 @@ export async function POST(req: NextRequest) {
         });
       });
 
+      // Say what actually happened: Meta and Google campaigns are created
+      // paused and spend nothing until the owner switches them on.
+      const paused = connection.platform === "meta" || connection.platform === "google_ads";
+      const note = (result.response as { note?: unknown } | null)?.note;
       return jsonResponse(
         {
           success: true,
           logId: logEntry.id,
           externalId: result.externalId,
           externalUrl: result.externalUrl,
+          platform: connection.platform,
+          paused,
+          note: typeof note === "string" ? note : null,
         },
         200,
         origin

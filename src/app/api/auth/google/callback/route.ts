@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { verifyOAuthState } from "@/lib/oauth-state";
+import { returnUrl, safeReturnTo } from "@/lib/oauth-return";
 
 export const maxDuration = 15;
 
@@ -18,10 +19,8 @@ function getBaseUrl(): string {
   );
 }
 
-function redirectError(platform: string, message: string): NextResponse {
-  return NextResponse.redirect(
-    `${getBaseUrl()}/?auth=error&platform=${platform}&message=${encodeURIComponent(message)}`
-  );
+function redirectError(platform: string, message: string, returnTo: string | null = null): NextResponse {
+  return NextResponse.redirect(returnUrl(getBaseUrl(), returnTo, { auth: "error", platform, message }));
 }
 
 export async function GET(request: NextRequest) {
@@ -34,24 +33,28 @@ export async function GET(request: NextRequest) {
   const error = url.searchParams.get("error");
 
   if (error) {
-    return redirectError("google_ads", error);
+    // Cancelled or refused on Google's side: back to where the owner started, if the state says.
+    const early = state ? verifyOAuthState<{ returnTo?: string }>(state) : null;
+    return redirectError("google_ads", error, safeReturnTo(early?.returnTo));
   }
 
   if (!code || !state) {
     return redirectError("google_ads", "Missing authorization code");
   }
 
-  const parsed = verifyOAuthState<{ facilityId?: string }>(state);
+  const parsed = verifyOAuthState<{ facilityId?: string; returnTo?: string }>(state);
   if (!parsed?.facilityId) {
     return redirectError("google_ads", "Invalid state parameter");
   }
   const facilityId = parsed.facilityId;
+  // Errors from here on go back to where the owner started, too.
+  const back = safeReturnTo(parsed.returnTo);
 
   const clientId = process.env.GOOGLE_ADS_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_ADS_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    return redirectError("google_ads", "Google Ads not configured");
+    return redirectError("google_ads", "Google Ads not configured", back);
   }
 
   const baseUrl = getBaseUrl();
@@ -75,7 +78,7 @@ export async function GET(request: NextRequest) {
       return redirectError(
         "google_ads",
         tokenData.error_description || tokenData.error
-      );
+      , back);
     }
 
     const { access_token, refresh_token, expires_in } = tokenData;
@@ -123,9 +126,9 @@ export async function GET(request: NextRequest) {
         updated_at = NOW()
     `;
 
-    return NextResponse.redirect(`${baseUrl}/?auth=success&platform=google_ads`);
+    return NextResponse.redirect(returnUrl(baseUrl, safeReturnTo(parsed.returnTo), { auth: "success", platform: "google_ads" }));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return redirectError("google_ads", message);
+    return redirectError("google_ads", message, back);
   }
 }

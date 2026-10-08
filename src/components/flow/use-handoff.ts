@@ -46,7 +46,9 @@ export function useHandoff(): (handoff: Handoff | null) => void {
         sentence: handoff.sentence,
         reason: handoff.reason,
         label: handoff.label,
-        onDo: () => router.push(handoff.href),
+        // Ads Manager and the like open beside the portal; app paths navigate.
+        onDo: () =>
+          /^https?:\/\//.test(handoff.href) ? window.open(handoff.href, "_blank", "noopener,noreferrer") : router.push(handoff.href),
       });
     },
     [setOverride, refresh, router],

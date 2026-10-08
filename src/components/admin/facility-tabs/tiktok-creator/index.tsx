@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useToolFocus } from '@/components/ontology/tool-focus'
+import { useFlow } from '@/components/flow/flow-context'
+import { useHandoff } from '@/components/flow/use-handoff'
 import {
   Loader2, Sparkles, ImageIcon, Clock, X
 } from 'lucide-react'
@@ -54,10 +57,17 @@ function generateId() {
 
 /* ── Component ── */
 
-export default function TikTokCreator({ facilityId, adminKey }: {
+export default function TikTokCreator({ facilityId, adminKey, facilityName }: {
   facilityId: string
   adminKey: string
+  facilityName?: string
 }) {
+  // The first slide names what the post is about: the object it was opened
+  // for (portal ?focus=), else the facility.
+  const focus = useToolFocus()
+  const inPortal = !!useFlow()
+  const handoff = useHandoff()
+  const opener = focus?.name ?? facilityName ?? 'Your Facility'
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -91,7 +101,7 @@ export default function TikTokCreator({ facilityId, adminKey }: {
           const initial = photos.slice(0, 5).map((a: Asset, i: number) => ({
             id: generateId(),
             imageUrl: a.url,
-            textOverlay: i === 0 ? 'Your Facility' : '',
+            textOverlay: i === 0 ? opener : '',
             subText: '',
             duration: 2,
             kenBurns: KB_EFFECTS[i % KB_EFFECTS.length],
@@ -102,7 +112,7 @@ export default function TikTokCreator({ facilityId, adminKey }: {
       })
       .catch(() => { setError('Failed to load assets. Please try refreshing the page.') })
       .finally(() => setLoading(false))
-  }, [facilityId, adminKey])
+  }, [facilityId, adminKey, opener])
 
   // Playback
   const advanceSlide = useCallback(() => {
@@ -174,7 +184,7 @@ export default function TikTokCreator({ facilityId, adminKey }: {
       if (images.length === 0) return
 
       const hookText = STORAGE_HOOKS[Math.floor(Math.random() * STORAGE_HOOKS.length)]
-      const headline = 'Your Storage Solution'
+      const headline = opener
       const cta = 'Reserve Your Unit Today'
 
       const newSlides: Slide[] = [
@@ -345,6 +355,18 @@ export default function TikTokCreator({ facilityId, adminKey }: {
 
           {/* Right: Slide editor */}
           <SlideEditorPanel
+            onPublish={() => {
+              // The slideshow is a video file: it's posted from TikTok itself.
+              // A photo post goes out through Publish Ads.
+              if (inPortal) {
+                handoff({
+                  sentence: 'Export the video, then post it in TikTok.',
+                  reason: 'A single photo post can go out from Publish Ads instead.',
+                  label: 'Open Publish Ads',
+                  href: '/portal/tools?tool=ad-publisher',
+                })
+              }
+            }}
             slides={slides}
             activeSlideIdx={activeSlideIdx}
             setActiveSlideIdx={setActiveSlideIdx}
