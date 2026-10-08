@@ -9,6 +9,7 @@ import {
   Settings,
   ClipboardCheck,
   Wrench,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 
@@ -42,6 +43,8 @@ export const PORTAL_NAV_GROUPS: PortalNavGroup[] = [
     label: "Results",
     items: [
       { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
+      // The facility ontology: every object the tools act on, with one address each.
+      { label: "Index", href: "/portal/index", icon: Network },
       { label: "Campaigns", href: "/portal/campaigns", icon: Megaphone },
       { label: "Reports", href: "/portal/reports", icon: BarChart3 },
     ],

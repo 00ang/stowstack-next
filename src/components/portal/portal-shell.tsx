@@ -22,6 +22,8 @@ import {
 import { PortalBottomTabs } from "./portal-bottom-tabs";
 import { portalNavGroups, portalNavTitle, isNavItemActive } from "./portal-nav";
 import { haptic } from "@/lib/haptics";
+import { bootPortalDemo, isPortalDemo, tidyDemoUrl } from "@/lib/portal-demo/demo-mode";
+import { clearOntologyCache } from "@/components/ontology/use-ontology";
 
 /* ─── context ─── */
 
@@ -221,6 +223,12 @@ function LoginForm({ onSuccess }: { onSuccess: (client: ClientData) => void }) {
               {resending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               {resending ? "Sending Code..." : "Send Login Code"}
             </button>
+            <p className="pt-2 text-center text-xs font-semibold text-[var(--color-body-text)]">
+              No account yet?{" "}
+              <a href="/portal?demo" className="font-bold text-[var(--color-dark)] underline underline-offset-4">
+                Look around a sample portal
+              </a>
+            </p>
           </form>
         ) : (
           <div className="space-y-4">
@@ -370,10 +378,36 @@ function PortalHeader({ client, onToggle, onLogout, expanded, toggleRef }: { cli
   );
 }
 
+/* ─── sample portal banner ─── */
+
+function SampleBanner({ onLeave }: { onLeave: () => void }) {
+  // Instrument Calm (library entry 008): sample data is labeled, not shouted.
+  return (
+    <div className="border-b-2 border-[var(--ic-ink)] bg-[var(--ic-pane)] px-4 py-2 text-[var(--ic-ink)] md:px-6">
+      <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-4 gap-y-1">
+        <span className="ic-label text-[10.5px]">
+          Sample portal <span aria-hidden="true">·</span> a made-up facility <span aria-hidden="true">·</span> nothing is saved
+        </span>
+        <button type="button" onClick={onLeave} className="text-[13px] font-bold underline underline-offset-4">
+          Leave the sample
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── main shell ─── */
 
 export function PortalShell({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<PortalSession | null>(() => getPortalSession());
+  // Boot the sample portal first (/portal?demo) so the session it reads is the sample's.
+  const [session, setSession] = useState<PortalSession | null>(() => {
+    bootPortalDemo();
+    return getPortalSession();
+  });
+  const [demo, setDemo] = useState(() => isPortalDemo());
+  useEffect(() => {
+    if (demo) tidyDemoUrl();
+  }, [demo]);
   const [client, setClient] = useState<ClientData | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
@@ -415,6 +449,8 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = useCallback(() => {
     clearPortalSession();
+    clearOntologyCache();
+    setDemo(false);
     // The portal login also opened the facility tools (httpOnly cookie, so
     // only the server can drop it). Best-effort: sign-out proceeds regardless.
     fetch("/api/manage/logout", { method: "POST" }).catch(() => {});
@@ -480,7 +516,10 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
         <Sidebar client={client} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} showOnboarding={showOnboarding} />
         <div className="flex flex-1 flex-col overflow-hidden">
           <PortalHeader client={client} onToggle={() => { haptic("light"); setMobileOpen((v) => !v); }} onLogout={handleLogout} expanded={mobileOpen} toggleRef={toggleRef} />
-          <main id="portal-main" tabIndex={-1} className="flex-1 overflow-y-auto pb-16 md:pb-0">{children}</main>
+          <main id="portal-main" tabIndex={-1} className="flex-1 overflow-y-auto pb-16 md:pb-0">
+            {demo && <SampleBanner onLeave={handleLogout} />}
+            {children}
+          </main>
         </div>
         <PortalBottomTabs onMore={() => { haptic("light"); setMobileOpen(true); }} />
       </div>
