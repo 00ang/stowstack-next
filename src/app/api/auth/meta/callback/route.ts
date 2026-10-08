@@ -4,6 +4,7 @@ import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { verifyOAuthState } from "@/lib/oauth-state";
 import { returnUrl, safeReturnTo } from "@/lib/oauth-return";
+import { META_API_VERSION } from "@/lib/ad-publish/types";
 
 export const maxDuration = 15;
 
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const tokenRes = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}`
+      `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}`
     );
     const tokenData = await tokenRes.json();
 
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
     }
 
     const longLivedRes = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tokenData.access_token}`
+      `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tokenData.access_token}`
     );
     const longLivedData = await longLivedRes.json();
     const accessToken =
@@ -81,13 +82,13 @@ export async function GET(request: NextRequest) {
       longLivedData.expires_in || tokenData.expires_in || 5184000;
 
     const accountsRes = await fetch(
-      `https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name,account_status&access_token=${accessToken}`
+      `https://graph.facebook.com/${META_API_VERSION}/me/adaccounts?fields=id,name,account_status&access_token=${accessToken}`
     );
     const accountsData = await accountsRes.json();
     const adAccounts = accountsData.data || [];
 
     const pagesRes = await fetch(
-      `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`
+      `https://graph.facebook.com/${META_API_VERSION}/me/accounts?fields=id,name,access_token&access_token=${accessToken}`
     );
     const pagesData = await pagesRes.json();
     const pages = pagesData.data || [];

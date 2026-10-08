@@ -10,6 +10,7 @@ import {
 import { attributeSpendToVariations } from "@/lib/attribution";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
+import { META_API_VERSION } from "@/lib/ad-publish/types";
 
 export async function OPTIONS(req: NextRequest) {
   return corsResponse(getOrigin(req));
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
       new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
 
     const metaUrl = new URL(
-      `https://graph.facebook.com/v21.0/act_${connection.account_id}/insights`
+      `https://graph.facebook.com/${META_API_VERSION}/act_${connection.account_id}/insights`
     );
     metaUrl.searchParams.set(
       "fields",

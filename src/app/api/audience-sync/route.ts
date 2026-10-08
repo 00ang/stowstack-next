@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-helpers";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
+import { META_API_VERSION } from "@/lib/ad-publish/types";
 
 function sha256(value: string): string {
   return createHash("sha256").update(value.trim().toLowerCase()).digest("hex");
@@ -138,7 +139,7 @@ export async function POST(req: NextRequest) {
       }
 
       const createRes = await fetch(
-        `https://graph.facebook.com/v21.0/act_${account_id}/customaudiences`,
+        `https://graph.facebook.com/${META_API_VERSION}/act_${account_id}/customaudiences`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -172,7 +173,7 @@ export async function POST(req: NextRequest) {
         ]);
 
       const uploadRes = await fetch(
-        `https://graph.facebook.com/v21.0/${metaAudienceId}/users`,
+        `https://graph.facebook.com/${META_API_VERSION}/${metaAudienceId}/users`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -268,7 +269,7 @@ export async function POST(req: NextRequest) {
         ]);
 
       const refreshRes = await fetch(
-        `https://graph.facebook.com/v21.0/${sync.meta_audience_id}/users`,
+        `https://graph.facebook.com/${META_API_VERSION}/${sync.meta_audience_id}/users`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -314,7 +315,7 @@ export async function POST(req: NextRequest) {
       const sync = syncs[0];
 
       const lookalikeRes = await fetch(
-        `https://graph.facebook.com/v21.0/act_${account_id}/customaudiences`,
+        `https://graph.facebook.com/${META_API_VERSION}/act_${account_id}/customaudiences`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -4,6 +4,7 @@ import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { verifyOAuthState } from "@/lib/oauth-state";
 import { returnUrl, safeReturnTo } from "@/lib/oauth-return";
+import { GOOGLE_ADS_API_VERSION } from "@/lib/attribution/write-back";
 
 export const maxDuration = 15;
 
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
       const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
       if (developerToken) {
         const customersRes = await fetch(
-          "https://googleads.googleapis.com/v17/customers:listAccessibleCustomers",
+          `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}/customers:listAccessibleCustomers`,
           {
             headers: {
               Authorization: `Bearer ${access_token}`,
