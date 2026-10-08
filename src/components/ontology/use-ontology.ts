@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ObjectAction, Ontology } from "@/lib/ontology/types";
+import type { Ontology } from "@/lib/ontology/types";
 
 /**
  * Loads the facility ontology. Two doors in, the same data out:
@@ -82,25 +82,5 @@ export function clearOntologyCache() {
   cache.clear();
 }
 
-/* ─── where an action goes ─── */
-
-/** Addresses are [a-z0-9-/] by construction, so they travel unencoded and stay readable. */
-function q(params: Record<string, string>): string {
-  return Object.entries(params)
-    .map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%2F/g, "/")}`)
-    .join("&");
-}
-
-export function actionHref(action: ObjectAction, address: string | null, toolsBase = "/portal/tools"): string {
-  if (action.href) return action.href;
-  const params: Record<string, string> = { tool: action.tool ?? "overview" };
-  if (address && address.includes("/")) params.focus = address;
-  Object.assign(params, action.params ?? {});
-  return `${toolsBase}?${q(params)}`;
-}
-
-export function indexHref(address?: string | null, type?: string | null): string {
-  if (address) return `/portal/index?${q({ o: address })}`;
-  if (type) return `/portal/index?${q({ t: type })}`;
-  return "/portal/index";
-}
+// Where an action goes lives in lib (pure, shared with the flow engine).
+export { actionHref, indexHref } from "@/lib/ontology/href";
