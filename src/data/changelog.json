@@ -8,6 +8,13 @@
       "title": "Keep the page preview on screen beside the blocks"
     },
     {
+      "id": "1dadf91bc5",
+      "date": "2026-10-09",
+      "category": "feature",
+      "scope": "tools",
+      "title": "Show only what names the focused object in the drawer"
+    },
+    {
       "id": "be56a24926",
       "date": "2026-10-09",
       "category": "feature",
@@ -20,6 +27,13 @@
       "category": "fix",
       "scope": "marketing",
       "title": "Keep the hero tiles on the path, not the playback step"
+    },
+    {
+      "id": "e6b07ebf58",
+      "date": "2026-10-09",
+      "category": "feature",
+      "scope": "tools",
+      "title": "Open the facility tools as a track"
     },
     {
       "id": "756680cac7",
