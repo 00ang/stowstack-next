@@ -22,7 +22,7 @@ const STEPS = [
       "[your-facility].storageads.com/finish-your-rental: retargeting campaign",
     ],
     kicker:
-      "A page for every ad. 8.7% of visitors reserve, against a 2.1% industry average on generic pages.",
+      "A page for every ad. The renter reserves on that page.",
   },
   {
     number: "03",
@@ -32,7 +32,7 @@ const STEPS = [
   {
     number: "04",
     title: "You see what's working.",
-    body: "Every ad dollar tied to the unit it filled. What you spent, what you got, what each move-in cost. One dashboard. No mystery.",
+    body: "You mark a move-in when it happens. The report shows where that person came from. What you spent and what you got, in one place.",
   },
 ];
 

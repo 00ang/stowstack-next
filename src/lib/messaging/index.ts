@@ -32,6 +32,16 @@ export function activeMessageProvider(): MessageProvider {
   return cached;
 }
 
+/**
+ * Whether a text sent now reaches a phone: Twilio keyed and MESSAGING_LIVE on
+ * (set once the A2P 10DLC registration clears). What the product may promise.
+ */
+export function messagingLive(): boolean {
+  return Boolean(
+    process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.MESSAGING_LIVE === "true",
+  );
+}
+
 /** Tests replace the provider rather than the vendor. */
 export function __setMessageProvider(p: MessageProvider | null) {
   cached = p;

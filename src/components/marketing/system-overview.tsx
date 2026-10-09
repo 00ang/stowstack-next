@@ -39,8 +39,8 @@ const PARTS = [
       "Each ad gets its own page. Your facility. Your rates. Your offer. Built around your storEDGE reserve button so the renter books on your branded page.",
     detail: [
       "One page per ad, with the offer that ad promised",
-      "8.7% average reservation rate",
-      "Fast on mobile, built for the reserve button",
+      "The renter reserves on that page",
+      "Fast on a phone, built for the reserve button",
     ],
   },
   {
@@ -58,13 +58,13 @@ const PARTS = [
   {
     id: "tracking",
     number: "05",
-    title: "Ad → move-in tracking",
+    title: "You mark the move-in",
     summary:
-      "Every move-in traces back to the ad that produced it. What you spent. What you got. What each move-in cost. Numbers, not adjectives.",
+      "When someone moves in, you mark it. The report shows the ad, the page, or the office. What you spent and what you got, in one place.",
     detail: [
-      "Click → page → reservation → move-in",
-      "What each move-in cost, by campaign",
-      "What you got back, by ad",
+      "You mark the move-in",
+      "The report shows the source",
+      "Spend and leases, side by side",
     ],
   },
   {

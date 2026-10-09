@@ -95,7 +95,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     backend: "exists",
     endpoint: "POST /api/waitlist",
     paused: false,
-    publish: () => "Adds a waitlist form for sold-out sizes; texts people in order when one frees up.",
+    publish: () => "Keeps a waitlist for sold-out sizes and texts people in order when one frees up.",
   },
   audience: {
     type: "audience",
@@ -112,7 +112,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     backend: "partial",
     endpoint: "funnels.target_audience",
     paused: false,
-    publish: () => "Saves targeting on the campaign; syncs a Meta custom audience when past leads is picked.",
+    publish: () => "Runs the ads within this radius of your street address, never account-wide.",
   },
   proven: {
     type: "proven",
@@ -129,7 +129,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     backend: "exists",
     endpoint: "POST /api/proven-ads/[id]/duplicate",
     paused: false,
-    publish: () => "Rewrites the proven ad for your facility, sizes and running offer; saves it as a draft ad on this campaign.",
+    publish: () => "Recreates the ad for this campaign: one of yours copied as it is, a library ad rewritten for your facility.",
   },
   write: {
     type: "write",
@@ -146,7 +146,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     backend: "exists",
     endpoint: "POST /api/facility-creatives",
     paused: false,
-    publish: () => "Generates copy and a hero image from your facility data; it stays a draft until you publish.",
+    publish: () => "Writes the ad from your facility's own sizes, prices and reviews, in the angle you picked.",
   },
   meta: {
     type: "meta",
@@ -164,7 +164,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     endpoint: "POST /api/publish-ad",
     paused: true,
     publish: (n) =>
-      `Creates a Meta campaign PAUSED at $${param(n, "budget") || "?"}/day. Nothing spends until you switch it on in Ads Manager.`,
+      `Makes a Meta campaign paused at $${param(n, "budget") || "?"}/day, near you. Nothing spends until you switch it on in Ads Manager.`,
   },
   google: {
     type: "google",
@@ -178,7 +178,8 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     backend: "partial",
     endpoint: "POST /api/publish-ad",
     paused: true,
-    publish: (n) => `Creates a Google Search campaign PAUSED at $${param(n, "budget") || "?"}/day.`,
+    publish: (n) =>
+      `Writes a search ad with its keywords and makes it in Google Ads paused at $${param(n, "budget") || "?"}/day, near you.`,
   },
   gbp: {
     type: "gbp",
@@ -192,7 +193,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     backend: "exists",
     endpoint: "POST /api/gbp-posts",
     paused: false,
-    publish: () => "Writes and schedules a Google Business post that links to the page.",
+    publish: () => "Posts to your Google profile, linking to the page.",
   },
   page: {
     type: "page",
@@ -207,7 +208,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     endpoint: "POST /api/landing-pages/generate",
     paused: false,
     publish: (n) =>
-      `Generates /lp/${n.slug || "…"}, message-matched to the ad, and publishes it. A tracking link is made for every way in.`,
+      `Puts /lp/${n.slug || "…"} live from the page you edited. Ads in this campaign point at it.`,
   },
   reserve: {
     type: "reserve",
@@ -221,7 +222,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     backend: "partial",
     endpoint: "POST /api/webhooks/storedge",
     paused: false,
-    publish: () => "Embeds the reservation widget on the page; reservations come back by webhook.",
+    publish: () => "Puts storEDGE reservations on the page; reservations come back to you by webhook.",
   },
   textback: {
     type: "textback",
@@ -235,7 +236,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     backend: "exists",
     endpoint: "src/lib/respond/speed-to-lead.ts",
     paused: false,
-    publish: () => "Every form gets an answer by text within 60 seconds, and you get their number to call.",
+    publish: () => "Answers every form by text within a minute, and sends you their number to call.",
   },
   follow: {
     type: "follow",
@@ -264,7 +265,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     backend: "exists",
     endpoint: "POST /api/tour",
     paused: false,
-    publish: () => "Adds tour booking to the page and the follow-up.",
+    publish: () => "Lets people book a tour right after they ask, confirmed by text.",
   },
   missed: {
     type: "missed",

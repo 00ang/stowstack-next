@@ -361,9 +361,9 @@ describe("toPublishPlan", () => {
     const meta = plan.find((s) => s.title === "Run on Meta");
     const google = plan.find((s) => s.title === "Google Search");
     expect(meta?.paused).toBe(true);
-    expect(meta?.summary).toContain("PAUSED");
+    expect(meta?.summary).toMatch(/paused/i);
     expect(google?.paused).toBe(true);
-    expect(google?.summary).toContain("PAUSED");
+    expect(google?.summary).toMatch(/paused/i);
     expect(plan.find((s) => s.title === "Landing page")?.paused).toBe(false);
     expect(plan.map((s) => s.endpoint)).toEqual(nodes.map((n) => CATALOG[n.type].endpoint));
   });
@@ -422,6 +422,7 @@ describe("graphFromRecord", () => {
     expect(types).toContain("follow");
     const page = graph.nodes.find((n) => n.type === "page");
     expect(page?.slug).toBe("fall-move");
+    expect(page?.params.page).toBe("p1");
     expect(graph.edges.some((e) => e.to === page?.id)).toBe(true);
     expect(graph.nodes.find((n) => n.type === "follow")?.params.steps).toBe("3");
     // A channel is never described as live just because the funnel row is.

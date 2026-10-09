@@ -16,6 +16,7 @@ import { isValidUuid } from "@/lib/validation";
 import { enrollIfMovedOut } from "@/lib/moveout-trigger";
 import { attemptAndPersistLeadMatch } from "@/lib/lead-matching";
 import { markTenantChurned } from "@/lib/retention-outcomes";
+import { askHowTheyHeard } from "@/lib/attribution/heard-ask";
 
 export async function OPTIONS() {
   return v1CorsResponse();
@@ -212,6 +213,15 @@ export async function POST(request: NextRequest) {
           } catch {
             // Match failure is non-fatal; import already succeeded.
           }
+          // Ask a new tenant how they found the facility, when the owner has that on.
+          await askHowTheyHeard({
+            id: inserted[0].id,
+            facility_id: fId,
+            name: t.name,
+            email: t.email ?? null,
+            phone: t.phone ?? null,
+            move_in_date: t.moveInDate,
+          });
         }
       } catch (e: unknown) {
         const message = e instanceof Error ? e.message : "Unknown error";

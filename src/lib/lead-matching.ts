@@ -304,6 +304,70 @@ export async function attemptAndPersistLeadMatch(
   };
 }
 
+/**
+ * A person settles a match the rules couldn't: confirm one of the candidates,
+ * or say it is none of them. A confirmed match is linked, its revenue filled
+ * and its move-in reported exactly as an automatic match would be. Returns
+ * false when the attempt doesn't exist, is already settled, or the lead isn't
+ * one of its candidates.
+ */
+export async function resolveMatchAttempt(
+  client: DbExecutor,
+  attemptId: string,
+  leadId: string | null,
+  by: string,
+): Promise<boolean> {
+  const rows = await client.$queryRaw<
+    Array<{ id: string; tenant_id: string; status: string; candidates: unknown }>
+  >`SELECT id, tenant_id, status, candidates FROM lead_match_attempts WHERE id = ${attemptId}::uuid LIMIT 1`;
+  const attempt = rows[0];
+  if (!attempt || attempt.status !== "ambiguous") return false;
+
+  if (!leadId) {
+    await client.$executeRaw`
+      UPDATE lead_match_attempts SET status = 'rejected', reviewed_at = NOW(), reviewed_by = ${by}
+      WHERE id = ${attemptId}::uuid
+    `;
+    return true;
+  }
+
+  const candidates = (Array.isArray(attempt.candidates) ? attempt.candidates : []) as LeadCandidate[];
+  const chosen = candidates.find((c) => c.partial_lead_id === leadId);
+  if (!chosen) return false;
+
+  const tenants = await client.$queryRaw<
+    Array<{ id: string; facility_id: string; name: string | null; email: string | null; phone: string | null; move_in_date: Date | null; monthly_rate: unknown }>
+  >`SELECT id, facility_id, name, email, phone, move_in_date, monthly_rate FROM tenants WHERE id = ${attempt.tenant_id}::uuid LIMIT 1`;
+  const tenant = tenants[0];
+  if (!tenant) return false;
+
+  await markLeadAsMatchedTenant(client, leadId, tenant.id, { changedBy: by, notes: "confirmed by the owner" });
+  await client.$executeRaw`
+    UPDATE lead_match_attempts
+    SET status = 'matched', partial_lead_id = ${leadId}::uuid, reviewed_at = NOW(), reviewed_by = ${by}
+    WHERE id = ${attemptId}::uuid
+  `;
+  const rate = tenant.monthly_rate == null ? null : Number(tenant.monthly_rate);
+  await client.$executeRaw`
+    UPDATE partial_leads
+    SET monthly_revenue = COALESCE(monthly_revenue, ${rate != null && Number.isFinite(rate) && rate > 0 ? rate : null}),
+        move_in_date    = COALESCE(move_in_date, ${tenant.move_in_date ? new Date(tenant.move_in_date).toISOString().slice(0, 10) : null}::date),
+        updated_at      = NOW()
+    WHERE id = ${leadId}::uuid
+  `;
+  try {
+    await emitLeadMovedIn(
+      { ...tenant, monthly_rate: rate },
+      chosen,
+      chosen.match_method,
+      chosen.confidence,
+    );
+  } catch (err) {
+    console.error("[lead-matching] lead.moved_in emit failed:", err instanceof Error ? err.message : err);
+  }
+  return true;
+}
+
 async function emitLeadMovedIn(
   tenant: TenantInput,
   candidate: LeadCandidate,

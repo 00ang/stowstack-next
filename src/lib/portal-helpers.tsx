@@ -17,6 +17,8 @@ export interface ClientData {
   signedAt: string;
   accessCode: string;
   monthlyGoal: number;
+  /** The facility's street address; ads run within a radius of it. */
+  streetAddress?: string | null;
   /**
    * Account-manager contact for the "Your Team" card. Data-driven so white-label
    * clients see their management company, not the StorageAds founder. Optional

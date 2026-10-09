@@ -70,7 +70,8 @@ function MoveRow({ move, n, known, toolsBase }: { move: Move; n: number; known: 
         )}
         <div className="min-w-0">
           <div className="text-[15px] font-extrabold leading-snug text-[var(--ic-ink)]">{move.sentence}</div>
-          <div className="mt-1 text-[13px] font-semibold leading-snug text-[var(--ic-secondary)]">{move.reason}</div>
+          {move.why && <div className="mt-1 text-[13.5px] font-bold leading-snug text-[var(--ic-ink)]">{move.why}</div>}
+          <div className="mt-0.5 text-[13px] font-semibold leading-snug text-[var(--ic-secondary)]">{move.reason}</div>
         </div>
       </div>
       <ActionFill href={actionHref(move.action, known ? move.subject : null, toolsBase)} n={n} className="self-start sm:self-center">

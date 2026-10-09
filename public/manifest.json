@@ -1,7 +1,7 @@
 {
   "name": "StorageAds",
   "short_name": "StorageAds",
-  "description": "Full-Funnel Demand Engine for Self-Storage",
+  "description": "Marketing for independent storage operators.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#E0E0E5",

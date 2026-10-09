@@ -96,12 +96,17 @@ const PLATFORM_LETTERS: Record<string, string> = {
   tiktok: "T",
 };
 
+// Ink text on every status; the colour rides the edge, so each stays readable.
 const PUBLISH_STATUS_STYLES: Record<string, string> = {
-  published: "bg-emerald-500/10 text-emerald-400",
-  success: "bg-emerald-500/10 text-emerald-400",
-  failed: "bg-red-500/10 text-red-400",
-  pending: "bg-yellow-500/10 text-yellow-400",
+  published: "border border-[#2F6B3F] text-[var(--color-dark)]",
+  success: "border border-[#2F6B3F] text-[var(--color-dark)]",
+  failed: "border border-[#A12A2A] text-[var(--color-dark)]",
+  pending: "border border-[#3E5A7A] text-[var(--color-dark)]",
+  unknown: "border-2 border-[#6B2340] text-[var(--color-dark)]",
 };
+
+/** "unknown" means the platform never answered: the ad may exist. Say so plainly. */
+const PUBLISH_STATUS_LABEL: Record<string, string> = { unknown: "check platform" };
 
 /* ── Publish Controls ── */
 
@@ -262,26 +267,26 @@ export function PublishControls({
         </p>
 
         {publishError && (
-          <div className="flex items-start gap-2 p-3 rounded-lg border bg-red-500/5 border-red-500/20">
+          <div role="alert" className="flex items-start gap-2 border-l-2 border-[var(--color-red)] bg-[var(--bg-elevated)] p-3">
             <XCircle
               size={14}
-              className="text-red-400 mt-0.5 shrink-0"
+              className="text-[var(--color-red)] mt-0.5 shrink-0"
             />
             <div>
-              <p className="font-medium text-xs text-red-400 mb-0.5">
-                Publish Failed
-              </p>
-              <p className="text-xs text-red-300">{publishError}</p>
+              <div className="font-semibold text-xs text-[var(--color-dark)] mb-0.5">
+                Publish failed
+              </div>
+              <div className="text-xs font-medium text-[var(--color-dark)]">{publishError}</div>
             </div>
           </div>
         )}
         {publishSuccess && (
-          <div className="flex items-start gap-2 p-3 rounded-lg border bg-emerald-500/5 border-emerald-500/20">
+          <div role="status" className="flex items-start gap-2 border-l-2 border-[var(--color-green)] bg-[var(--bg-elevated)] p-3">
             <CheckCircle2
               size={14}
-              className="text-emerald-400 mt-0.5 shrink-0"
+              className="text-[var(--color-green)] mt-0.5 shrink-0"
             />
-            <p className="text-xs text-emerald-300">{publishSuccess}</p>
+            <div className="text-xs font-semibold text-[var(--color-dark)]">{publishSuccess}</div>
           </div>
         )}
       </div>
@@ -354,7 +359,7 @@ export function PublishHistory({
               <span
                 className={`text-xs px-2 py-1 rounded font-medium text-center ${PUBLISH_STATUS_STYLES[log.status] || "bg-[var(--color-light-gray)] text-[var(--color-mid-gray)]"}`}
               >
-                {log.status}
+                {PUBLISH_STATUS_LABEL[log.status] ?? log.status}
               </span>
               <div>
                 {log.external_url && (

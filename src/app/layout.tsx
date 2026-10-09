@@ -38,17 +38,17 @@ const archivo = Archivo({
 });
 
 const siteDescription =
-  "Stop losing units to the REIT down the road. StorageAds runs the whole marketing system for independent storage operators: ads, landing pages, and reservations that become move-ins. See which ads fill your units.";
+  "Stop losing units to the REIT down the road. StorageAds runs the marketing system for independent storage operators: ads, a page for each one, and reservations that become move-ins.";
 
 export const metadata: Metadata = {
   title: {
-    default: "StorageAds | Marketing that proves which ads fill units",
+    default: "StorageAds | Ads, pages, and reservations that become move-ins",
     template: "%s | StorageAds",
   },
   description: siteDescription,
   metadataBase: new URL("https://storageads.com"),
   openGraph: {
-    title: "StorageAds | Marketing that proves which ads fill units",
+    title: "StorageAds | Ads, pages, and reservations that become move-ins",
     description: siteDescription,
     url: "https://storageads.com",
     siteName: "StorageAds",
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "StorageAds | Marketing that proves which ads fill units",
+    title: "StorageAds | Ads, pages, and reservations that become move-ins",
     description: siteDescription,
     images: ["/og-image.png"],
   },
@@ -97,7 +97,7 @@ const jsonLd = {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       url: "https://storageads.com",
-      description: "The marketing system built for self-storage operators. Ads, landing pages, call tracking, and ad-to-move-in tracking on one dashboard.",
+      description: "The marketing system built for self-storage operators. Ads, a page for each one, and reservations that become move-ins.",
       offers: {
         "@type": "AggregateOffer",
         priceCurrency: "USD",

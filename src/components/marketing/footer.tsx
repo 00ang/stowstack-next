@@ -1,6 +1,7 @@
 import { Mail } from "lucide-react";
 import { CAL_BOOKING_URL } from "@/lib/booking";
 import PaletteSwitch from "@/components/palette-switch";
+import { Logo } from "@/components/brand/logo";
 
 const FOOTER_LINKS: Array<{ label: string; href: string; external?: boolean }> = [
   { label: "How It Works", href: "#how-it-works" },
@@ -36,9 +37,9 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {/* Brand */}
           <div>
-            <p className="text-lg mb-2" style={{ fontFamily: "var(--font-heading)", fontWeight: 700, letterSpacing: "-0.5px" }}>
-              <span style={{ color: "var(--color-dark)" }}>storage</span><span style={{ color: "var(--brand-ads)" }}>ads</span>
-            </p>
+            <div className="mb-2">
+              <Logo mark={32} />
+            </div>
             <p
               className="text-sm"
               style={{ color: "var(--text-tertiary)" }}

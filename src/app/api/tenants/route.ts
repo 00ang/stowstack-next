@@ -10,6 +10,7 @@ import {
 } from "@/lib/api-helpers";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
+import { askHowTheyHeard } from "@/lib/attribution/heard-ask";
 
 // Convert BigInt values to numbers in raw query results
 function serializeBigInts(obj: unknown): unknown {
@@ -398,6 +399,18 @@ export async function POST(req: NextRequest) {
             RETURNING id
           `;
           imported++;
+          // Only with a stated move-in date: a row without one is dated today,
+          // and an old tenant must never get a "welcome".
+          if (t.move_in_date && t.email && (!t.status || t.status === "active")) {
+            const row = await db.tenants.findFirst({
+              where: { facility_id, name: t.name, unit_number: t.unit_number, deleted_at: null },
+              select: { id: true },
+              orderBy: { created_at: "desc" },
+            });
+            if (row) {
+              await askHowTheyHeard({ id: row.id, facility_id, name: t.name, email: t.email, phone: t.phone, move_in_date: t.move_in_date });
+            }
+          }
         } catch (err) {
           errors.push({
             name: t.name,
@@ -454,6 +467,11 @@ export async function POST(req: NextRequest) {
         balance = EXCLUDED.balance, status = EXCLUDED.status, updated_at = NOW()
       RETURNING *
     `;
+
+    const created = (rows as { id?: string }[])[0];
+    if (created?.id && move_in_date && email && (!tenantStatus || tenantStatus === "active")) {
+      await askHowTheyHeard({ id: created.id, facility_id, name, email, phone, move_in_date });
+    }
 
     return jsonResponse({ tenant: (rows as unknown[])[0] }, 200, origin);
   } catch (err) {

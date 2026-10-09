@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { HandMark, Logo } from "@/components/brand/logo";
 import { ChevronLeft, Lock, Search, ShieldCheck } from "lucide-react";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { AdminProvider, STORAGE_KEY } from "@/lib/admin-context";
@@ -105,8 +106,8 @@ function LoginGate({ onAuthenticated }: { onAuthenticated: (key: string) => void
     <div className="admin-theme flex min-h-screen items-center justify-center" style={{ background: 'var(--bg)', fontFamily: mono }}>
       <div className="w-full max-w-[340px] p-8" style={{ border: '1px solid rgba(0,0,0,0.08)', borderRadius: '6px' }}>
         <div className="mb-8 text-center">
-          <h1 className="mb-1" style={{ fontFamily: mono, fontSize: '15px', fontWeight: 700, letterSpacing: '-0.02em', color: '#1A1A1A' }}>
-            storage<span style={{ color: 'var(--brand-ads)' }}>ads</span>
+          <h1 className="mb-1 flex justify-center">
+            <Logo mark={28} />
           </h1>
           <p style={{ fontFamily: mono, fontSize: '12px', fontWeight: 300, color: '#A3A3A3', letterSpacing: '0.02em' }}>admin</p>
         </div>
@@ -253,15 +254,16 @@ function Sidebar({
           className={`transition-opacity ${collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}
           style={{ fontFamily: 'var(--font)', fontSize: '14px', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--ink)', textDecoration: 'none' }}
         >
-          storage<span style={{ color: 'var(--brand-ads)' }}>ads</span>
+          <Logo mark={22} />
         </Link>
         {collapsed && (
           <Link
             href="/"
             className="mx-auto flex h-7 w-7 items-center justify-center"
-            style={{ color: 'var(--ink)', textDecoration: 'none', fontFamily: 'var(--font)', fontSize: '14px', fontWeight: 500 }}
+            style={{ color: 'var(--ink)', textDecoration: 'none' }}
+            aria-label="StorageAds"
           >
-            ~
+            <HandMark size={22} title="StorageAds" />
           </Link>
         )}
       </div>

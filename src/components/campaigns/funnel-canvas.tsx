@@ -31,6 +31,8 @@ import {
   type PortType,
 } from "@/lib/funnel-graph";
 import { NodeIcon } from "./icons";
+import type { NodeResult, NodeState } from "@/lib/campaign-publish/types";
+import { PUBLISH_LABEL, publishMark } from "./use-publish";
 
 export interface FunnelNodeData extends Record<string, unknown> {
   title: string;
@@ -43,6 +45,8 @@ export interface FunnelNodeData extends Record<string, unknown> {
   outputs: PortType[];
   ready: boolean;
   need: string | null;
+  /** Where this function stands after the last publish, when there was one. */
+  publish: { state: NodeState; label: string } | null;
   /** Open the picker of functions that can follow this output. */
   onPlus: (outIndex: number) => void;
 }
@@ -105,13 +109,36 @@ function FunnelFlowNode({ data, selected }: NodeProps<Node<FunnelNodeData>>) {
           </div>
         </div>
       )}
-      <div className={`flex items-center gap-1.5 border-t border-[var(--ic-ink)] px-2.5 py-1.5 text-[12px] font-extrabold ${data.ready ? "" : "bg-[var(--ic-soft)]"}`}>
-        <i
-          aria-hidden
-          className={`inline-block h-[9px] w-[9px] border-[1.5px] border-[var(--ic-ink)] ${data.ready ? "border-[var(--color-green)] bg-[var(--color-green)]" : ""}`}
-        />
-        {data.ready ? "Ready" : `Needs · ${data.need}`}
-      </div>
+      {data.publish && data.ready ? (
+        <PublishFooter state={data.publish.state} label={data.publish.label} />
+      ) : (
+        <div className={`flex items-center gap-1.5 border-t border-[var(--ic-ink)] px-2.5 py-1.5 text-[12px] font-extrabold ${data.ready ? "" : "bg-[var(--ic-soft)]"}`}>
+          <i
+            aria-hidden
+            className={`inline-block h-[9px] w-[9px] border-[1.5px] border-[var(--ic-ink)] ${data.ready ? "border-[var(--color-green)] bg-[var(--color-green)]" : ""}`}
+          />
+          {data.ready ? "Ready" : `Needs · ${data.need}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A published function's footer: the state in words, with its mark. */
+function PublishFooter({ state, label }: { state: NodeState; label: string }) {
+  const mark = publishMark(state);
+  const loud = state === "failed" || state === "unknown" || state === "needs";
+  return (
+    <div
+      className={`flex items-center gap-1.5 border-t border-[var(--ic-ink)] px-2.5 py-1.5 text-[12px] font-extrabold ${loud ? "bg-[var(--ic-soft)]" : ""}`}
+      style={loud ? { boxShadow: `inset 4px 0 0 ${mark.edge}` } : undefined}
+    >
+      <i
+        aria-hidden
+        className={`inline-block h-[9px] w-[9px] border-[1.5px] ${mark.pulse ? "animate-pulse" : ""}`}
+        style={{ borderColor: mark.edge, background: mark.fill ?? "transparent" }}
+      />
+      {label}
     </div>
   );
 }
@@ -218,7 +245,12 @@ function FunctionPicker({
   );
 }
 
-function nodeData(graph: FunnelGraph, ctx: FunnelContext, onPlus: (nodeId: string, outIndex: number) => void): Node<FunnelNodeData>[] {
+function nodeData(
+  graph: FunnelGraph,
+  ctx: FunnelContext,
+  onPlus: (nodeId: string, outIndex: number) => void,
+  published?: Record<string, NodeResult>,
+): Node<FunnelNodeData>[] {
   return graph.nodes.map((n) => {
     const def = defOf(n.type);
     const state = readiness(graph, n);
@@ -237,6 +269,7 @@ function nodeData(graph: FunnelGraph, ctx: FunnelContext, onPlus: (nodeId: strin
         outputs: def.outputs,
         ready: state.state === "ready",
         need: state.need,
+        publish: published?.[n.id] ? { state: published[n.id].state, label: PUBLISH_LABEL[published[n.id].state] } : null,
         onPlus: (outIndex: number) => onPlus(n.id, outIndex),
       },
     };
@@ -256,6 +289,10 @@ interface CanvasProps {
   onRefuse: (reason: string) => void;
   /** The function the next move would add after `fromId`, if any. */
   suggestFor: (fromId: string) => NodeType | null;
+  /** Live counts per wire (edge id → "240 visits"), when the campaign has any. */
+  edgeLabels?: Record<string, string>;
+  /** Each function's result from the last publish. */
+  published?: Record<string, NodeResult>;
 }
 
 function CanvasInner({
@@ -269,6 +306,8 @@ function CanvasInner({
   onAddFrom,
   onRefuse,
   suggestFor,
+  edgeLabels,
+  published,
   wrapper,
 }: CanvasProps & { wrapper: HTMLDivElement | null }) {
   const flow = useReactFlow();
@@ -314,17 +353,30 @@ function CanvasInner({
     [graph.nodes, flow, toLocal],
   );
 
-  const nodes = useMemo(() => nodeData(graph, ctx, openPlus), [graph, ctx, openPlus]);
+  const nodes = useMemo(() => nodeData(graph, ctx, openPlus, published), [graph, ctx, openPlus, published]);
   const edges = useMemo(
     () =>
-      graph.edges.map((e) => ({
-        id: e.id,
-        source: e.from,
-        target: e.to,
-        sourceHandle: `out-${e.fromPort}`,
-        targetHandle: `in-${e.toPort}`,
-      })),
-    [graph.edges],
+      graph.edges.map((e) => {
+        const label = edgeLabels?.[e.id];
+        return {
+          id: e.id,
+          source: e.from,
+          target: e.to,
+          sourceHandle: `out-${e.fromPort}`,
+          targetHandle: `in-${e.toPort}`,
+          // What flowed along this wire in the window, on a white tab so it reads over the grid.
+          ...(label
+            ? {
+                label,
+                labelStyle: { fontFamily: "var(--font-plex-mono), ui-monospace, monospace", fontSize: 11, fontWeight: 600, fill: "#121214" },
+                labelBgStyle: { fill: "#FFFFFF", stroke: "#121214", strokeWidth: 1 },
+                labelBgPadding: [6, 3] as [number, number],
+                labelShowBg: true,
+              }
+            : {}),
+        };
+      }),
+    [graph.edges, edgeLabels],
   );
 
   const isValid = useCallback(

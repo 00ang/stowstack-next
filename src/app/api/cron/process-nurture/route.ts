@@ -9,6 +9,7 @@ import {
   sendEmail as sendCentralEmail,
   sendEmailOrThrow,
 } from "@/lib/email";
+import { messagingLive } from "@/lib/messaging";
 
 export const maxDuration = 60;
 
@@ -68,6 +69,16 @@ async function logMessage(
     INSERT INTO nurture_messages (enrollment_id, step_number, channel, to_address, subject, body, status, external_id, sent_at, error_message)
     VALUES (${enrollmentId}::uuid, ${stepNumber}, ${channel}, ${toAddress}, ${subject}, ${body}, ${status}, ${externalId}, ${status === "sent" ? new Date().toISOString() : null}::timestamptz, ${errorMessage})
   `;
+}
+
+/** Reserved, held or moved in: the follow-up has done its job. */
+async function leadIsDone(leadId: string): Promise<boolean> {
+  const lead = await db.partial_leads.findUnique({
+    where: { id: leadId },
+    select: { lead_status: true, matched_tenant_id: true },
+  });
+  if (!lead) return false;
+  return !!lead.matched_tenant_id || ["reserved", "hold", "held", "moved_in"].includes((lead.lead_status ?? "").toLowerCase());
 }
 
 async function sendSMS(to: string, body: string, facilityId: string) {
@@ -136,6 +147,7 @@ interface EnrollmentRow {
   contact_email: string | null;
   contact_phone: string | null;
   current_step: number;
+  lead_id: string | null;
   metadata: unknown;
   seq_steps: unknown;
   seq_name: string;
@@ -197,6 +209,28 @@ export async function GET(request: NextRequest) {
             UPDATE nurture_enrollments SET status = 'completed', completed_at = NOW(), next_send_at = NULL WHERE id = ${enrollment.id}::uuid
           `;
           completed++;
+          continue;
+        }
+
+        // A lead who has reserved or moved in is done being followed up.
+        if (enrollment.lead_id && (await leadIsDone(enrollment.lead_id))) {
+          await db.$executeRaw`
+            UPDATE nurture_enrollments SET status = 'exited', exit_reason = 'reserved_or_moved_in',
+            completed_at = NOW(), next_send_at = NULL WHERE id = ${enrollment.id}::uuid
+          `;
+          completed++;
+          continue;
+        }
+
+        // A text can't reach anyone until texting is live (A2P registration).
+        // Skip the step rather than retry it every run, so the emails after it
+        // still go out.
+        if (step.channel === "sms" && !messagingLive()) {
+          await db.$transaction(async (tx) => {
+            await logMessage(tx, enrollment.id, currentStepIdx, "sms", enrollment.contact_phone || "unknown", null, step.body, "skipped", null, "Texting is not live yet");
+            await advanceStep(tx, enrollment.id, steps, currentStepIdx);
+          });
+          skipped++;
           continue;
         }
 

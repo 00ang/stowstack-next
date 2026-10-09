@@ -32,6 +32,7 @@ import {
   SectionSkeleton,
   ErrorState,
 } from "@/components/portal/ui";
+import { MoveInLedger } from "@/components/attribution/move-in-ledger";
 
 /* ─── types ─── */
 
@@ -142,6 +143,9 @@ export default function ReportsPage() {
       }
     >
       <div className="space-y-6">
+        {/* Where move-ins came from: the open ledger (src/lib/attribution/ledger.ts). */}
+        <MoveInLedger facilityId={client.facilityId} />
+
         {/* Error */}
         {error && <ErrorState message={error} onRetry={fetchData} />}
 

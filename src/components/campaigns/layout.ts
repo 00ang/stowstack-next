@@ -13,7 +13,8 @@ export async function layoutGraph(graph: FunnelGraph): Promise<FunnelGraph> {
         "elk.algorithm": "layered",
         "elk.direction": "RIGHT",
         "elk.spacing.nodeNode": "28",
-        "elk.layered.spacing.nodeNodeBetweenLayers": "48",
+        // Wide enough between columns for a wire's count to sit clear of both ends.
+        "elk.layered.spacing.nodeNodeBetweenLayers": "104",
       },
       children: graph.nodes.map((n) => ({ id: n.id, width: 220, height: 168 })),
       edges: graph.edges.map((e) => ({ id: e.id, sources: [e.from], targets: [e.to] })),

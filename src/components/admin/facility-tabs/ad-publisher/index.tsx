@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { Loader2, X } from "lucide-react";
+import { useToolFocus } from "@/components/ontology/tool-focus";
+import { useFlow } from "@/components/flow/flow-context";
+import { useHandoff } from "@/components/flow/use-handoff";
+import { campaignHref } from "@/lib/flow";
 import { PlatformConnectionsSection } from "./platform-connections";
 import { PublishControls, PublishHistory } from "./publish-controls-history";
 
@@ -105,10 +110,35 @@ export default function AdPublisher({
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
   const [disconnecting, setDisconnecting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Opened for an ad (portal ?focus=ads/…): it is the one selected, or, still a
+  // draft, it points back to Creative Studio to be approved first.
+  const focus = useToolFocus();
+  const working = useFlow()?.working ?? null;
+  const handoff = useHandoff();
+  const focusAd = useRef(focus?.type === "ads" ? focus.id : null);
+  const [focusDraft, setFocusDraft] = useState<string | null>(null);
+  // Back from connecting an ad account (?auth=success&platform=meta).
+  const [connectNote, setConnectNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
+    // Connect links come back here, not to the homepage. The outcome params are
+    // read once and cleared from the address.
+    const here = new URL(window.location.href);
+    const auth = here.searchParams.get("auth");
+    const platformName: Record<string, string> = { meta: "Meta", google_ads: "Google Ads", tiktok: "TikTok" };
+    if (auth) {
+      const which = platformName[here.searchParams.get("platform") ?? ""] ?? "The account";
+      setConnectNote(
+        auth === "success"
+          ? { ok: true, text: `${which} is connected.` }
+          : { ok: false, text: `${which} didn't connect: ${here.searchParams.get("message") ?? "it was cancelled"}.` },
+      );
+      for (const k of ["auth", "platform", "message"]) here.searchParams.delete(k);
+      window.history.replaceState(null, "", here);
+    }
+    const returnTo = `${here.pathname}${here.search}`;
     Promise.all([
-      fetch(`/api/platform-connections?facilityId=${facilityId}`, {
+      fetch(`/api/platform-connections?facilityId=${facilityId}&returnTo=${encodeURIComponent(returnTo)}`, {
         headers: { "X-Admin-Key": adminKey },
       }).then((r) => r.json()),
       fetch(`/api/facility-creatives?facilityId=${facilityId}`, {
@@ -136,7 +166,13 @@ export default function AdPublisher({
               v.status === "approved" || v.status === "published"
           );
           setVariations(approved);
-          if (approved.length) setSelectedVariation(approved[0].id);
+          const focusId = focusAd.current;
+          const focusRow = focusId
+            ? (creativeData.variations as AdVariation[]).find((v) => v.id === focusId)
+            : undefined;
+          if (focusRow && approved.some((v: AdVariation) => v.id === focusRow.id)) setSelectedVariation(focusRow.id);
+          else if (approved.length) setSelectedVariation(approved[0].id);
+          if (focusRow && !approved.some((v: AdVariation) => v.id === focusRow.id)) setFocusDraft(focusRow.id);
         }
         if (assetData.assets) {
           const photos = assetData.assets.filter(
@@ -218,11 +254,27 @@ export default function AdPublisher({
       });
       const data = await res.json();
       if (data.success) {
+        // Meta and Google are created paused: say so, and hand off to switching it on.
+        const where = data.platform === "google_ads" ? "Google Ads" : data.platform === "meta" ? "Ads Manager" : "TikTok";
         setPublishSuccess(
-          data.externalUrl
-            ? "Ad published! View in Ads Manager."
-            : "Ad published successfully!"
+          data.paused
+            ? `Created in ${where}, paused. Nothing spends until you switch it on there.`
+            : data.note || "Posted."
         );
+        if (data.paused && data.externalUrl) {
+          handoff({
+            sentence: `Created in ${where}, paused.`,
+            reason: `Check the budget and audience there, then switch it on. Nothing spends until you do.`,
+            label: `Open ${where}`,
+            href: data.externalUrl,
+          });
+        } else {
+          handoff(
+            working
+              ? { sentence: "It's posted.", reason: `Carry on with ${working.name}.`, label: `Back to ${working.name}`, href: campaignHref(working.id) }
+              : { sentence: "It's posted.", reason: "See what needs you next.", label: "Back to the dashboard", href: "/portal" },
+          );
+        }
         const logRes = await fetch(
           `/api/publish-ad?facilityId=${facilityId}`,
           { headers: { "X-Admin-Key": adminKey } }
@@ -261,10 +313,31 @@ export default function AdPublisher({
 
   return (
     <div className="space-y-6">
+      {connectNote && (
+        <div
+          role="status"
+          className={`border-l-2 bg-[var(--bg-elevated)] px-4 py-3 text-sm font-semibold text-[var(--color-dark)] ${connectNote.ok ? "border-[var(--color-green)]" : "border-[var(--color-red)]"}`}
+        >
+          {connectNote.text}
+        </div>
+      )}
+      {focusDraft && (
+        <div className="border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-4 py-3">
+          <div className="text-[15px] font-extrabold text-[var(--ic-ink)]">This ad is still a draft.</div>
+          <div className="text-[13px] font-semibold text-[var(--ic-secondary)]">
+            Approve it in Creative Studio first; then it can be published here.{" "}
+            {focus && (
+              <Link href={`/portal/tools?tool=creative-studio&focus=${focus.address}`} className="font-extrabold text-[var(--ic-ink)] underline underline-offset-4">
+                Open it in Creative Studio
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
       {error && (
-        <div className="flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 mb-4">
-          <p className="flex-1 text-sm text-red-300">{error}</p>
-          <button type="button" onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
+        <div role="alert" className="flex items-center gap-3 border-l-2 border-[var(--color-red)] bg-[var(--bg-elevated)] px-4 py-3 mb-4">
+          <p className="flex-1 text-sm font-medium text-[var(--color-dark)]">{error}</p>
+          <button type="button" onClick={() => setError(null)} aria-label="Dismiss" className="text-[var(--color-dark)]">
             <X className="h-4 w-4" />
           </button>
         </div>

@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
       const facility = await db.facilities.findUnique({
         where: { id: c.facility_id },
         select: {
+          google_address: true,
           organizations: {
             select: {
               name: true,
@@ -122,6 +123,8 @@ export async function POST(req: NextRequest) {
             signedAt: c.signed_at,
             accessCode: c.access_code,
             monthlyGoal: c.monthly_goal || 0,
+            // The street address ads run around (src/lib/ad-publish).
+            streetAddress: facility?.google_address ?? null,
             accountManager,
           },
         },
@@ -196,7 +199,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { email, accessCode, monthlyGoal, notificationPreferences } =
+    const { email, accessCode, monthlyGoal, notificationPreferences, streetAddress } =
       body || {};
 
     if (!email || !accessCode) {
@@ -261,14 +264,29 @@ export async function PATCH(req: NextRequest) {
       updateData.notification_preferences = notificationPreferences;
     }
 
-    if (Object.keys(updateData).length === 0) {
+    // The facility's street address: every ad a campaign publishes runs within
+    // a radius of it, so it is the owner's to set and correct.
+    const address = typeof streetAddress === "string" ? streetAddress.replace(/\s+/g, " ").trim().slice(0, 300) : null;
+    if (address !== null && address.length < 6) {
+      return errorResponse("That address looks too short. Add the street, city and ZIP.", 400, origin);
+    }
+
+    if (Object.keys(updateData).length === 0 && !address) {
       return errorResponse("No valid fields to update", 400, origin);
     }
 
-    await db.clients.update({
-      where: { id: client.id },
-      data: updateData,
-    });
+    if (Object.keys(updateData).length > 0) {
+      await db.clients.update({
+        where: { id: client.id },
+        data: updateData,
+      });
+    }
+    if (address) {
+      const row = await db.clients.findUnique({ where: { id: client.id }, select: { facility_id: true } });
+      if (row?.facility_id) {
+        await db.facilities.update({ where: { id: row.facility_id }, data: { google_address: address } });
+      }
+    }
 
     // The goal an owner sets is this month's goal too. /api/client-goals
     // snapshots each month's target when the month's row is first read, so

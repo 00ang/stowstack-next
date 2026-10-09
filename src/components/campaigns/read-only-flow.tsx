@@ -2,6 +2,8 @@
 
 import { defOf, LANE_LABEL, nodeReading, pathToMoveIn, PORTS, readiness, readyCount, topo, type FunnelContext, type FunnelGraph } from "@/lib/funnel-graph";
 import { NodeIcon } from "./icons";
+import type { NodeResult } from "@/lib/campaign-publish/types";
+import { PUBLISH_LABEL, publishMark } from "./use-publish";
 
 /**
  * The campaign as a vertical list. Same nodes as the canvas, no horizontal
@@ -14,6 +16,10 @@ export function ReadOnlyFlow({
   onSelect,
   showBack,
   onBackToCanvas,
+  edgeLabels,
+  published,
+  fixHref,
+  toolLink,
 }: {
   graph: FunnelGraph;
   ctx: FunnelContext;
@@ -21,6 +27,13 @@ export function ReadOnlyFlow({
   onSelect: (id: string) => void;
   showBack?: boolean;
   onBackToCanvas?: () => void;
+  /** Live counts per wire, shown on the connector between steps. */
+  edgeLabels?: Record<string, string>;
+  /** Each function's result from the last publish. */
+  published?: Record<string, NodeResult>;
+  fixHref?: (tool: string) => string | null;
+  /** Where a function's own work opens. The page opens its editor. */
+  toolLink?: (nodeId: string) => { href: string; label: string } | null;
 }) {
   const order = topo(graph);
   const counts = readyCount(graph);
@@ -34,7 +47,7 @@ export function ReadOnlyFlow({
         {counts.ready} of {counts.total} ready · path to move-in {pathToMoveIn(graph) ? "closed" : "open"}
       </div>
       {showBack && onBackToCanvas && (
-        <button type="button" onClick={onBackToCanvas} className="mt-3 border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2 text-[13px] font-extrabold">
+        <button type="button" onClick={onBackToCanvas} data-fill="3" className="act-fill mt-3 px-3 py-2 text-[13px] font-extrabold">
           Back to the canvas
         </button>
       )}
@@ -78,20 +91,69 @@ export function ReadOnlyFlow({
                         .join(", ")}
                     </span>
                   )}
-                  <span className={`mt-1.5 flex items-center gap-1.5 text-[12.5px] font-extrabold ${state.state === "ready" ? "" : ""}`}>
-                    <i
-                      aria-hidden
-                      className={`inline-block h-[9px] w-[9px] border-[1.5px] border-[var(--ic-ink)] ${
-                        state.state === "ready" ? "border-[var(--color-green)] bg-[var(--color-green)]" : ""
-                      }`}
-                    />
-                    {state.state === "ready" ? "Ready" : `Needs ${state.need}`}
-                  </span>
+                  {published?.[n.id] && state.state === "ready" ? (
+                    <span className="mt-1.5 block">
+                      <span className="flex items-center gap-1.5 text-[12.5px] font-extrabold">
+                        <i
+                          aria-hidden
+                          className={`inline-block h-[9px] w-[9px] border-[1.5px] ${publishMark(published[n.id].state).pulse ? "animate-pulse" : ""}`}
+                          style={{
+                            borderColor: publishMark(published[n.id].state).edge,
+                            background: publishMark(published[n.id].state).fill ?? "transparent",
+                          }}
+                        />
+                        {PUBLISH_LABEL[published[n.id].state]}
+                      </span>
+                      <span className="mt-0.5 block text-[12.5px] font-semibold text-[var(--ic-ink)]">{published[n.id].line}</span>
+                    </span>
+                  ) : (
+                    <span className="mt-1.5 flex items-center gap-1.5 text-[12.5px] font-extrabold">
+                      <i
+                        aria-hidden
+                        className={`inline-block h-[9px] w-[9px] border-[1.5px] border-[var(--ic-ink)] ${
+                          state.state === "ready" ? "border-[var(--color-green)] bg-[var(--color-green)]" : ""
+                        }`}
+                      />
+                      {state.state === "ready" ? "Ready" : `Needs ${state.need}`}
+                    </span>
+                  )}
                 </span>
               </button>
+              {(() => {
+                const r = published?.[n.id];
+                const fix = r?.fix && fixHref ? fixHref(r.fix.tool) : null;
+                const work = n.type === "page" ? toolLink?.(n.id) : null;
+                if (!work && (!r || (!r.href && !fix))) return null;
+                return (
+                  <div className="flex flex-wrap gap-2 border-x border-b border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2">
+                    {work && (
+                      <a href={work.href} data-fill="1" className="act-fill inline-flex h-9 items-center px-3 text-[13px] font-extrabold">
+                        {work.label}
+                      </a>
+                    )}
+                    {r?.href && (
+                      <a
+                        href={r.href}
+                        target={r.external ? "_blank" : undefined}
+                        rel={r.external ? "noopener noreferrer" : undefined}
+                        data-fill="2"
+                        className="act-fill inline-flex h-9 items-center px-3 text-[13px] font-extrabold"
+                      >
+                        {r.hrefLabel ?? "Open"}
+                      </a>
+                    )}
+                    {fix && r?.fix && (
+                      <a href={fix} data-fill="3" className="act-fill inline-flex h-9 items-center px-3 text-[13px] font-extrabold">
+                        {r.fix.label}
+                      </a>
+                    )}
+                  </div>
+                );
+              })()}
               {main ? (
                 <div className="ic-label ml-5 border-l-2 border-[var(--ic-ink)] py-1 pl-3 text-[10px] text-[var(--ic-secondary)]">
                   {PORTS[defOf(n.type).outputs[main.fromPort]].label}
+                  {edgeLabels?.[main.id] && <span className="text-[var(--ic-ink)]"> · {edgeLabels[main.id]}</span>}
                 </div>
               ) : idx < order.length - 1 ? (
                 <div className="h-2" />

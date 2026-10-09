@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { verifyOAuthState } from "@/lib/oauth-state";
+import { returnUrl, safeReturnTo } from "@/lib/oauth-return";
+import { META_API_VERSION } from "@/lib/ad-publish/types";
 
 export const maxDuration = 15;
 
@@ -18,10 +20,8 @@ function getBaseUrl(): string {
   );
 }
 
-function redirectError(message: string): NextResponse {
-  return NextResponse.redirect(
-    `${getBaseUrl()}/?auth=error&platform=meta&message=${encodeURIComponent(message)}`
-  );
+function redirectError(message: string, returnTo: string | null = null): NextResponse {
+  return NextResponse.redirect(returnUrl(getBaseUrl(), returnTo, { auth: "error", platform: "meta", message }));
 }
 
 export async function GET(request: NextRequest) {
@@ -35,24 +35,28 @@ export async function GET(request: NextRequest) {
   const errorDescription = url.searchParams.get("error_description");
 
   if (error) {
-    return redirectError(errorDescription || error);
+    // Cancelled or refused on the platform's side: back to where the owner started, if the state says.
+    const early = state ? verifyOAuthState<{ returnTo?: string }>(state) : null;
+    return redirectError(errorDescription || error, safeReturnTo(early?.returnTo));
   }
 
   if (!code || !state) {
     return redirectError("Missing authorization code");
   }
 
-  const parsed = verifyOAuthState<{ facilityId?: string }>(state);
+  const parsed = verifyOAuthState<{ facilityId?: string; returnTo?: string }>(state);
   if (!parsed?.facilityId) {
     return redirectError("Invalid state parameter");
   }
   const facilityId = parsed.facilityId;
+  // Errors from here on go back to where the owner started, too.
+  const back = safeReturnTo(parsed.returnTo);
 
   const appId = process.env.META_APP_ID;
   const appSecret = process.env.META_APP_SECRET;
 
   if (!appId || !appSecret) {
-    return redirectError("Meta app not configured");
+    return redirectError("Meta app not configured", back);
   }
 
   const baseUrl = getBaseUrl();
@@ -60,16 +64,16 @@ export async function GET(request: NextRequest) {
 
   try {
     const tokenRes = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}`
+      `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}`
     );
     const tokenData = await tokenRes.json();
 
     if (tokenData.error) {
-      return redirectError(tokenData.error.message);
+      return redirectError(tokenData.error.message, back);
     }
 
     const longLivedRes = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tokenData.access_token}`
+      `https://graph.facebook.com/${META_API_VERSION}/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tokenData.access_token}`
     );
     const longLivedData = await longLivedRes.json();
     const accessToken =
@@ -78,13 +82,13 @@ export async function GET(request: NextRequest) {
       longLivedData.expires_in || tokenData.expires_in || 5184000;
 
     const accountsRes = await fetch(
-      `https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name,account_status&access_token=${accessToken}`
+      `https://graph.facebook.com/${META_API_VERSION}/me/adaccounts?fields=id,name,account_status&access_token=${accessToken}`
     );
     const accountsData = await accountsRes.json();
     const adAccounts = accountsData.data || [];
 
     const pagesRes = await fetch(
-      `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&access_token=${accessToken}`
+      `https://graph.facebook.com/${META_API_VERSION}/me/accounts?fields=id,name,access_token&access_token=${accessToken}`
     );
     const pagesData = await pagesRes.json();
     const pages = pagesData.data || [];
@@ -131,9 +135,9 @@ export async function GET(request: NextRequest) {
         updated_at = NOW()
     `;
 
-    return NextResponse.redirect(`${baseUrl}/?auth=success&platform=meta`);
+    return NextResponse.redirect(returnUrl(baseUrl, safeReturnTo(parsed.returnTo), { auth: "success", platform: "meta" }));
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return redirectError(message);
+    return redirectError(message, back);
   }
 }

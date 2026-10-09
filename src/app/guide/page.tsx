@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Logo } from "@/components/brand/logo";
 import {
   ArrowLeft,
   BookOpen,
@@ -160,12 +161,7 @@ export default function GuidePage() {
           >
             <ArrowLeft size={20} />
           </Link>
-          <span
-            className="text-sm font-semibold tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
-            storage<span style={{ color: "var(--accent)" }}>ads</span>
-          </span>
+          <Logo mark={26} />
           <span
             className="text-xs ml-1"
             style={{ color: "var(--text-tertiary)" }}

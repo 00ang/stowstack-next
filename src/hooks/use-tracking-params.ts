@@ -46,7 +46,10 @@ export function useTrackingParams(
   // Fire visit tracking event once
   useEffect(() => {
     if (firedRef.current) return;
-    if (!hasPaidParams(result.params) && !landingPageId) return;
+    // Wait for the page. A beacon sent before the page has loaded carries no
+    // page or facility, so the visit is stored unattached and never counts
+    // toward its campaign — paid clicks, which used to fire at once, most of all.
+    if (!landingPageId) return;
     firedRef.current = true;
 
     // Fire-and-forget tracking event

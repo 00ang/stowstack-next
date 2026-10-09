@@ -237,6 +237,7 @@ function ObjectRow({
                     </span>
                     <span>
                       <span className="block text-[14px] font-extrabold text-[var(--ic-ink)]">{m.sentence}</span>
+                      {m.why && <span className="block text-[13px] font-bold text-[var(--ic-ink)]">{m.why}</span>}
                       <span className="block text-[13px] font-semibold text-[var(--ic-secondary)]">{m.reason}</span>
                     </span>
                   </li>

@@ -18,6 +18,8 @@ import {
 import Link from "next/link";
 import { goalMonths } from "./context";
 import { NodeIcon } from "./icons";
+import type { NodeResult } from "@/lib/campaign-publish/types";
+import { PUBLISH_LABEL, publishMark } from "./use-publish";
 
 /** Where a function's own tool opens, with the object it works on in focus. Absent where there is no tool. */
 export type ToolLinkFor = (nodeId: string) => { href: string; label: string } | null;
@@ -34,6 +36,9 @@ export function FunnelInspector({
   onSelectNode,
   toolLink,
   technical = false,
+  published,
+  onRetry,
+  fixHref,
 }: {
   graph: FunnelGraph;
   ctx: FunnelContext;
@@ -48,6 +53,12 @@ export function FunnelInspector({
   toolLink?: ToolLinkFor;
   /** Show the route each function publishes through (the admin view). */
   technical?: boolean;
+  /** Each function's result from the last publish. */
+  published?: Record<string, NodeResult>;
+  /** Run the publish again, trying this function even if its outcome was unknown. */
+  onRetry?: (nodeId: string) => void;
+  /** A link into the tool that fixes a result, or null (the canvas itself, or the admin). */
+  fixHref?: (tool: string) => string | null;
 }) {
   const node = graph.nodes.find((n) => n.id === selectedId) ?? null;
   const rootRef = useRef<HTMLElement>(null);
@@ -60,6 +71,9 @@ export function FunnelInspector({
 
   if (!node) {
     const needs = graph.nodes.filter((n) => readiness(graph, n).state === "needs");
+    const asks = Object.entries(published ?? {})
+      .filter(([, r]) => r.state === "needs" || r.state === "failed" || r.state === "unknown")
+      .map(([id, result]) => ({ id, result }));
     const months = goalMonths();
     return (
       <aside ref={rootRef} aria-label="Inspector" className="w-[300px] shrink-0 overflow-y-auto border-l border-[var(--ic-ink)] bg-[var(--ic-pane)] p-4">
@@ -119,6 +133,28 @@ export function FunnelInspector({
             ))}
           </ul>
         )}
+        {asks.length > 0 && (
+          <>
+            <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">After publishing · needs you · {asks.length}</div>
+            <ul>
+              {asks.map(({ id, result }) => {
+                const n = graph.nodes.find((x) => x.id === id);
+                if (!n) return null;
+                return (
+                  <li key={id} className="border-b border-[var(--ic-dither)]/40">
+                    <button
+                      type="button"
+                      onClick={() => onSelectNode?.(id)}
+                      className="w-full py-1.5 text-left text-[13px] font-semibold hover:underline hover:underline-offset-4"
+                    >
+                      <b className="font-extrabold">{defOf(n.type).title}.</b> {result.line}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
       </aside>
     );
   }
@@ -139,6 +175,13 @@ export function FunnelInspector({
         <i aria-hidden className={`inline-block h-[9px] w-[9px] border-[1.5px] ${state.state === "ready" ? "border-[var(--color-green)] bg-[var(--color-green)]" : "border-[var(--ic-ink)]"}`} />
         {state.state === "ready" ? "Ready" : `Needs · ${state.need}`}
       </div>
+      {published?.[node.id] && (
+        <PublishedBox
+          result={published[node.id]}
+          href={published[node.id].fix && fixHref ? fixHref(published[node.id].fix!.tool) : null}
+          onRetry={onRetry ? () => onRetry(node.id) : undefined}
+        />
+      )}
       <div className="ic-label mt-4 text-[10.5px] text-[var(--ic-instruction)]">Reading</div>
       <div className="text-[13px] font-semibold">
         {nodeReading(node, ctx)}
@@ -272,5 +315,55 @@ export function FunnelInspector({
         Remove {def.title}
       </button>
     </aside>
+  );
+}
+
+/** What happened to this function when the campaign was published, and the one thing to do about it. */
+function PublishedBox({ result, href, onRetry }: { result: NodeResult; href: string | null; onRetry?: () => void }) {
+  const mark = publishMark(result.state);
+  const loud = result.state === "failed" || result.state === "unknown" || result.state === "needs";
+  return (
+    <div
+      className={`mt-2 border border-[var(--ic-ink)] px-2 py-2 ${loud ? "bg-[var(--ic-soft)]" : ""}`}
+      style={loud ? { boxShadow: `inset 4px 0 0 ${mark.edge}` } : undefined}
+    >
+      <div className="flex items-center gap-1.5 text-[13px] font-extrabold">
+        <i
+          aria-hidden
+          className={`inline-block h-[9px] w-[9px] border-[1.5px] ${mark.pulse ? "animate-pulse" : ""}`}
+          style={{ borderColor: mark.edge, background: mark.fill ?? "transparent" }}
+        />
+        {PUBLISH_LABEL[result.state]}
+      </div>
+      <div className="mt-1 text-[13px] font-semibold leading-snug text-[var(--ic-ink)]">{result.line}</div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {result.href && (
+          <a
+            href={result.href}
+            target={result.external ? "_blank" : undefined}
+            rel={result.external ? "noopener noreferrer" : undefined}
+            data-fill="2"
+            className="act-fill inline-flex h-8 items-center px-2.5 text-[12.5px] font-extrabold"
+          >
+            {result.hrefLabel ?? "Open"}
+          </a>
+        )}
+        {result.fix && href && (
+          <a href={href} data-fill="3" className="act-fill inline-flex h-8 items-center px-2.5 text-[12.5px] font-extrabold">
+            {result.fix.label}
+          </a>
+        )}
+        {onRetry && (result.state === "failed" || result.state === "unknown") && (
+          <button
+            type="button"
+            data-fill="4"
+            onClick={onRetry}
+            className="act-fill inline-flex h-8 items-center px-2.5 text-[12.5px] font-extrabold"
+          >
+            {result.state === "unknown" ? "I've checked · try again" : "Try again"}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

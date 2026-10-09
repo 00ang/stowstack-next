@@ -1,7 +1,8 @@
 import { PartnerShell } from "@/components/partner/partner-shell";
 
 export const metadata = {
-  title: "Partner Dashboard | StorageAds",
+  // Root layout already appends " | StorageAds".
+  title: "Partner Dashboard",
   robots: { index: false, follow: false },
 };
 

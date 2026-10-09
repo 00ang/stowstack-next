@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/events/bus", () => ({ emit: vi.fn().mockResolvedValue({ emitted: 1, duplicates: 0, fannedOut: 2 }) }));
 vi.mock("@/lib/lead-events", () => ({ markLeadAsMatchedTenant: vi.fn().mockResolvedValue({ recorded: true, fromStatus: "new" }) }));
 
-import { attemptAndPersistLeadMatch } from "@/lib/lead-matching";
+import { attemptAndPersistLeadMatch, resolveMatchAttempt } from "@/lib/lead-matching";
 import { emit } from "@/lib/events/bus";
 import { markLeadAsMatchedTenant } from "@/lib/lead-events";
 
@@ -69,5 +69,46 @@ describe("attemptAndPersistLeadMatch → lead.moved_in", () => {
   it("does not touch revenue for an ambiguous match", async () => {
     await attemptAndPersistLeadMatch(client([lead("L1"), lead("L2")]), TENANT);
     expect($executeRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe("resolveMatchAttempt: the owner settles an unsure match", () => {
+  const ATTEMPT = {
+    id: "attempt-9",
+    tenant_id: TENANT.id,
+    status: "ambiguous",
+    candidates: [
+      { partial_lead_id: "L1", match_method: "name_last4_phone", confidence: 0.7 },
+      { partial_lead_id: "L2", match_method: "name_last4_phone", confidence: 0.7 },
+    ],
+  };
+  function resolver(attempt: unknown) {
+    const $queryRaw = vi
+      .fn()
+      .mockResolvedValueOnce(attempt ? [attempt] : [])
+      .mockResolvedValueOnce([{ ...TENANT, name: "Robin Marsh", email: null, move_in_date: new Date("2026-10-01") }]);
+    $executeRaw = vi.fn().mockResolvedValue(1);
+    return { $queryRaw, $executeRaw } as never;
+  }
+
+  it("links the chosen lead and reports the move-in like an automatic match", async () => {
+    const ok = await resolveMatchAttempt(resolver(ATTEMPT), "attempt-9", "L2", "owner:ledger");
+    expect(ok).toBe(true);
+    expect(markLeadAsMatchedTenant).toHaveBeenCalledWith(expect.anything(), "L2", TENANT.id, expect.objectContaining({ changedBy: "owner:ledger" }));
+    expect(emit).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses a lead that wasn't a candidate, and an attempt that's already settled", async () => {
+    expect(await resolveMatchAttempt(resolver(ATTEMPT), "attempt-9", "L7", "owner:ledger")).toBe(false);
+    expect(await resolveMatchAttempt(resolver({ ...ATTEMPT, status: "matched" }), "attempt-9", "L1", "owner:ledger")).toBe(false);
+    expect(markLeadAsMatchedTenant).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalled();
+  });
+
+  it("records 'none of these' without linking anyone or reporting anything", async () => {
+    expect(await resolveMatchAttempt(resolver(ATTEMPT), "attempt-9", null, "owner:ledger")).toBe(true);
+    expect(markLeadAsMatchedTenant).not.toHaveBeenCalled();
+    expect(emit).not.toHaveBeenCalled();
+    expect(String($executeRaw.mock.calls[0][0])).toContain("rejected");
   });
 });

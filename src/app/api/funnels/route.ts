@@ -9,6 +9,7 @@ import {
 } from "@/lib/api-helpers";
 import { funnelConfigToDripSteps } from "@/lib/drip-sequences";
 import { funnelGraphSchema } from "@/lib/funnel-graph/schema";
+import { writeGraph } from "@/lib/campaign-publish/store";
 
 export const maxDuration = 60;
 
@@ -213,19 +214,31 @@ export async function PATCH(req: NextRequest) {
         data.archived_at = new Date();
       }
     }
-    if (config !== undefined) data.config = config;
+    const prev =
+      existing.config && typeof existing.config === "object" && !Array.isArray(existing.config)
+        ? (existing.config as Record<string, unknown>)
+        : {};
+    // A whole-config write (the older funnel builder) keeps the canvas and any
+    // publish results, which it knows nothing about.
+    if (config !== undefined) {
+      data.config = {
+        ...(config && typeof config === "object" ? config : {}),
+        ...(prev.graph !== undefined ? { graph: prev.graph } : {}),
+        ...(prev.publish !== undefined ? { publish: prev.publish } : {}),
+      };
+    }
+    let graphToWrite: unknown = undefined;
     if (graph !== undefined) {
       const parsed = funnelGraphSchema.safeParse(graph);
       if (!parsed.success) return errorResponse("Campaign graph is not valid", 400, origin);
-      const prev =
-        existing.config && typeof existing.config === "object" && !Array.isArray(existing.config)
-          ? (existing.config as Record<string, unknown>)
-          : {};
-      data.config = { ...prev, graph: parsed.data };
+      // Written in place below, so a publish writing its results at the same
+      // moment keeps them (src/lib/campaign-publish/store.ts).
+      graphToWrite = parsed.data;
     }
     if (dailyBudget !== undefined) data.daily_budget = dailyBudget;
     if (targetAudience !== undefined) data.target_audience = targetAudience;
 
+    if (graphToWrite !== undefined) await writeGraph(id, graphToWrite);
     const funnel = await db.funnels.update({
       where: { id },
       data,

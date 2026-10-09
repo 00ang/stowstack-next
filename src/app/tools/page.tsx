@@ -262,7 +262,7 @@ export default function ToolsPage() {
 
         <ToolCta
           heading="Want the numbers to move in your favor?"
-          body="StorageAds runs the Meta and Google ads, builds a landing page for every ad, and proves which campaigns filled units. One bill per facility per month."
+          body="StorageAds runs the Meta and Google ads and builds a landing page for every ad. One bill per facility per month."
         />
       </main>
     </div>

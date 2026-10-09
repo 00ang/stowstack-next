@@ -23,8 +23,8 @@ export interface MarketingRoiState {
   costPerMoveIn: number;
 }
 
-/** Default cost per move-in, from the platform average. */
-export const DEFAULT_COST_PER_MOVE_IN = 14.2;
+/** Starting input for the calculator. Not a measured result. Replace it with your own. */
+export const DEFAULT_COST_PER_MOVE_IN = 100;
 
 export const MARKETING_ROI_DEFAULTS: MarketingRoiState = {
   totalUnits: 150,

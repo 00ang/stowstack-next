@@ -181,7 +181,7 @@ export const DSCR_FAQS: ToolFaq[] = [
 export const MARKETING_ROI_FAQS: ToolFaq[] = [
   {
     q: "How is cost per move-in calculated?",
-    a: "It's your total ad spend divided by the number of move-ins that spend produced. This tool defaults to $14.20 per move-in from the platform average, but you can override it with your own number. It's the single biggest driver of the result.",
+    a: "It's your total ad spend divided by the number of move-ins that spend produced. The field starts at a sample number. Replace it with yours.",
   },
   {
     q: "What is return on ad spend (ROAS)?",

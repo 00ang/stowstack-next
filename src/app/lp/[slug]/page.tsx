@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTrackingParams } from "@/hooks/use-tracking-params";
+import { BlockPage } from "@/components/landing/block-page";
+import { sectionsToBlocks, type LiveUnit } from "@/lib/page-blocks";
+import { bootPortalDemo, isPortalDemo } from "@/lib/portal-demo/demo-mode";
 import {
   Phone,
   MapPin,
@@ -43,9 +46,17 @@ interface LandingPage {
   meta_title?: string;
   meta_description?: string;
   og_image_url?: string;
-  theme?: { primaryColor?: string; accentColor?: string };
+  theme?: {
+    primaryColor?: string;
+    accentColor?: string;
+    /** Switched on by the campaign that owns the page (src/lib/campaign-publish). */
+    features?: { tour?: boolean; reserve?: string };
+    /** Set by the campaign page editor. The public page renders blocks in order. */
+    editor?: string;
+  };
   storedge_widget_url?: string;
   sections: Section[];
+  liveUnits?: LiveUnit[];
 }
 
 /* ═══════════════════════════════════════════════════════ */
@@ -625,6 +636,287 @@ function CTAChapter({
   );
 }
 
+/* ═══════════════════════════════════════════════════════ */
+/*  ASK — the on-page lead form                            */
+/* ═══════════════════════════════════════════════════════ */
+
+/** Same size string can mean two unit types. Name the difference so the form can tell them apart. */
+function askSizeLabels(units: { name?: string; size?: string; features?: string[] }[]): string[] {
+  const labels = units.map((u) => (u.size || u.name || "").trim()).filter(Boolean);
+  const shared = new Set(labels.filter((s, i) => labels.indexOf(s) !== i));
+  return units
+    .map((u) => {
+      const size = (u.size || u.name || "").trim();
+      if (!size) return "";
+      const hint = u.features?.find((f) => f && f !== size) || (u.name && u.name !== size ? u.name : "");
+      return shared.has(size) && hint ? `${size} · ${hint}` : size;
+    })
+    .filter(Boolean);
+}
+
+const WHEN: [string, string][] = [
+  ["this_week", "This week"],
+  ["this_month", "This month"],
+  ["just_looking", "Just looking"],
+];
+
+/**
+ * The way to ask without leaving the page, on every screen. Before this the
+ * only capture was a desktop exit popup, so a phone visitor who wasn't ready to
+ * reserve left nothing behind. A lead from here is answered by text within a
+ * minute (speed-to-lead), joins its campaign's follow-up, and is tied to the
+ * visit that brought it.
+ */
+function AskChapter({
+  page,
+  facilityName,
+  sizes,
+  hasReserve,
+}: {
+  page: LandingPage;
+  facilityName?: string;
+  sizes: string[];
+  hasReserve: boolean;
+}) {
+  const searchParams = useSearchParams();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [size, setSize] = useState("");
+  const [when, setWhen] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [leadId, setLeadId] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+  const tour = !!page.theme?.features?.tour;
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/lead-capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          phone,
+          email,
+          unitSize: size || undefined,
+          timeline: WHEN.find(([k]) => k === when)?.[1],
+          facilityId: page.facility_id,
+          landingPageId: page.id,
+          sessionId: sessionStorage.getItem("storageads_session_id") || undefined,
+          utmSource: searchParams.get("utm_source") || undefined,
+          utmMedium: searchParams.get("utm_medium") || undefined,
+          utmCampaign: searchParams.get("utm_campaign") || undefined,
+          utmContent: searchParams.get("utm_content") || undefined,
+          referrer: document.referrer || undefined,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { leadId?: string; error?: string };
+      if (!res.ok) {
+        // The server's own words (a bad email, say); anything else gets ours.
+        setError(data.error || "That didn't go through. Please try again.");
+        return;
+      }
+      setLeadId(data.leadId ?? null);
+      setSent(true);
+    } catch {
+      setError("That didn't go through. Check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const first = name.trim().split(/\s+/)[0];
+  // Inline: the site's global input rule would otherwise set 13px.
+  const fieldSize = { fontSize: 16 } as const;
+  const field =
+    "w-full px-4 py-3.5 rounded-xl border border-[#141413]/20 bg-[#E0E0E5] text-[16px] font-medium text-[#141413] placeholder:text-[#141413]/45 focus:outline-none focus:ring-2 focus:ring-[#141413]/35";
+  const label = "block text-[13px] font-semibold text-[#141413] mb-1.5";
+
+  return (
+    <section id="ask" className="bg-white py-14 md:py-24 border-t border-[#141413]/8">
+      <div className="max-w-xl mx-auto px-5 md:px-8">
+        {sent ? (
+          <div>
+            <h2 className="text-2xl md:text-4xl font-bold leading-snug tracking-tight text-[#141413]">
+              Thanks{first ? `, ${first}` : ""}.
+            </h2>
+            <div className="mt-2 text-[16px] font-medium text-[#141413]/80">
+              {facilityName || "We"} {facilityName ? "has" : "have"} your number and will be in touch shortly.
+            </div>
+            {tour && <TourPicker page={page} name={name} phone={phone} size={size} leadId={leadId} />}
+          </div>
+        ) : (
+          <form onSubmit={submit} noValidate={false}>
+            <span className="text-[11px] tracking-[0.22em] uppercase font-bold text-[#141413]/80">
+              {hasReserve ? "Not ready to reserve?" : "Ask about a unit"}
+            </span>
+            <h2 className="mt-2 text-2xl md:text-4xl font-bold leading-snug tracking-tight text-[#141413]">
+              Leave your number. We’ll get back to you.
+            </h2>
+            <div className="mt-6 grid gap-4">
+              <div>
+                <label htmlFor="ask-name" className={label}>Name</label>
+                <input id="ask-name" className={field} style={fieldSize} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="ask-phone" className={label}>Phone</label>
+                  <input id="ask-phone" className={field} style={fieldSize} value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" inputMode="tel" autoComplete="tel" required />
+                </div>
+                <div>
+                  <label htmlFor="ask-email" className={label}>Email</label>
+                  <input id="ask-email" className={field} style={fieldSize} value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="email" required />
+                </div>
+              </div>
+              {sizes.length > 0 && (
+                <div>
+                  <label htmlFor="ask-size" className={label}>Size</label>
+                  <select id="ask-size" className={field} style={fieldSize} value={size} onChange={(e) => setSize(e.target.value)}>
+                    <option value="">Not sure yet</option>
+                    {sizes.map((s, i) => (
+                      <option key={`${s}-${i}`} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <fieldset>
+                <legend className={label}>When do you need it?</legend>
+                <div className="flex flex-wrap gap-2">
+                  {WHEN.map(([k, l]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setWhen(when === k ? "" : k)}
+                      aria-pressed={when === k}
+                      className={`px-4 py-2.5 rounded-full border text-[15px] font-semibold transition-colors ${
+                        when === k
+                          ? "bg-[#1E3C74] border-[#1E3C74] text-white"
+                          : "bg-white border-[#141413]/25 text-[#141413] hover:border-[#141413]/50"
+                      }`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            </div>
+            {error && (
+              <div role="alert" className="mt-4 border-l-4 border-[#A12A2A] pl-3 text-[15px] font-semibold text-[#141413]">
+                {error}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={sending}
+              className="mt-6 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-4 bg-[#141413] text-[#E0E0E5] rounded-full text-[16px] font-bold hover:bg-[#141413]/90 transition-colors disabled:opacity-60"
+            >
+              {sending ? <Loader2 size={17} className="animate-spin" /> : null}
+              {sending ? "Sending" : "Ask about a unit"}
+            </button>
+            <div className="mt-3 text-[13px] font-semibold text-[#141413]/80">
+              By sending this you agree to a text or call about storage. Reply STOP to opt out.
+            </div>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** After someone asks: book a time to see it, confirmed by text. */
+function TourPicker({
+  page,
+  name,
+  phone,
+  size,
+  leadId,
+}: {
+  page: LandingPage;
+  name: string;
+  phone: string;
+  size: string;
+  leadId: string | null;
+}) {
+  const [at, setAt] = useState("");
+  const [state, setState] = useState<"idle" | "sending" | "booked">("idle");
+  const [message, setMessage] = useState<string | null>(null);
+
+  const book = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!at) return;
+    setState("sending");
+    setMessage(null);
+    try {
+      const res = await fetch("/api/tour", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          facilityId: page.facility_id,
+          phone,
+          name,
+          sizeLabel: size || undefined,
+          leadId: leadId || undefined,
+          scheduledAt: new Date(at).toISOString(),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { booked?: boolean; message?: string; confirmationSent?: boolean; error?: string };
+      if (!data.booked) {
+        setState("idle");
+        setMessage(data.message || data.error || "That time couldn't be booked. Please pick another.");
+        return;
+      }
+      setState("booked");
+      setMessage(data.confirmationSent ? "We've texted you a confirmation." : "See you then.");
+    } catch {
+      setState("idle");
+      setMessage("That didn't go through. Please try again.");
+    }
+  };
+
+  if (state === "booked") {
+    return (
+      <div className="mt-6 border-l-4 border-[#2F6B3F] pl-3 text-[16px] font-semibold text-[#141413]">
+        Booked for {new Date(at).toLocaleString([], { weekday: "long", hour: "numeric", minute: "2-digit" })}. {message}
+      </div>
+    );
+  }
+  return (
+    <form onSubmit={book} className="mt-8 border-t border-[#141413]/10 pt-6">
+      <h3 className="text-xl font-bold text-[#141413]">Want to see it first?</h3>
+      <label htmlFor="tour-at" className="mt-3 block text-[13px] font-semibold text-[#141413] mb-1.5">
+        Pick a time
+      </label>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          id="tour-at"
+          type="datetime-local"
+          style={{ fontSize: 16 }}
+          value={at}
+          onChange={(e) => setAt(e.target.value)}
+          className="flex-1 px-4 py-3.5 rounded-xl border border-[#141413]/20 bg-[#E0E0E5] text-[16px] font-medium text-[#141413] focus:outline-none focus:ring-2 focus:ring-[#141413]/35"
+          required
+        />
+        <button
+          type="submit"
+          disabled={state === "sending" || !at}
+          className="inline-flex items-center justify-center px-6 py-3.5 rounded-full bg-[#2F6B3F] text-white text-[16px] font-bold disabled:opacity-60"
+        >
+          {state === "sending" ? "Booking" : "Book a tour"}
+        </button>
+      </div>
+      {message && (
+        <div role="alert" className="mt-3 border-l-4 border-[#A12A2A] pl-3 text-[15px] font-semibold text-[#141413]">
+          {message}
+        </div>
+      )}
+    </form>
+  );
+}
+
 function PageFooter() {
   return (
     <footer className="bg-[#E0E0E5] border-t border-[#141413]/8 py-10 md:py-12">
@@ -701,7 +993,7 @@ function ExitIntentPopup({
           ) : (
             <>
               <h3 className="text-xl font-semibold text-[#141413] mb-2">
-                Wait, don&apos;t lose your spot!
+                Wait, don’t lose your spot!
               </h3>
               <p className="text-sm text-[#6a6560] mb-5">
                 Enter your email and we will save your progress. Plus, we will
@@ -741,6 +1033,9 @@ function ExitIntentPopup({
 /* ═══════════════════════════════════════════════════════ */
 
 export default function LandingPageRoute() {
+  // A sample tab opened with ?demo answers from the sample, not the database.
+  // Real pages have neither the flag nor the query, so this does nothing there.
+  if (typeof window !== "undefined") bootPortalDemo();
   const { slug } = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
   const [page, setPage] = useState<LandingPage | null>(null);
@@ -959,7 +1254,7 @@ export default function LandingPageRoute() {
           Page Not Found
         </h1>
         <p className="text-[#6a6560] mb-6">
-          This landing page doesn&apos;t exist or hasn&apos;t been published
+          This landing page doesn’t exist or hasn’t been published
           yet.
         </p>
         <Link
@@ -969,6 +1264,23 @@ export default function LandingPageRoute() {
           Go to homepage
         </Link>
       </div>
+    );
+  }
+
+  if (page.theme?.editor === "blocks") {
+    const hero = page.sections.find((s) => s.section_type === "hero")?.config ?? {};
+    return (
+      <BlockPage
+        title={page.title}
+        blocks={sectionsToBlocks(page.sections)}
+        units={page.liveUnits ?? []}
+        facilityName={typeof hero.facilityName === "string" ? hero.facilityName : undefined}
+        phone={trackingPhone || (typeof hero.phone === "string" ? hero.phone : null)}
+        storedgeUrl={page.storedge_widget_url}
+        facilityId={page.facility_id}
+        pageId={page.id}
+        sample={typeof window !== "undefined" && isPortalDemo()}
+      />
     );
   }
 
@@ -1008,7 +1320,8 @@ export default function LandingPageRoute() {
         ? (hero.ctaUrl as string)
         : ""
     );
-  const reserveUrl = externalUrl || "#cta";
+  // Without a reservation link, every "reserve" button leads to the form.
+  const reserveUrl = externalUrl || "#ask";
   const reserveLabel =
     (cta.ctaText as string) || (hero.ctaText as string) || "Reserve Unit";
 
@@ -1058,6 +1371,12 @@ export default function LandingPageRoute() {
       />
 
       {sectionByType("trust_bar") && <TrustBarChapter items={trustItems} />}
+      <AskChapter
+        page={page}
+        facilityName={facilityName}
+        sizes={askSizeLabels(unitItems)}
+        hasReserve={!!externalUrl}
+      />
       {sectionByType("features") && (
         <FeaturesChapter
           headline={features.headline as string | undefined}

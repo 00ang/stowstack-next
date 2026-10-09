@@ -16,34 +16,26 @@ type CaseStudy = {
 
 const CASE_STUDIES: CaseStudy[] = [
   {
-    name: "Single-Site Independent: Rural Trade Area",
+    name: "Ads in the trade area",
     context:
-      "A 247-unit facility at 71% occupancy with no paid ads and a default storEDGE rental page. StorageAds launched a Meta campaign with 3 ad-specific landing pages targeting climate-controlled, vehicle storage, and first-month-free audiences.",
+      "Meta reaches renters before they search. Google catches the ones already looking. Retargeting brings back the ones who left. Each ad points at its own page.",
     stats: [
-      { value: "34", label: "move-ins in 90 days" },
-      { value: "$41", label: "per move-in" },
-      { value: "71% → 84%", label: "occupancy in one quarter" },
-      { value: "35x", label: "return on ad spend" },
+      { value: "Meta", label: "before they search" },
+      { value: "Google", label: "when they are looking" },
+      { value: "Page", label: "one for every ad" },
+      { value: "Offer", label: "the one that ad promised" },
     ],
-    benchmark: {
-      text: "84% lands above the 87.2% independent average and inside reach of the 92.6% REIT band. One quarter, one facility, no new units built.",
-      cites: [1, 2],
-    },
   },
   {
-    name: "Seasonal Lakefront Market",
+    name: "From the page to a lease",
     context:
-      "A seasonal market with 60% winter occupancy. StorageAds ran targeted campaigns for boat/RV storage and temperature-sensitive items during the fall shoulder season.",
+      "The renter reserves on your page, with storEDGE built in. Follow-up chases the reservation. When they move in, you mark it, and the report shows where they came from.",
     stats: [
-      { value: "22", label: "move-ins in 60 days" },
-      { value: "$38", label: "per move-in" },
-      { value: "74%", label: "winter occupancy (vs 60% prior year)" },
-      { value: "8.7%", label: "of page visitors reserved (vs 2.1% industry)" },
+      { value: "Reserve", label: "on your page" },
+      { value: "Follow-up", label: "until they sign" },
+      { value: "Mark", label: "the move-in yourself" },
+      { value: "Report", label: "shows the source" },
     ],
-    benchmark: {
-      text: "+14 points of winter occupancy in a market where the national web rate dropped 4.71% YoY. The renters were there. The system just had to reach them.",
-      cites: [3],
-    },
   },
 ];
 
@@ -84,8 +76,7 @@ export default function Results() {
               lineHeight: 1.55,
             }}
           >
-            Two facilities. Real campaigns. Numbers pulled directly from
-            storEDGE and the StorageAds reporting layer. No case-study polish.
+            Ads, a page, a reservation, and a move-in you can account for.
           </p>
         </div>
 
@@ -179,21 +170,8 @@ export default function Results() {
             className="text-sm leading-relaxed"
             style={{ color: "var(--text-secondary)" }}
           >
-            <strong className="text-[var(--color-dark)]">Here&apos;s the math.</strong>{" "}
-            A move-in at a typical facility pays $130 a month and stays 14
-            months. That&apos;s about $1,820 per move-in. Five to ten extra
-            move-ins a month adds $9,000-18,000 in future rent every month.
-            The Launch plan plus a typical ad budget runs about $1,750 a
-            month. That&apos;s 5-10x before the system even starts tightening
-            up.
-          </p>
-          <p
-            className="text-sm leading-relaxed mt-4"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            And it compounds. As the move-in data stacks up over six months,
-            what you pay for each move-in drops and the reserve rate climbs.
-            The math only gets better with time.
+            <strong className="text-[var(--color-dark)]">A tenant pays rent for the stay.</strong>{" "}
+            The system is built to fill empty units: map the trade area, run the ads, put the reservation on your page, and follow it until it becomes a lease.
           </p>
         </div>
       </div>

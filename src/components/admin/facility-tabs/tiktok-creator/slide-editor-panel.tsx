@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Loader2, Plus, Trash2,
   Download, Hash, Type,
@@ -45,6 +46,7 @@ const HASHTAG_SETS = [
 ]
 
 export function SlideEditorPanel({
+  onPublish,
   slides,
   activeSlideIdx,
   setActiveSlideIdx,
@@ -61,6 +63,8 @@ export function SlideEditorPanel({
   exportProgress,
   exportVideo,
 }: {
+  /** Hand off to where it can actually be posted (the portal shows the next step). */
+  onPublish?: () => void
   slides: Slide[]
   activeSlideIdx: number
   setActiveSlideIdx: (idx: number) => void
@@ -77,6 +81,7 @@ export function SlideEditorPanel({
   exportProgress?: string | null
   exportVideo: () => void
 }) {
+  const [publishNote, setPublishNote] = useState(false)
   const activeSlide = slides[activeSlideIdx]
 
   return (
@@ -264,14 +269,20 @@ export function SlideEditorPanel({
         </button>
         <button
           onClick={() => {
-            const msg = `Slideshow ready! ${slides.length} slides, ${totalDuration}s total.\n\nGo to the Publish tab and select TikTok to post this content.`
-            alert(msg)
+            setPublishNote(true)
+            onPublish?.()
           }}
           disabled={slides.length === 0}
           className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--color-light-gray)] text-[var(--color-dark)] text-sm font-medium rounded-lg hover:bg-[var(--color-light-gray)] disabled:opacity-40 transition-colors border border-[var(--border-subtle)]"
         >
-          <Send size={14} /> Publish as Carousel ({slides.length} slides)
+          <Send size={14} /> Post on TikTok ({slides.length} slides)
         </button>
+        {publishNote && (
+          <div role="status" className="border-l-2 border-[var(--color-dark)] bg-[var(--bg-elevated)] p-3 text-xs font-medium text-[var(--color-dark)]">
+            The slideshow is a video: export it above, then post it from the TikTok app. A single photo post can go out
+            from Publish Ads.
+          </div>
+        )}
       </div>
     </div>
   )

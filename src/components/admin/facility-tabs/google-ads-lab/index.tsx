@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useToolFocus } from '@/components/ontology/tool-focus'
+import { useHandoff } from '@/components/flow/use-handoff'
 import { PMSContextBar, CampaignScoreCard, RevenueProjections } from './campaign-intelligence'
 import { CampaignSettingsPanel, KeywordsPanel } from './campaign-config-panel'
 
@@ -137,8 +139,12 @@ export default function GoogleAdsLab({ facilityId, adminKey }: {
 
   const suggestedBudget = pmsData?.vacantUnits ? Math.max(20, Math.round(pmsData.vacantUnits * 2)) : 30
 
+  // Opened for a unit (portal ?focus=units/…): the campaign is named for it,
+  // and the ad written next is about it.
+  const focus = useToolFocus()
+  const handoff = useHandoff()
   const [config, setConfig] = useState<CampaignConfig>({
-    name: 'Search Campaign',
+    name: focus?.type === 'units' ? `Search · ${focus.name}` : 'Search Campaign',
     dailyBudget: 30,
     bidStrategy: 'maximize_clicks',
     targetCPA: null,
@@ -197,6 +203,14 @@ export default function GoogleAdsLab({ facilityId, adminKey }: {
       if (data.keywords) {
         setKeywords(data.keywords)
         setConfig(prev => ({ ...prev, keywords: data.keywords }))
+        // The keywords are a plan; the search ad that uses them is written in
+        // Creative Studio and published from Publish Ads (created paused).
+        handoff({
+          sentence: `${data.keywords.length} keywords are ready.`,
+          reason: 'Write the search ad that uses them, then publish it. Google campaigns are created paused.',
+          label: 'Write the Google ad',
+          href: `/portal/tools?tool=creative-studio${focus?.type === 'units' ? `&focus=${focus.address}` : ''}`,
+        })
       } else if (data.error) {
         setError(data.error)
       }
@@ -206,7 +220,7 @@ export default function GoogleAdsLab({ facilityId, adminKey }: {
     } finally {
       setLoading(false)
     }
-  }, [facilityId, adminKey])
+  }, [facilityId, adminKey, focus, handoff])
 
   function toggleKeyword(keyword: KeywordIdea) {
     setConfig(prev => {

@@ -26,6 +26,30 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [goalError, setGoalError] = useState("");
+  const [address, setAddress] = useState(client.streetAddress ?? "");
+  const [addressState, setAddressState] = useState<"idle" | "saving" | "saved">("idle");
+  const [addressError, setAddressError] = useState("");
+
+  async function handleSaveAddress() {
+    setAddressState("saving");
+    setAddressError("");
+    try {
+      const res = await fetch("/api/client-data", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: session.email, accessCode: session.accessCode, streetAddress: address }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || "Unable to save. Please try again.");
+      }
+      setAddressState("saved");
+      setTimeout(() => setAddressState("idle"), 2000);
+    } catch (e) {
+      setAddressState("idle");
+      setAddressError(e instanceof Error ? e.message : "Unable to save. Please try again.");
+    }
+  }
 
   // Push notifications (client-authenticated via the portal session).
   const pushCredentials = useMemo(
@@ -133,6 +157,37 @@ export default function SettingsPage() {
                 <p className="text-sm text-[var(--color-dark)]">{client.location}</p>
               </div>
             </div>
+            <div className="flex items-start gap-3">
+              <MapPin className="mt-1 h-4 w-4 shrink-0 text-[var(--color-dark)]" />
+              <div className="min-w-0 flex-1">
+                <label htmlFor="street-address" className="text-xs font-semibold text-[var(--color-dark)]">
+                  Street address
+                </label>
+                <p className="text-xs text-[var(--color-dark)]">Your ads run within a few miles of it.</p>
+                <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    id="street-address"
+                    value={address}
+                    onChange={(e) => {
+                      setAddress(e.target.value);
+                      setAddressError("");
+                    }}
+                    autoComplete="street-address"
+                    placeholder="123 Main St, Kalamazoo, MI 49001"
+                    className="min-w-0 flex-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--color-light)] px-3 py-2 text-sm text-[var(--color-dark)] outline-none focus:border-[var(--color-dark)]/50 focus:ring-1 focus:ring-[var(--color-dark)]/25"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleSaveAddress}
+                    loading={addressState === "saving"}
+                    icon={addressState === "saved" ? <Check className="h-3.5 w-3.5" /> : undefined}
+                  >
+                    {addressState === "saving" ? "Saving..." : addressState === "saved" ? "Saved" : "Save"}
+                  </Button>
+                </div>
+                {addressError && <p className="mt-1.5 border-l-2 border-[#A12A2A] pl-2 text-xs font-semibold text-[var(--color-dark)]">{addressError}</p>}
+              </div>
+            </div>
             <div className="flex items-center gap-3">
               <Mail className="h-4 w-4 shrink-0 text-[var(--color-dark)]" />
               <div>
@@ -200,7 +255,7 @@ export default function SettingsPage() {
           <h3 className="mb-4 text-sm font-semibold text-[var(--color-dark)]">Notifications</h3>
           {!supported ? (
             <p className="text-xs text-[var(--color-mid-gray)]">
-              Push notifications aren&apos;t supported in this browser. Install the app to your home
+              Push notifications aren’t supported in this browser. Install the app to your home
               screen to enable them.
             </p>
           ) : (
