@@ -934,7 +934,7 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
 
           Each tile is a Link to /demo so a click on any module takes the
           curious user into the real thing. */}
-      <DemoPreviewStrip current={current} />
+      <DemoPreviewStrip />
 
       {/* Demo footer — small caption that turns the playback into a
           path to the full /demo page. Auto-play proves the dashboard is
@@ -1035,11 +1035,11 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
    Three parts of the system under the dashboard. No facility results.
    ═══════════════════════════════════════════ */
 
-function DemoPreviewStrip({ current }: { current: (typeof HERO_STEPS)[number] }) {
+function DemoPreviewStrip() {
   const tiles = [
     { key: "map", label: "Market", sub: "Competitors, rates, reviews", visual: "Map" },
     { key: "ads", label: "Ads and pages", sub: "Meta, Google, a page per ad", visual: "Ads" },
-    { key: "lease", label: "The move-in", sub: current.detail, visual: current.short },
+    { key: "lease", label: "The move-in", sub: "You mark it. The report shows the source.", visual: "Mark" },
   ];
 
   return (
