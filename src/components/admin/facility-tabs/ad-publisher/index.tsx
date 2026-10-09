@@ -7,6 +7,8 @@ import { useToolFocus } from "@/components/ontology/tool-focus";
 import { useFlow } from "@/components/flow/flow-context";
 import { useHandoff } from "@/components/flow/use-handoff";
 import { campaignHref } from "@/lib/flow";
+import { FocusScopeToggle } from "@/components/ontology/focus-scope";
+import { linkedIds, splitByFocus, variationText } from "@/lib/tools-track/focus-match";
 import { PlatformConnectionsSection } from "./platform-connections";
 import { PublishControls, PublishHistory } from "./publish-controls-history";
 
@@ -113,12 +115,15 @@ export default function AdPublisher({
   // Opened for an ad (portal ?focus=ads/…): it is the one selected, or, still a
   // draft, it points back to Creative Studio to be approved first.
   const focus = useToolFocus();
-  const working = useFlow()?.working ?? null;
+  const flow = useFlow();
+  const working = flow?.working ?? null;
   const handoff = useHandoff();
   const focusAd = useRef(focus?.type === "ads" ? focus.id : null);
   const [focusDraft, setFocusDraft] = useState<string | null>(null);
   // Back from connecting an ad account (?auth=success&platform=meta).
   const [connectNote, setConnectNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [scope, setScope] = useState<{ address: string | null; showAll: boolean }>({ address: null, showAll: false });
+  const showAll = scope.address === (focus?.address ?? null) && scope.showAll;
 
   useEffect(() => {
     // Connect links come back here, not to the homepage. The outcome params are
@@ -310,6 +315,15 @@ export default function AdPublisher({
   const connectedPlatforms = connections.filter(
     (c) => c.status === "connected"
   );
+  const scoped = focus?.type === "units" || focus?.type === "ads" || focus?.type === "campaigns";
+  const { named } = splitByFocus(
+    scoped ? focus : null,
+    variations,
+    (v) => variationText(v.content_json),
+    (v) => v.id,
+    focus ? linkedIds(flow?.ontology, focus.address, "ads") : new Set(),
+  );
+  const adChoices = scoped && !showAll ? named : variations;
 
   return (
     <div className="space-y-6">
@@ -352,10 +366,20 @@ export default function AdPublisher({
         saveWriteBackSettings={saveWriteBackSettings}
       />
 
+      {scoped && focus && (
+        <FocusScopeToggle
+          name={focus.name}
+          named={named.length}
+          total={variations.length}
+          showAll={showAll}
+          onToggle={() => setScope({ address: focus.address, showAll: !showAll })}
+        />
+      )}
+
       {/* Publish Controls */}
-      {connectedPlatforms.length > 0 && variations.length > 0 && (
+      {connectedPlatforms.length > 0 && adChoices.length > 0 && (
         <PublishControls
-          variations={variations}
+          variations={adChoices}
           connectedPlatforms={connectedPlatforms}
           assets={assets}
           selectedVariation={selectedVariation}

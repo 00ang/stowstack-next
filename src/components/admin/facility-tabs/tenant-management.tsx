@@ -21,6 +21,9 @@ import {
   Target,
 } from "lucide-react";
 import { useAdminFetch, adminFetch } from "@/hooks/use-admin-fetch";
+import { useToolFocus } from "@/components/ontology/tool-focus";
+import { FocusScopeToggle } from "@/components/ontology/focus-scope";
+import { textNamesFocus } from "@/lib/tools-track/focus-match";
 import type {
   Tenant,
   TenantStats,
@@ -56,6 +59,10 @@ export default function TenantManagement({ facilityId, adminKey: _adminKey }: Pr
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const focus = useToolFocus();
+  const unitFocus = focus?.type === "units" ? focus : null;
+  const [scope, setScope] = useState<{ address: string | null; showAll: boolean }>({ address: null, showAll: false });
+  const showAll = scope.address === (focus?.address ?? null) && scope.showAll;
 
   const pageSize = 25;
 
@@ -102,6 +109,10 @@ export default function TenantManagement({ facilityId, adminKey: _adminKey }: Pr
       );
     }
 
+    if (unitFocus && !showAll) {
+      result = result.filter((t) => textNamesFocus(unitFocus, `${t.unit_size ?? ""} ${t.unit_type ?? ""} ${t.unit_number}`));
+    }
+
     result.sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
@@ -116,7 +127,7 @@ export default function TenantManagement({ facilityId, adminKey: _adminKey }: Pr
     });
 
     return result;
-  }, [tenants, statusFilter, searchQuery, sortField, sortDir]);
+  }, [tenants, statusFilter, searchQuery, sortField, sortDir, unitFocus, showAll]);
 
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -323,6 +334,16 @@ export default function TenantManagement({ facilityId, adminKey: _adminKey }: Pr
           <Upload className="h-3.5 w-3.5" /> Import CSV
         </button>
       </div>
+
+      {unitFocus && (
+        <FocusScopeToggle
+          name={unitFocus.name}
+          named={tenants.filter((t) => textNamesFocus(unitFocus, `${t.unit_size ?? ""} ${t.unit_type ?? ""} ${t.unit_number}`)).length}
+          total={tenants.length}
+          showAll={showAll}
+          onToggle={() => setScope({ address: unitFocus.address, showAll: !showAll })}
+        />
+      )}
 
       <div className="flex items-center justify-between text-xs text-[var(--color-mid-gray)]">
         <span>{filtered.length} tenant{filtered.length !== 1 ? "s" : ""} found</span>

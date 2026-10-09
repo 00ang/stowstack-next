@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Loader2, Sparkles, X } from "lucide-react";
 import { useCreativeStudio } from "./creative-studio/use-creative-studio";
 import { GenerationPanel } from "./creative-studio/generation-panel";
@@ -9,6 +10,9 @@ import { PLATFORM_ICONS, PLATFORM_LABELS, type AdVariation } from "./creative-st
 import { useFlow } from "@/components/flow/flow-context";
 import { useHandoff } from "@/components/flow/use-handoff";
 import { campaignHref } from "@/lib/flow";
+import { useToolFocus } from "@/components/ontology/tool-focus";
+import { FocusScopeToggle } from "@/components/ontology/focus-scope";
+import { linkedIds, splitByFocus, variationText } from "@/lib/tools-track/focus-match";
 
 export default function CreativeStudio({
   facilityId,
@@ -37,8 +41,12 @@ export default function CreativeStudio({
     approved,
     total,
   } = useCreativeStudio(facilityId, adminKey);
-  const working = useFlow()?.working ?? null;
+  const flow = useFlow();
+  const working = flow?.working ?? null;
   const handoff = useHandoff();
+  const focus = useToolFocus();
+  const [scope, setScope] = useState<{ address: string | null; showAll: boolean }>({ address: null, showAll: false });
+  const showAll = scope.address === (focus?.address ?? null) && scope.showAll;
 
   // An approved ad hands off: back to the campaign it was written for, or on
   // to the Ad Generator to put an image on it before it is published.
@@ -62,6 +70,15 @@ export default function CreativeStudio({
     );
   };
 
+  const { named } = splitByFocus(
+    focus,
+    filtered,
+    (v) => variationText(v.content_json),
+    (v) => v.id,
+    focus ? linkedIds(flow?.ontology, focus.address, "ads") : new Set(),
+  );
+  const visible = focus && !showAll ? named : filtered;
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -84,11 +101,23 @@ export default function CreativeStudio({
       {/* Header */}
       <div>
         <h3 className="font-semibold text-[var(--color-dark)]">Creative Studio</h3>
-        {total > 0 && (
-          <p className="text-sm text-[var(--color-mid-gray)] mt-1">
-            {approved}/{total} approved across {platforms.length} platform
-            {platforms.length !== 1 ? "s" : ""}
-          </p>
+        {focus ? (
+          <div className="mt-2">
+            <FocusScopeToggle
+              name={focus.name}
+              named={named.length}
+              total={filtered.length}
+              showAll={showAll}
+              onToggle={() => setScope({ address: focus.address, showAll: !showAll })}
+            />
+          </div>
+        ) : (
+          total > 0 && (
+            <p className="text-sm text-[var(--color-mid-gray)] mt-1">
+              {approved}/{total} approved across {platforms.length} platform
+              {platforms.length !== 1 ? "s" : ""}
+            </p>
+          )
         )}
       </div>
 
@@ -122,14 +151,14 @@ export default function CreativeStudio({
         </div>
       )}
 
-      {/* Variation cards grouped by version */}
-      {filtered.length > 0 &&
+      {/* Variation cards grouped by version. Focused: only what names that object, until Show all. */}
+      {visible.length > 0 &&
         (() => {
           const versions = [
-            ...new Set(filtered.map((v) => v.version)),
+            ...new Set(visible.map((v) => v.version)),
           ].sort((a, b) => b - a);
           return versions.map((ver) => {
-            const batch = filtered.filter((v) => v.version === ver);
+            const batch = visible.filter((v) => v.version === ver);
             const batchPlatforms = [...new Set(batch.map((v) => v.platform))];
 
             return (

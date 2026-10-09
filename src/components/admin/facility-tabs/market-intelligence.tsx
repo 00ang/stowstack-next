@@ -5,6 +5,8 @@ import { useToolFocus } from '@/components/ontology/tool-focus'
 import { useFlow } from '@/components/flow/flow-context'
 import { ActionFill } from '@/components/ontology/action-fill'
 import { actionHref } from '@/lib/ontology/href'
+import { FocusScopeToggle } from '@/components/ontology/focus-scope'
+import { textNamesFocus } from '@/lib/tools-track/focus-match'
 import {
   Loader2, Star, MapPin, ExternalLink, Users, DollarSign,
   Calendar, Save, Shield, Heart, TrendingUp, ScanSearch,
@@ -111,6 +113,7 @@ export default function MarketIntelligence({ facilityId, adminKey }: {
   const [savingNotes, setSavingNotes] = useState(false)
   const [notesSaved, setNotesSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [scope, setScope] = useState<{ address: string | null; showAll: boolean }>({ address: null, showAll: false })
   // Opened for one competitor (portal ?focus=competitors/…). Hooks stay above
   // the early returns below.
   const focus = useToolFocus()
@@ -186,9 +189,17 @@ export default function MarketIntelligence({ facilityId, adminKey }: {
   // Opened for one competitor (portal ?focus=competitors/…): it leads the list,
   // marked, with what to do about it.
   const focusName = focus?.type === 'competitors' ? focus.name : null
-  const competitors = [...(intel?.competitors || [])].sort((a, b) =>
-    a.name === focusName ? -1 : b.name === focusName ? 1 : 0
-  )
+  const unitFocus = focus?.type === 'units' ? focus : null
+  const showAll = scope.address === (focus?.address ?? null) && scope.showAll
+  const listsUnit = (c: Competitor) =>
+    !!unitFocus && textNamesFocus(unitFocus, (c.units ?? []).map((u) => `${u.size} ${u.type ?? ''}`).join(' '))
+  const competitors = [...(intel?.competitors || [])].sort((a, b) => {
+    if (a.name === focusName) return -1
+    if (b.name === focusName) return 1
+    if (unitFocus) return Number(listsUnit(b)) - Number(listsUnit(a))
+    return 0
+  })
+  const shownCompetitors = unitFocus && !showAll ? competitors.filter(listsUnit) : competitors
   // The answers: an ad for the size they undercut, and the running offer on Google.
   const answers = (() => {
     if (!focus || !focusName) return []
@@ -291,9 +302,9 @@ export default function MarketIntelligence({ facilityId, adminKey }: {
               <h5 className="text-xs font-semibold uppercase tracking-wide text-[var(--color-mid-gray)]">
                 Competitive Landscape
               </h5>
-              {competitors.length > 0 && (
+              {shownCompetitors.length > 0 && (
                 <span className="text-xs text-[var(--color-mid-gray)]">
-                  {competitors.length} competitor{competitors.length !== 1 ? 's' : ''} within 15 miles
+                  {shownCompetitors.length} competitor{shownCompetitors.length !== 1 ? 's' : ''} within 15 miles
                   {avgRating > 0 ? `, avg rating ${avgRating}` : ''}
                   {avgRating > 0 && <Star size={10} className="inline ml-0.5 text-[var(--color-dark)]" fill="currentColor" />}
                 </span>
@@ -314,11 +325,22 @@ export default function MarketIntelligence({ facilityId, adminKey }: {
                 )}
               </div>
             )}
-            {competitors.length === 0 ? (
+            {unitFocus && (
+              <div className="mb-3">
+                <FocusScopeToggle
+                  name={unitFocus.name}
+                  named={competitors.filter(listsUnit).length}
+                  total={competitors.length}
+                  showAll={showAll}
+                  onToggle={() => setScope({ address: unitFocus.address, showAll: !showAll })}
+                />
+              </div>
+            )}
+            {shownCompetitors.length === 0 && !(unitFocus && !showAll) ? (
               <p className="text-sm text-[var(--color-body-text)]">No competitors found nearby.</p>
-            ) : (
+            ) : shownCompetitors.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {competitors.map((c, i) => (
+                {shownCompetitors.map((c, i) => (
                   <div
                     key={i}
                     className={`p-3 rounded-lg bg-[var(--color-light-gray)] ${c.name === focusName ? 'border-l-[3px] border-l-[var(--ic-selected)]' : ''}`}
@@ -355,7 +377,7 @@ export default function MarketIntelligence({ facilityId, adminKey }: {
                           Pricing ({c.units.length} unit{c.units.length !== 1 ? 's' : ''})
                         </p>
                         <div className="flex flex-wrap gap-1">
-                          {c.units.slice(0, 4).map((u, ui) => (
+                          {(unitFocus && !showAll ? c.units.filter((u) => textNamesFocus(unitFocus, `${u.size} ${u.type ?? ''}`)) : c.units).slice(0, 4).map((u, ui) => (
                             <span key={ui} className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-light)] text-[var(--color-body-text)]">
                               {u.size}{u.price ? ` — ${u.price}/mo` : ''}
                             </span>
@@ -380,7 +402,7 @@ export default function MarketIntelligence({ facilityId, adminKey }: {
                   </div>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Demand Drivers Section */}
