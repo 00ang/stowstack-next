@@ -22,23 +22,5 @@ export interface CaseStudy {
   tags: string[];
 }
 
-export const CASE_STUDIES: CaseStudy[] = [
-  {
-    slug: 'climate-controlled-independent',
-    facilityName: 'Climate-Controlled Independent',
-    location: 'Rural trade area',
-    unitCount: 340,
-    challenge: 'Occupancy stuck at 74% despite being the only climate-controlled facility in the area. Previous agency was reporting clicks, not move-ins.',
-    solution: 'Launched targeted Meta campaigns with ad-specific landing pages and storEDGE embed. Full attribution from click to signed lease.',
-    heroMetric: { label: 'Cost per move-in', value: '$14.20' },
-    metrics: [
-      { label: 'Occupancy', before: '74%', after: '91%', change: '+17%', isPositive: true },
-      { label: 'Cost per move-in', before: '$89', after: '$14.20', change: '-84%', isPositive: true },
-      { label: 'Monthly move-ins', before: '8', after: '34', change: '+325%', isPositive: true },
-      { label: 'Monthly ad spend', before: '$2,400', after: '$1,500', change: '-38%', isPositive: true },
-    ],
-    quote: { text: "For the first time, I can see exactly which ads produce move-ins. Not clicks, not leads. Actual signed leases.", author: 'Operator', role: '340-unit independent facility' },
-    timelineWeeks: 6,
-    tags: ['climate-controlled', 'meta-ads', 'rural-market'],
-  },
-];
+// No published client results. Do not add a study until the founders have verified it.
+export const CASE_STUDIES: CaseStudy[] = [];

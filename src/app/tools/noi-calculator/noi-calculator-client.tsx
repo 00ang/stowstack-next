@@ -525,7 +525,7 @@ export default function NoiCalculatorClient() {
           <div className="mt-12">
             <ToolCta
               heading="A sign on a chainlink fence is not an acquisition strategy"
-              body="NOI grows when units fill and rates hold. StorageAds runs the ads, builds the landing pages, and proves which campaigns moved the line. Built for storage operators, not adapted from another industry."
+              body="NOI grows when units fill and rates hold. StorageAds runs the ads and builds the landing pages. Built for storage operators, not adapted from another industry."
             />
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "StorageAds. Marketing that proves which ads fill units";
+export const alt = "StorageAds. Ads, pages, and reservations that become move-ins";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -57,7 +57,7 @@ export default function OGImage() {
               letterSpacing: "-0.5px",
             }}
           >
-            Marketing that proves which ads fill units
+            Ads, pages, and reservations that become move-ins
           </div>
         </div>
 

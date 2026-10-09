@@ -33,9 +33,8 @@ const PROBLEMS: Problem[] = [
   },
   {
     heading: "The economics still work at independent scale.",
-    body: "A storage tenant is worth $1,820 over an average 14-month stay at $130 a month. Landing that tenant on the StorageAds system costs $41. That's 44-to-1 on every extra move-in, the same math the REITs run on. It works the same for 150 units as it does for 15,000.",
-    highlight: "44-to-1",
-    cite: [3],
+    body: "A tenant pays rent for the length of the stay. The same system that fills a REIT fills a 150-unit yard: ads in the trade area, a page for each one, and a reservation that can become a lease.",
+    highlight: "a 150-unit yard",
   },
 ];
 

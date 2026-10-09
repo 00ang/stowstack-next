@@ -13,7 +13,6 @@ import {
   Target,
   TrendingUp,
   Zap,
-  MousePointerClick,
   Eye,
   DollarSign,
   Sparkles,
@@ -44,25 +43,6 @@ const CALCOM_URL = CAL_BOOKING_URL;
 /* ═══════════════════════════════════════════
    HOOKS
    ═══════════════════════════════════════════ */
-
-function useCountUp(target: number, duration = 2000, decimals = 0, active = false) {
-  const [value, setValue] = useState(0);
-  const rafRef = useRef<number>(0);
-  useEffect(() => {
-    if (!active) return;
-    const start = performance.now();
-    function tick(now: number) {
-      const elapsed = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - (1 - progress) * (1 - progress);
-      setValue(parseFloat((eased * target).toFixed(decimals)));
-      if (progress < 1) rafRef.current = requestAnimationFrame(tick);
-    }
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [active, target, duration, decimals]);
-  return value;
-}
 
 // Animates 0 → target on first reveal; subsequent target updates snap into
 // place without re-animating. Honors prefers-reduced-motion by snapping
@@ -175,45 +155,6 @@ function useMouseTilt(enabled: boolean) {
   return { ref, tilt };
 }
 
-// Smoothly interpolates between value transitions. Re-targeting mid-tween
-// picks up from the current displayed value (held in a ref so the effect
-// stays target-driven and we don't infinite-loop on the value dep). Honors
-// prefers-reduced-motion by bypassing the tween and returning `target`
-// directly — no setState-in-effect required for the reduced path.
-function useTweenedNumber(target: number, durationMs = 700) {
-  const [value, setValue] = useState(target);
-  const valueRef = useRef(target);
-  const rafRef = useRef<number>(0);
-  const reduced = useReducedMotion();
-  useEffect(() => {
-    if (reduced) {
-      // Make sure no in-flight animation overrides the snap-to value.
-      cancelAnimationFrame(rafRef.current);
-      valueRef.current = target;
-      return;
-    }
-    const from = valueRef.current;
-    if (from === target) return;
-    const start = performance.now();
-    cancelAnimationFrame(rafRef.current);
-    function tick(now: number) {
-      const elapsed = now - start;
-      const p = Math.min(elapsed / durationMs, 1);
-      // easeOutCubic — fast start, gentle finish
-      const eased = 1 - Math.pow(1 - p, 3);
-      const next = from + (target - from) * eased;
-      valueRef.current = next;
-      setValue(next);
-      if (p < 1) rafRef.current = requestAnimationFrame(tick);
-    }
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [target, durationMs, reduced]);
-  // Reduced-motion users skip the tween entirely; they get the latest target
-  // at every render. Keeps the snap synchronous without setState-in-effect.
-  return reduced ? target : value;
-}
-
 // Live boolean for whether the ref is currently in the viewport. Unlike
 // useInView (one-shot, sticks at true), this flips back to false when the
 // element scrolls out — used to pause demo playback when off-screen so we
@@ -252,10 +193,10 @@ function useStaggeredReveal(count: number, active: boolean, baseDelay = 0, stagg
    ═══════════════════════════════════════════ */
 
 const STATS = [
-  { value: 34, prefix: "", suffix: "", label: "Move-ins, 90 days", decimals: 0, icon: TrendingUp },
-  { value: 84, prefix: "", suffix: "%", label: "Occupancy, one quarter", decimals: 0, icon: DollarSign },
-  { value: 8.7, prefix: "", suffix: "%", label: "Page conversion rate", decimals: 1, icon: MousePointerClick },
-  { value: 35, prefix: "", suffix: "x", label: "Return on ad spend", decimals: 0, icon: BarChart3 },
+  { text: "Map", label: "Competitors, rates, and reviews", icon: Search },
+  { text: "Ads", label: "Meta and Google, in the trade area", icon: Megaphone },
+  { text: "Page", label: "One page per ad, storEDGE on it", icon: FileText },
+  { text: "Lease", label: "Follow-up from reservation to move-in", icon: Target },
 ];
 
 // Ordered to mirror the funnel: see the field, run ads, convert,
@@ -284,8 +225,8 @@ const PIPELINE_STEPS = [
 // (create / capture / recapture, REIT-grade tools, reach 100%). Keeps the
 // hook from reading as a single dimension. Leads with the hardest number.
 const TYPEWRITER_WORDS = [
-  "34 move-ins in 90 days.",
-  "71% to 84% occupancy in one quarter.",
+  "Ads, a page, a reservation, a lease.",
+  "Map the trade area before you spend.",
   "Create demand. Capture demand. Recapture demand.",
   "REIT-grade tools to reach 100% occupancy.",
   "Stop leaking $72,000 a year to the REIT down the road.",
@@ -476,7 +417,6 @@ export function PipelineFlow({ isVisible }: { isVisible: boolean }) {
    ═══════════════════════════════════════════ */
 
 function StatItem({ stat, active, delay }: { stat: (typeof STATS)[0]; active: boolean; delay: number }) {
-  const count = useCountUp(stat.value, 2200, stat.decimals, active);
   const Icon = stat.icon;
   return (
     <div
@@ -488,7 +428,7 @@ function StatItem({ stat, active, delay }: { stat: (typeof STATS)[0]; active: bo
       </div>
       <div>
         <div className="font-semibold leading-none" style={{ fontFamily: "var(--serif)", fontSize: "clamp(1.5rem, 3vw, 2rem)", letterSpacing: "-0.03em", color: "var(--color-dark)" }}>
-          {stat.prefix}{stat.decimals > 0 ? count.toFixed(stat.decimals) : Math.round(count)}{stat.suffix}
+          {stat.text}
         </div>
         <div className="text-xs mt-0.5" style={{ color: "var(--text-secondary)", fontFamily: "var(--font-body)" }}>{stat.label}</div>
       </div>
@@ -500,45 +440,22 @@ function StatItem({ stat, active, delay }: { stat: (typeof STATS)[0]; active: bo
    DASHBOARD MOCKUP
    ═══════════════════════════════════════════ */
 
-// Demo data — designed to match the public stats on the rest of the site so
-// the numbers reconcile between hero, ROI, and funnel sections.
-const DASHBOARD_ROWS = [
-  { campaign: "10x10 Climate", channel: "Meta", spend: 847, clicks: 312, reservations: 14, moveIns: 9, cpm: 94, trend: "down" as const },
-  { campaign: "Drive-up Units", channel: "Google", spend: 612, clicks: 198, reservations: 11, moveIns: 7, cpm: 87, trend: "down" as const },
-  { campaign: "Boat / RV Storage", channel: "Meta", spend: 423, clicks: 156, reservations: 6, moveIns: 4, cpm: 106, trend: "flat" as const },
-  { campaign: "Climate Retargeting", channel: "Meta", spend: 298, clicks: 89, reservations: 5, moveIns: 4, cpm: 74, trend: "down" as const },
+// What a campaign is made of. No facility results: those are not verified.
+const PATH_ROWS = [
+  { campaign: "10x10 climate", channel: "Meta", step: "Its own page" },
+  { campaign: "Drive-up units", channel: "Google", step: "Its own page" },
+  { campaign: "Boat and RV", channel: "Meta", step: "Its own page" },
+  { campaign: "People who left", channel: "Retargeting", step: "Bring them back" },
 ];
 
-// 6-month campaign progression — mirrors /demo data so the hero dashboard
-// can scrub through the same story the full demo tells. Compounds month over
-// month: spend climbs slowly, CPM drops as the system learns.
-const HERO_DEMO_MONTHS = [
-  { label: "Oct 2025", short: "Oct", spend: 1800, leads: 42, moveIns: 8,  cpm: 225, occupancy: 68, rowScale: 0.62, trend: "flat" as const, topAudience: "Lookalike 1%", topCreative: "Your Stuff Deserves Better" },
-  { label: "Nov 2025", short: "Nov", spend: 2100, leads: 58, moveIns: 12, cpm: 175, occupancy: 73, rowScale: 0.74, trend: "down" as const, topAudience: "Recently Moved", topCreative: "Unit Size Guide" },
-  { label: "Dec 2025", short: "Dec", spend: 2100, leads: 51, moveIns: 10, cpm: 210, occupancy: 76, rowScale: 0.81, trend: "flat" as const, topAudience: "14-Day Retarget", topCreative: "Holiday Declutter" },
-  { label: "Jan 2026", short: "Jan", spend: 2400, leads: 67, moveIns: 15, cpm: 160, occupancy: 80, rowScale: 0.90, trend: "down" as const, topAudience: "Phone Call LAL", topCreative: "$1 First Month" },
-  { label: "Feb 2026", short: "Feb", spend: 2400, leads: 74, moveIns: 18, cpm: 133, occupancy: 85, rowScale: 0.96, trend: "down" as const, topAudience: "Life Event", topCreative: "Move-In in 10 Minutes" },
-  { label: "Mar 2026", short: "Mar", spend: 2800, leads: 89, moveIns: 22, cpm: 127, occupancy: 89, rowScale: 1.00, trend: "down" as const, topAudience: "Broad + Advantage+", topCreative: "Customer Testimonial Reel" },
+const HERO_STEPS = [
+  { label: "Map the trade area", short: "Map", title: "See the field", detail: "Competitors, rates, reviews" },
+  { label: "Run the ads", short: "Ads", title: "Meta and Google", detail: "In the trade area" },
+  { label: "Build the page", short: "Page", title: "A page for the ad", detail: "The offer that ad promised" },
+  { label: "Take the reservation", short: "Reserve", title: "They book on your page", detail: "storEDGE, under your name" },
+  { label: "Follow up", short: "Follow", title: "Chase the reservation", detail: "Until it becomes a lease" },
+  { label: "Mark the move-in", short: "Report", title: "You mark the move-in", detail: "Then you see where they came from" },
 ];
-const HERO_DEMO_STARTING_OCCUPANCY = 64;
-
-// Mini lead feed for the "Lead activity" preview tile. We surface a sliding
-// window of two leads based on the active month, so as playback advances
-// the most-recent leads cycle. Names + units + sources are static; the
-// recency tag and ordering shift.
-const HERO_DEMO_LEADS = [
-  { name: "Sarah M.",   unit: "10x10 Standard", status: "moved_in" as const },
-  { name: "David K.",   unit: "10x15 Drive-up", status: "tour"     as const },
-  { name: "Jennifer L.",unit: "5x10 Climate",   status: "moved_in" as const },
-  { name: "Mike R.",    unit: "10x20 Drive-up", status: "new"      as const },
-  { name: "Amanda T.",  unit: "10x10 Standard", status: "moved_in" as const },
-  { name: "Chris B.",   unit: "10x30 Vehicle",  status: "new"      as const },
-];
-const HERO_DEMO_LEAD_STATUS: Record<string, { label: string; color: string }> = {
-  new:      { label: "New",      color: "var(--color-blue)" },
-  tour:     { label: "Tour",     color: "#8a70b0" },
-  moved_in: { label: "Move-in",  color: "var(--color-green)" },
-};
 
 const CHANNEL_DOT: Record<string, string> = {
   Meta: "var(--color-dark)",
@@ -546,16 +463,11 @@ const CHANNEL_DOT: Record<string, string> = {
   Retargeting: "var(--color-green)",
 };
 
-// Sparkline path for the avg cost-per-move-in trend (12 points). In SVG
-// y=0 is top, so a descending line starts at a small y and ends at a
-// large y — i.e. cost was higher 30 days ago and is lower now.
-const SPARKLINE_PATH = "M0 4 C8 5, 16 6, 24 8 S40 11, 48 13 S64 15, 72 16 S88 17, 96 18";
-
 // Playback cadence constants — pulled out so the demo's rhythm is easy
 // to tune in one place rather than hunting through JSX.
 const HERO_DEMO_TICK_MS = 1400;
 const HERO_DEMO_AUTOSTART_DELAY_MS = 1100;
-const HERO_DEMO_LAST_INDEX = HERO_DEMO_MONTHS.length - 1;
+const HERO_DEMO_LAST_INDEX = HERO_STEPS.length - 1;
 
 export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
   const { ref: tiltRef, tilt } = useMouseTilt(isVisible);
@@ -564,13 +476,7 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
   // can see, and users returning to the page get a fresh start.
   const { ref: presenceRef, present } = useLiveInViewport<HTMLDivElement>(0.2);
 
-  // Interactive 6-month playback. Mirrors the /demo page's scrubber so the
-  // hero proves the product is real — you can press play and watch the
-  // metrics compound in front of you.
-  //
-  // Initial state is the FINAL month: SSR / no-JS / reduced-motion users see
-  // the best numbers up front, the same way a typical SaaS hero shows its
-  // strongest metric. Auto-play rewinds to month 0 and walks forward.
+  // Walks the path a campaign takes. No results, no facility numbers.
   const [activeMonth, setActiveMonth] = useState(HERO_DEMO_LAST_INDEX);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
@@ -608,21 +514,8 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
     return () => clearInterval(tick);
   }, [shouldPlay]);
 
-  const current = HERO_DEMO_MONTHS[activeMonth];
-  const cumulative = HERO_DEMO_MONTHS.slice(0, activeMonth + 1);
-  const totalSpend = cumulative.reduce((s, m) => s + m.spend, 0);
-  const totalMoveIns = cumulative.reduce((s, m) => s + m.moveIns, 0);
-  const avgCpm = current.cpm;
+  const current = HERO_STEPS[activeMonth];
   const isAtEnd = activeMonth >= HERO_DEMO_LAST_INDEX;
-
-  // Tweened display values — animate smoothly between months so the
-  // dashboard reads as a live system, not a snapping mock.
-  const tSpend = useTweenedNumber(totalSpend);
-  const tMoveIns = useTweenedNumber(totalMoveIns);
-  const tCpm = useTweenedNumber(avgCpm);
-  const tCpmDelta = useTweenedNumber(
-    activeMonth > 0 ? HERO_DEMO_MONTHS[0].cpm - avgCpm : 0,
-  );
 
   function handleTogglePlay() {
     setHasUserInteracted(true);
@@ -683,7 +576,7 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
         transform: isVisible ? "translateY(0)" : "translateY(4px)",
       }}
       role="region"
-      aria-label="Interactive 6-month campaign demo for a sample storage facility"
+      aria-label="How a StorageAds campaign runs, from the trade area to a move-in"
     >
       {/* Neutral glow — replaces the old gold halo */}
       <div
@@ -767,40 +660,14 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
                     className="text-[13px] sm:text-sm font-semibold"
                     style={{ color: "var(--color-dark)", fontFamily: "var(--font-heading)" }}
                   >
-                    Campaign performance
+                    How a campaign runs
                   </h3>
-                  <p className="text-[10px] sm:text-[11px] mt-0.5 tabular-nums" style={{ color: "var(--text-tertiary)" }}>
-                    {current.label} · Month {activeMonth + 1} of {HERO_DEMO_MONTHS.length}
+                  <p className="text-[10px] sm:text-[11px] mt-0.5" style={{ color: "var(--text-tertiary)" }}>
+                    {current.label} · Step {activeMonth + 1} of {HERO_STEPS.length}
                   </p>
                 </div>
-                {/* Sparkline — progressively draws as months play. The
-                    path's total length is ~140; we mask it with a dash
-                    offset proportional to (1 - activeMonth/last) so each
-                    tick extends the line a bit further. */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] uppercase tracking-wide" style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-heading)" }}>
-                    Cost / move-in
-                  </span>
-                  <svg width="96" height="22" viewBox="0 0 96 22" fill="none" aria-hidden="true">
-                    <path
-                      d={SPARKLINE_PATH}
-                      stroke="var(--color-green)"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      fill="none"
-                      style={{
-                        strokeDasharray: 140,
-                        strokeDashoffset: isVisible
-                          ? 140 -
-                            140 *
-                              ((activeMonth + 1) / HERO_DEMO_MONTHS.length)
-                          : 140,
-                        transition:
-                          "stroke-dashoffset 700ms cubic-bezier(0.16,1,0.3,1)",
-                      }}
-                    />
-                  </svg>
+                <div className="text-[10px] sm:text-[11px] font-semibold text-right" style={{ color: "var(--color-dark)", fontFamily: "var(--font-heading)" }}>
+                  {current.title}
                 </div>
               </div>
 
@@ -848,7 +715,7 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
                   className="flex-1 flex items-center gap-1"
                   role="presentation"
                 >
-                  {HERO_DEMO_MONTHS.map((m, i) => {
+                  {HERO_STEPS.map((m, i) => {
                     const isActive = i === activeMonth;
                     const isReached = i <= activeMonth;
                     return (
@@ -907,45 +774,26 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
                 </span>
               </div>
 
-              {/* Stat strip — values drive off the active month and animate
-                  smoothly between them via useTweenedNumber so the whole
-                  panel reads as a live system, not a static mock.
-
-                  aria-live="polite" lets screen reader users hear updates
-                  without interrupting their flow. Numbers are rounded for
-                  display because mid-tween fractional dollars would be
-                  noisy ("$1,847.32 → $1,847.65"). */}
               <div
                 className="grid grid-cols-3 gap-2 px-4 sm:px-5 mt-2"
                 role="group"
-                aria-label={`Campaign totals through ${current.label}`}
+                aria-label={current.title}
                 aria-live="polite"
                 aria-atomic="false"
               >
                 {[
                   {
-                    label: "Total spend",
-                    value: `$${Math.round(tSpend).toLocaleString()}`,
-                    delta: `Through ${current.short}`,
+                    label: activeMonth === 0 ? "Start" : "Before",
+                    value: HERO_STEPS[Math.max(0, activeMonth - 1)].short,
+                    delta: HERO_STEPS[Math.max(0, activeMonth - 1)].title,
                     deltaColor: "var(--text-tertiary)",
                   },
+                  { label: "Now", value: current.short, delta: current.detail, deltaColor: "var(--text-tertiary)" },
                   {
-                    label: "Move-ins",
-                    value: `${Math.round(tMoveIns)}`,
-                    delta: `+${current.moveIns} this month`,
-                    deltaColor: "var(--color-green)",
-                  },
-                  {
-                    label: "Avg cost / move-in",
-                    value: `$${Math.round(tCpm)}`,
-                    delta:
-                      activeMonth > 0
-                        ? `−$${Math.round(tCpmDelta)} vs Oct`
-                        : "Starting point",
-                    deltaColor:
-                      activeMonth > 0
-                        ? "var(--color-green)"
-                        : "var(--text-tertiary)",
+                    label: isAtEnd ? "End" : "Then",
+                    value: HERO_STEPS[Math.min(HERO_DEMO_LAST_INDEX, activeMonth + 1)].short,
+                    delta: HERO_STEPS[Math.min(HERO_DEMO_LAST_INDEX, activeMonth + 1)].title,
+                    deltaColor: "var(--text-tertiary)",
                   },
                 ].map((s, i) => (
                   <div
@@ -1010,12 +858,11 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
                   <div className="overflow-x-auto">
                   <table className="w-full text-left min-w-[360px] sm:min-w-0" style={{ borderCollapse: "collapse" }}>
                     <caption className="sr-only">
-                      Campaign performance for {current.label}, month{" "}
-                      {activeMonth + 1} of {HERO_DEMO_MONTHS.length}
+                      What a campaign is made of. Step {activeMonth + 1} of {HERO_STEPS.length}: {current.label}.
                     </caption>
                     <thead>
                       <tr style={{ background: "var(--color-light-gray)" }}>
-                        {["Campaign", "Spend", "Clicks", "Res.", "Move-ins", "Cost / MI"].map((h, i) => (
+                        {["Campaign", "Channel", "Page"].map((h, i) => (
                           <th
                             key={h}
                             scope="col"
@@ -1028,30 +875,7 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {DASHBOARD_ROWS.map((row, i) => {
-                        // DASHBOARD_ROWS represent the final-month state.
-                        // Scale volume by rowScale and CPM inversely by the
-                        // ratio of current vs. final-month CPM so earlier
-                        // months show higher CPMs and lower volume.
-                        const scale = current.rowScale;
-                        const cpmMul =
-                          current.cpm /
-                          HERO_DEMO_MONTHS[HERO_DEMO_MONTHS.length - 1].cpm;
-                        const dynSpend = Math.round(row.spend * scale);
-                        const dynClicks = Math.round(row.clicks * scale);
-                        const dynRes = Math.max(
-                          1,
-                          Math.round(row.reservations * scale),
-                        );
-                        const dynMoveIns = Math.max(
-                          1,
-                          Math.round(row.moveIns * scale),
-                        );
-                        const dynCpm = Math.round(row.cpm * cpmMul);
-                        // No prior month → no trend; otherwise inherit the
-                        // baked-in improving story.
-                        const dynTrend = activeMonth === 0 ? "flat" : row.trend;
-                        return (
+                      {PATH_ROWS.map((row, i) => (
                           <tr
                             key={row.campaign}
                             style={{
@@ -1069,80 +893,29 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
                               className="px-2 sm:px-3 py-2 text-[10px] sm:text-[11px]"
                               style={{ color: "var(--color-dark)" }}
                             >
-                              <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-medium truncate">{row.campaign}</span>
+                            </td>
+                            <td
+                              className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-[11px]"
+                              style={{ color: "var(--text-secondary)" }}
+                            >
+                              <span className="inline-flex items-center justify-end gap-1.5">
                                 <span
                                   className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                                  style={{
-                                    background:
-                                      CHANNEL_DOT[row.channel] ||
-                                      "var(--color-dark)",
-                                  }}
-                                  aria-label={`${row.channel} channel`}
+                                  style={{ background: CHANNEL_DOT[row.channel] || "var(--color-dark)" }}
+                                  aria-hidden="true"
                                 />
-                                <span className="font-medium truncate">
-                                  {row.campaign}
-                                </span>
-                              </div>
-                            </td>
-                            <td
-                              className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-[11px] tabular-nums transition-colors duration-500"
-                              style={{ color: "var(--text-secondary)" }}
-                            >
-                              ${dynSpend.toLocaleString()}
-                            </td>
-                            <td
-                              className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-[11px] tabular-nums transition-colors duration-500"
-                              style={{ color: "var(--text-secondary)" }}
-                            >
-                              {dynClicks}
-                            </td>
-                            <td
-                              className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-[11px] tabular-nums transition-colors duration-500"
-                              style={{ color: "var(--text-secondary)" }}
-                            >
-                              {dynRes}
-                            </td>
-                            <td
-                              className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-[11px] tabular-nums font-medium transition-colors duration-500"
-                              style={{ color: "var(--color-dark)" }}
-                            >
-                              {dynMoveIns}
-                            </td>
-                            <td
-                              className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-[11px] tabular-nums"
-                              style={{ color: "var(--color-dark)" }}
-                            >
-                              <span className="inline-flex items-center gap-1">
-                                <span className="font-semibold">${dynCpm}</span>
-                                {dynTrend === "down" && (
-                                  <svg
-                                    width="9"
-                                    height="9"
-                                    viewBox="0 0 8 8"
-                                    aria-label="trending down"
-                                  >
-                                    <path
-                                      d="M4 1V7M4 7L1.5 4.5M4 7L6.5 4.5"
-                                      stroke="var(--color-green)"
-                                      strokeWidth="1.3"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      fill="none"
-                                    />
-                                  </svg>
-                                )}
-                                {dynTrend === "flat" && (
-                                  <span
-                                    className="w-2 h-px"
-                                    style={{ background: "var(--text-tertiary)" }}
-                                    aria-label="flat"
-                                  />
-                                )}
+                                {row.channel}
                               </span>
                             </td>
+                            <td
+                              className="px-2 sm:px-3 py-2 text-right text-[10px] sm:text-[11px] font-medium"
+                              style={{ color: "var(--color-dark)" }}
+                            >
+                              {row.step}
+                            </td>
                           </tr>
-                        );
-                      })}
+                      ))}
                     </tbody>
                   </table>
                   </div>
@@ -1161,11 +934,7 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
 
           Each tile is a Link to /demo so a click on any module takes the
           curious user into the real thing. */}
-      <DemoPreviewStrip
-        activeMonth={activeMonth}
-        cumulative={cumulative}
-        current={current}
-      />
+      <DemoPreviewStrip current={current} />
 
       {/* Demo footer — small caption that turns the playback into a
           path to the full /demo page. Auto-play proves the dashboard is
@@ -1195,7 +964,7 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
           {shouldPlay
             ? "Playing · hover to pause"
             : isAtEnd
-            ? "Demo complete · see the full version"
+            ? "That's the path"
             : reduced
             ? "Interactive · use the scrubber"
             : "Interactive · press play"}
@@ -1263,210 +1032,42 @@ export function DashboardMockup({ isVisible }: { isVisible: boolean }) {
 
 /* ═══════════════════════════════════════════
    DEMO PREVIEW STRIP
-   Three live mini-modules under the main dashboard hinting at the
-   breadth of the /demo page: occupancy curve, live lead feed, and
-   campaign intelligence. All driven by the same playback state so the
-   whole panel moves in lockstep. Click any tile to open /demo.
+   Three parts of the system under the dashboard. No facility results.
    ═══════════════════════════════════════════ */
 
-type DemoPreviewStripProps = {
-  activeMonth: number;
-  cumulative: (typeof HERO_DEMO_MONTHS)[number][];
-  current: (typeof HERO_DEMO_MONTHS)[number];
-};
-
-function DemoPreviewStrip({
-  activeMonth,
-  cumulative,
-  current,
-}: DemoPreviewStripProps) {
-  // Occupancy curve points — starts at HERO_DEMO_STARTING_OCCUPANCY,
-  // walks through each completed month. Mapped into a 100×30 SVG box.
-  const occPoints = [
-    HERO_DEMO_STARTING_OCCUPANCY,
-    ...cumulative.map((m) => m.occupancy),
-  ];
-  const occMin = HERO_DEMO_STARTING_OCCUPANCY - 4;
-  const occMax = 95;
-  const occRange = occMax - occMin;
-  const occW = 100;
-  const occH = 30;
-  const occCoords = occPoints
-    .map((v, i) => {
-      const x = (i / (HERO_DEMO_MONTHS.length)) * occW;
-      const y = occH - ((v - occMin) / occRange) * occH;
-      return [x, y];
-    });
-  const occLine = occCoords
-    .map((c, i) => `${i === 0 ? "M" : "L"} ${c[0].toFixed(1)} ${c[1].toFixed(1)}`)
-    .join(" ");
-  const lastOccCoord = occCoords[occCoords.length - 1];
-  const occFill =
-    occLine +
-    ` L ${lastOccCoord[0].toFixed(1)} ${occH} L 0 ${occH} Z`;
-
-  // Lead feed window — two most-recent leads cycle as months advance.
-  // Modulo wraps so every month surfaces a different pair.
-  const leadStart = activeMonth % HERO_DEMO_LEADS.length;
-  const visibleLeads = [
-    HERO_DEMO_LEADS[leadStart],
-    HERO_DEMO_LEADS[(leadStart + 1) % HERO_DEMO_LEADS.length],
-  ];
-
+function DemoPreviewStrip({ current }: { current: (typeof HERO_STEPS)[number] }) {
   const tiles = [
-    {
-      key: "occupancy",
-      label: "Occupancy",
-      sub: `${HERO_DEMO_STARTING_OCCUPANCY}% → ${current.occupancy}%`,
-      visual: (
-        <svg
-          viewBox={`0 0 ${occW} ${occH}`}
-          preserveAspectRatio="none"
-          className="w-full h-7"
-          aria-hidden="true"
-        >
-          <defs>
-            <linearGradient id="hero-occ-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-green)" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="var(--color-green)" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path d={occFill} fill="url(#hero-occ-fill)" />
-          <path
-            d={occLine}
-            fill="none"
-            stroke="var(--color-green)"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              transition: "d 600ms cubic-bezier(0.16,1,0.3,1)",
-            }}
-          />
-          {/* Marker on the latest point */}
-          {lastOccCoord && (
-            <circle
-              cx={lastOccCoord[0]}
-              cy={lastOccCoord[1]}
-              r="1.6"
-              fill="var(--color-green)"
-              stroke="var(--color-light)"
-              strokeWidth="0.8"
-            />
-          )}
-        </svg>
-      ),
-    },
-    {
-      key: "leads",
-      label: "Live lead feed",
-      sub: `${current.leads} this month`,
-      visual: (
-        <div className="space-y-1 pt-0.5">
-          {visibleLeads.map((lead, i) => {
-            const status = HERO_DEMO_LEAD_STATUS[lead.status];
-            return (
-              <div
-                key={`${activeMonth}-${i}-${lead.name}`}
-                className="flex items-center gap-1.5 text-[10px]"
-                style={{
-                  animation: i === 0 ? "hero-value-flash 700ms ease-out" : undefined,
-                }}
-              >
-                <span
-                  className="w-1 h-1 rounded-full flex-shrink-0"
-                  style={{ background: status.color }}
-                  aria-hidden="true"
-                />
-                <span
-                  className="font-medium truncate flex-1"
-                  style={{ color: "var(--color-dark)" }}
-                >
-                  {lead.name}
-                </span>
-                <span
-                  className="text-[9px] font-semibold uppercase tracking-wide flex-shrink-0"
-                  style={{ color: status.color, letterSpacing: "0.04em" }}
-                >
-                  {status.label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      ),
-    },
-    {
-      key: "intel",
-      label: "Campaign intelligence",
-      sub: `Top: ${current.topAudience}`,
-      visual: (
-        <div className="pt-0.5">
-          <div
-            key={`intel-aud-${activeMonth}`}
-            className="text-[10px] font-medium truncate"
-            style={{
-              color: "var(--color-dark)",
-              animation: "hero-value-flash 700ms ease-out",
-            }}
-          >
-            {current.topAudience}
-          </div>
-          <div
-            key={`intel-cre-${activeMonth}`}
-            className="text-[10px] mt-0.5 truncate"
-            style={{
-              color: "var(--text-secondary)",
-              fontStyle: "normal",
-              animation: "hero-value-flash 700ms ease-out",
-            }}
-          >
-            “{current.topCreative}”
-          </div>
-        </div>
-      ),
-    },
+    { key: "map", label: "Market", sub: "Competitors, rates, reviews", visual: "Map" },
+    { key: "ads", label: "Ads and pages", sub: "Meta, Google, a page per ad", visual: "Ads" },
+    { key: "lease", label: "The move-in", sub: current.detail, visual: current.short },
   ];
 
   return (
     <div
       className="hidden lg:grid mt-3 grid-cols-3 gap-2"
       role="list"
-      aria-label="More dashboard modules in the full demo"
+      aria-label="What the system does"
     >
       {tiles.map((tile) => (
-        <Link
+        <div
           key={tile.key}
-          href="/demo"
           role="listitem"
-          className="group block rounded-xl border bg-[var(--color-light)] p-3 transition-all hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-dark)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-light)]"
+          className="rounded-xl border bg-[var(--color-light)] p-3"
           style={{ borderColor: "var(--border-subtle)" }}
         >
-          <div className="flex items-center justify-between mb-1.5">
-            <span
-              className="text-[9px] uppercase tracking-wide font-semibold"
-              style={{
-                color: "var(--text-tertiary)",
-                fontFamily: "var(--font-heading)",
-                letterSpacing: "0.06em",
-              }}
-            >
-              {tile.label}
-            </span>
-            <ArrowUpRight
-              size={10}
-              className="opacity-30 group-hover:opacity-100 transition-opacity"
-              style={{ color: "var(--text-secondary)" }}
-            />
-          </div>
-          <div className="min-h-[42px]">{tile.visual}</div>
           <div
-            className="text-[10px] mt-1.5 font-medium tabular-nums"
-            style={{ color: "var(--text-secondary)" }}
+            className="text-[9px] uppercase tracking-wide font-semibold"
+            style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-heading)", letterSpacing: "0.06em" }}
           >
+            {tile.label}
+          </div>
+          <div className="mt-2 text-lg font-semibold" style={{ color: "var(--color-dark)", fontFamily: "var(--serif)" }}>
+            {tile.visual}
+          </div>
+          <div className="text-[10px] mt-1.5 font-medium" style={{ color: "var(--text-secondary)" }}>
             {tile.sub}
           </div>
-        </Link>
+        </div>
       ))}
     </div>
   );
@@ -1898,16 +1499,11 @@ export function BecauseLetterboard() {
    ═══════════════════════════════════════════ */
 
 export function ROITeaser({ isVisible }: { isVisible: boolean }) {
-  const adSpend = useCountUp(2400, 2000, 0, isVisible);
-  const moveIns = useCountUp(34, 2200, 0, isVisible);
-  const costPerMI = useCountUp(41, 2000, 0, isVisible);
-  const revenue = useCountUp(27200, 2400, 0, isVisible);
-
   const stats = [
-    { label: "Ad Spend", value: `$${adSpend.toLocaleString()}`, sub: "per month", color: "var(--color-blue)" },
-    { label: "Move-ins", value: String(moveIns), sub: "this quarter", color: "var(--color-green)" },
-    { label: "Cost / Move-in", value: `$${costPerMI}`, sub: "average", color: "var(--accent)" },
-    { label: "Revenue", value: `$${revenue.toLocaleString()}`, sub: "90 days", color: "var(--color-green)" },
+    { label: "Ads", value: "Meta", sub: "and Google", color: "var(--color-blue)" },
+    { label: "Page", value: "Own", sub: "one per ad", color: "var(--color-dark)" },
+    { label: "Reserve", value: "Book", sub: "on your page", color: "var(--color-dark)" },
+    { label: "Move-in", value: "Mark", sub: "then see the source", color: "var(--color-green)" },
   ];
 
   return (
@@ -1934,7 +1530,7 @@ export function ROITeaser({ isVisible }: { isVisible: boolean }) {
           className="text-xs sm:text-sm font-bold tracking-wider uppercase"
           style={{ fontFamily: "var(--font-heading)", color: "var(--text-inverse)", letterSpacing: "0.08em" }}
         >
-          90-Day Performance Snapshot
+          What the system does
         </h3>
       </div>
 
@@ -1975,33 +1571,6 @@ export function ROITeaser({ isVisible }: { isVisible: boolean }) {
         ))}
       </div>
 
-      {/* ROAS bar */}
-      <div className="flex items-center gap-4 px-6 sm:px-8 py-4" style={{ background: "var(--bg-surface)" }}>
-        <span
-          className="text-[10px] sm:text-[11px] font-bold tracking-wider uppercase flex-shrink-0"
-          style={{ color: "var(--text-tertiary)", fontFamily: "var(--font-heading)", letterSpacing: "0.06em" }}
-        >
-          Return on ad spend
-        </span>
-        <div className="flex-1 h-4 overflow-hidden" style={{ background: "var(--border-medium)" }}>
-          <div
-            className="h-full transition-all"
-            style={{
-              background: "linear-gradient(90deg, var(--accent), var(--color-green))",
-              width: isVisible ? "88%" : "0%",
-              transitionDuration: "1.8s",
-              transitionDelay: "800ms",
-              transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)",
-            }}
-          />
-        </div>
-        <span
-          className="text-lg sm:text-xl font-bold flex-shrink-0"
-          style={{ color: "var(--color-green)", fontFamily: "var(--serif)", letterSpacing: "-0.03em" }}
-        >
-          35x
-        </span>
-      </div>
     </div>
   );
 }
@@ -2240,13 +1809,7 @@ function StatCell({
 export function LiveStatsStrip({ isVisible }: { isVisible: boolean }) {
   const clock = useClock();
 
-  // Industry + forecast cards only. The alpha portfolio numbers don't yet
-  // reflect what's actually being built behind the scenes, so showing the
-  // raw platform counts (60 ads / 7 audits) was misleading. Instead the
-  // strip tells the "$50B market → here's what we're building toward"
-  // story via two clearly-labeled data types:
-  //   INDUSTRY (public, sourced) → hueB
-  //   FORECAST (year-one targets) → hueC
+  // Sourced industry figures only. Year-one targets are not published here.
   const cards: StatCard[] = [
     // ─── INDUSTRY · 2025 ─────────────────────────────────────────────
     // Sourced public figures, attributed inline. Full source list lives in
@@ -2285,39 +1848,6 @@ export function LiveStatsStrip({ isVisible }: { isVisible: boolean }) {
       context: "INDUSTRY · BENCHMARK",
       cites: [3],
     },
-
-    // ─── FORECAST · YEAR 1 ───────────────────────────────────────────
-    // Placeholder targets — replace with Blake's actual year-one goals.
-    {
-      key: "y1-spend",
-      rawValue: 10_000_000,
-      format: "money",
-      label: "Ad spend goal",
-      caption:
-        "ad spend StorageAds will put to work by EOY. Every dollar buying move-ins, not sitting in a vendor's queue.",
-      hue: MONO.hueC,
-      context: "FORECAST · YEAR 1",
-    },
-    {
-      key: "y1-facilities",
-      rawValue: 250,
-      format: "count",
-      label: "Facilities goal",
-      caption:
-        "operators live on the system by EOY. Partner operators carry the growth.",
-      hue: MONO.hueC,
-      context: "FORECAST · YEAR 1",
-    },
-    {
-      key: "y1-moveins",
-      rawValue: 10_000,
-      format: "count",
-      label: "Move-ins generated",
-      caption:
-        "signed leases generated by StorageAds campaigns. Operators pay for outcomes, not vendor reports.",
-      hue: MONO.hueC,
-      context: "FORECAST · YEAR 1",
-    },
   ];
 
   // 6 cards land at 3-col × 2-row on desktop, 2-col stack on mobile.
@@ -2353,7 +1883,7 @@ export function LiveStatsStrip({ isVisible }: { isVisible: boolean }) {
             <Label
               style={{ color: MONO.textDim, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "inline-block", maxWidth: "100%" }}
             >
-              n = {cards.length} · industry · forecast
+              n = {cards.length} · industry
             </Label>
           </span>
         </div>
