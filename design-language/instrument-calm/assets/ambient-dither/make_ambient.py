@@ -40,27 +40,6 @@ def paint(field, layers):
     return img
 
 
-def dusk_sky():
-    """Blue at the top, then purple, pink, and orange toward the horizon."""
-    xn, yn = grids()
-    blue = np.array(SKY, np.float32)
-    purple = np.array(hx("#8E78C8"), np.float32)
-    pink = np.array(hx("#E7A4C4"), np.float32)
-    orange = np.array(hx("#E38B6C"), np.float32)
-    stops = [(0.00, blue), (0.22, blue), (0.40, purple), (0.55, pink), (0.78, orange)]
-    sky = np.zeros((H, W, 3), np.float32)
-    for (y0, c0), (y1, c1) in zip(stops, stops[1:]):
-        t = np.clip((yn - y0) / (y1 - y0), 0, 1)
-        band = (yn >= y0) & (yn <= y1)
-        mix = c0 * (1 - t)[..., None] + c1 * t[..., None]
-        sky[band] = mix[band]
-    sky[yn >= stops[-1][0]] = orange
-    # A little extra warmth low and toward the middle, the way dusk pools.
-    glow = np.exp(-((xn - 0.42) ** 2) / 0.12) * np.clip((yn - 0.28) / 0.45, 0, 1)
-    sky = sky * (1 - 0.28 * glow)[..., None] + orange * (0.28 * glow)[..., None]
-    return np.clip(sky, 0, 255).astype(np.uint8)
-
-
 def mountain():
     xn, yn = grids()
     n = smooth_noise((H, W), scale=280, seed=51, octaves=4)
@@ -79,7 +58,16 @@ def mountain():
     slate = np.maximum(slate, np.where(far_in, 0.16 + 0.08 * n, 0))
     cap = np.clip((ridge + 0.09 - yn) / 0.09, 0, 1)
     snow = np.where(yn > ridge - 0.012, cap * (0.75 + 0.25 * n), 0)
-    img = Image.fromarray(dusk_sky())
+    # The sky is stipple, not a wash. Blue field, then purple, pink, and orange
+    # dots that get denser toward the horizon.
+    grain = smooth_noise((H, W), scale=90, seed=57, octaves=3)
+    purple = np.clip((yn - 0.08) * 1.4, 0, 0.72) * (0.35 + 0.65 * grain)
+    pink = np.clip((yn - 0.28) * 2.0, 0, 0.8) * (0.3 + 0.7 * n)
+    orange = np.clip((yn - 0.46) * 2.4, 0, 0.9) * (0.4 + 0.6 * grain)
+    img = Image.new("RGB", (W, H), SKY)
+    img = apply_ink(img, dither_mask(purple, "stipple", 58, cell=CELL), hx("#8E78C8"))
+    img = apply_ink(img, dither_mask(pink, "stipple", 59, cell=CELL), hx("#E7A4C4"))
+    img = apply_ink(img, dither_mask(orange, "stipple", 60, cell=CELL), hx("#E38B6C"))
     img = apply_ink(img, dither_mask(np.clip(slate, 0, 1), "stipple", 53, cell=CELL), SLATE)
     img = apply_ink(img, dither_mask(np.clip(snow, 0, 1), "stipple", 54, cell=CELL), WHITE)
     return img
