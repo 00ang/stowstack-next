@@ -1,6 +1,391 @@
 {
   "entries": [
     {
+      "id": "17543e5820",
+      "date": "2026-10-09",
+      "category": "fix",
+      "scope": "pages",
+      "title": "Keep the page preview on screen beside the blocks"
+    },
+    {
+      "id": "be56a24926",
+      "date": "2026-10-09",
+      "category": "feature",
+      "scope": "brand",
+      "title": "Use the open hand lockup"
+    },
+    {
+      "id": "261c563955",
+      "date": "2026-10-09",
+      "category": "fix",
+      "scope": "marketing",
+      "title": "Keep the hero tiles on the path, not the playback step"
+    },
+    {
+      "id": "756680cac7",
+      "date": "2026-10-09",
+      "category": "fix",
+      "scope": "marketing",
+      "title": "Drop unverified client results and automatic tracing claims"
+    },
+    {
+      "id": "56204406af",
+      "date": "2026-10-09",
+      "category": "fix",
+      "scope": "pages",
+      "title": "Keep two unit types when they share a size label"
+    },
+    {
+      "id": "ad65b4d80d",
+      "date": "2026-10-09",
+      "category": "fix",
+      "scope": null,
+      "title": "Stop doubling StorageAds in the portal, partner, and admin tab titles"
+    },
+    {
+      "id": "31d1356ec9",
+      "date": "2026-10-09",
+      "category": "feature",
+      "scope": "campaigns",
+      "title": "Edit a landing page from the funnel"
+    },
+    {
+      "id": "aa7eaab484",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "attribution",
+      "title": "Every move-in in the open, with how we know"
+    },
+    {
+      "id": "ec6d6f93ca",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": null,
+      "title": "The page's form gets past the CSRF gate, and spaces stay where they're written"
+    },
+    {
+      "id": "c8c525a99a",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "pages",
+      "title": "The Ask form reads as written on every screen"
+    },
+    {
+      "id": "10c088b713",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "pages",
+      "title": "Ask on the page, on every screen; attach every visit to its page"
+    },
+    {
+      "id": "02bc8ae248",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "campaigns",
+      "title": "Publish puts a campaign live, one function at a time"
+    },
+    {
+      "id": "1b7c06e45d",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "ads",
+      "title": "Publish on current Meta and Google APIs, near the facility, at its budget"
+    },
+    {
+      "id": "f6bae5081e",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "campaigns",
+      "title": "Live counts on the canvas wires"
+    },
+    {
+      "id": "a9a18e6c7a",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "tools",
+      "title": "Publish Ads, Google Ads and TikTok join the handoffs"
+    },
+    {
+      "id": "72ede8edc8",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "ontology",
+      "title": "Every suggestion says why, from the facility's own numbers"
+    },
+    {
+      "id": "bc0d6b2f61",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "tools",
+      "title": "Creative Studio and Competitors join the chain"
+    },
+    {
+      "id": "2df8a27b5e",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "onboarding",
+      "title": "Setup in four screens that ends in a campaign"
+    },
+    {
+      "id": "4950a2bc86",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "onboarding",
+      "title": "Typed sizes count real vacancy"
+    },
+    {
+      "id": "811f27469e",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "portal",
+      "title": "A goal set by the owner is this month's goal"
+    },
+    {
+      "id": "66a577730f",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "tools",
+      "title": "Tools open on the object and hand off the next step"
+    },
+    {
+      "id": "c098520e90",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "tools",
+      "title": "Open the tool and focus the link asked for"
+    },
+    {
+      "id": "4668f6327d",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "campaigns",
+      "title": "A page of their own, built from the goal"
+    },
+    {
+      "id": "8d772d5d27",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "portal",
+      "title": "The next move follows the operator to every page"
+    },
+    {
+      "id": "1d1415a4ad",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "flow",
+      "title": "One next move for wherever the operator is"
+    },
+    {
+      "id": "591eec81ce",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "api",
+      "title": "Check a campaign's own facility when it is read by id"
+    },
+    {
+      "id": "ec36cadba7",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "campaigns",
+      "title": "Cite the index vacancy on the Units node"
+    },
+    {
+      "id": "368a81e198",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "campaigns",
+      "title": "Inset the phone flow and keep it above the nav"
+    },
+    {
+      "id": "69eb772cc0",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "campaigns",
+      "title": "Keep funnel nodes readable at the default zoom"
+    },
+    {
+      "id": "45ee9e45ff",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "portal",
+      "title": "Pad ontology index section headers"
+    },
+    {
+      "id": "832d0bced5",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "campaigns",
+      "title": "Drag-and-drop canvas with a publish dry run"
+    },
+    {
+      "id": "816734d846",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "campaigns",
+      "title": "Read-only flow for an existing campaign"
+    },
+    {
+      "id": "9c0d42d810",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "campaigns",
+      "title": "A next move inside the builder"
+    },
+    {
+      "id": "4d05d57506",
+      "date": "2026-10-08",
+      "category": "fix",
+      "scope": "campaigns",
+      "title": "Owner-safe detail, unit mix, and one name"
+    },
+    {
+      "id": "3de0ac2ec8",
+      "date": "2026-10-08",
+      "category": "feature",
+      "scope": "funnel-graph",
+      "title": "Typed ports, readiness, and a publish plan"
+    },
+    {
+      "id": "05b41aeaa3",
+      "date": "2026-10-07",
+      "category": "feature",
+      "scope": "portal",
+      "title": "Facility ontology, and a sample portal at /portal?demo"
+    },
+    {
+      "id": "dc2bf60230",
+      "date": "2026-10-06",
+      "category": "feature",
+      "scope": null,
+      "title": "Recreate the open proven ad into an Ad Studio draft"
+    },
+    {
+      "id": "12c71a995e",
+      "date": "2026-10-06",
+      "category": "fix",
+      "scope": null,
+      "title": "Route FAQ price questions to public plan prices"
+    },
+    {
+      "id": "d972d680e9",
+      "date": "2026-10-05",
+      "category": "feature",
+      "scope": "proven-ads",
+      "title": "The read on every ad, a library clients can use, in their tools"
+    },
+    {
+      "id": "18be23fd63",
+      "date": "2026-10-05",
+      "category": "feature",
+      "scope": null,
+      "title": "Homepage FAQ answers from public pages, three themes only"
+    },
+    {
+      "id": "d042681f6d",
+      "date": "2026-10-05",
+      "category": "fix",
+      "scope": null,
+      "title": "Retint marketing chrome off cream onto the page ground"
+    },
+    {
+      "id": "eae66d4a09",
+      "date": "2026-10-05",
+      "category": "feature",
+      "scope": null,
+      "title": "Ship cool light #E0E0E5 as the default page ground"
+    },
+    {
+      "id": "0389e8d557",
+      "date": "2026-10-05",
+      "category": "feature",
+      "scope": "portal",
+      "title": "One login for the facility tools — portal + partner orgs, Portfolio-only video"
+    },
+    {
+      "id": "a07fbef888",
+      "date": "2026-10-05",
+      "category": "fix",
+      "scope": "db",
+      "title": "Restore client_goals, the last table production was missing"
+    },
+    {
+      "id": "d6101ccb48",
+      "date": "2026-10-05",
+      "category": "fix",
+      "scope": "db",
+      "title": "Put every migration online and make the history whole"
+    },
+    {
+      "id": "0a8eab7ebc",
+      "date": "2026-10-05",
+      "category": "fix",
+      "scope": "db",
+      "title": "Apply the drift migration in the production build"
+    },
+    {
+      "id": "647333f1b9",
+      "date": "2026-10-05",
+      "category": "fix",
+      "scope": "db",
+      "title": "Restore the tables and columns code has queried since June"
+    },
+    {
+      "id": "da3de4e92c",
+      "date": "2026-10-05",
+      "category": "fix",
+      "scope": "audit",
+      "title": "Diagnostic auto-generation 401'd silently for weeks"
+    },
+    {
+      "id": "bd7650bcca",
+      "date": "2026-10-05",
+      "category": "fix",
+      "scope": "cron",
+      "title": "Move the two hourly crons onto the job queue"
+    },
+    {
+      "id": "5b9a10e3d3",
+      "date": "2026-10-05",
+      "category": "feature",
+      "scope": "proven-ads",
+      "title": "Library of long-running storage ads and adapt-to-studio"
+    },
+    {
+      "id": "dd72f31094",
+      "date": "2026-10-05",
+      "category": "fix",
+      "scope": null,
+      "title": "Go-live activity log, homepage lead popup, onboarding routes"
+    },
+    {
+      "id": "1cf30d54f8",
+      "date": "2026-10-04",
+      "category": "feature",
+      "scope": "attribution",
+      "title": "Operator screens, write-back settings, CSV move-in matching (s12)"
+    },
+    {
+      "id": "26a43ddc08",
+      "date": "2026-10-04",
+      "category": "feature",
+      "scope": "attribution",
+      "title": "Visitor, Touch and move-in write-back (MISSION.md s12)"
+    },
+    {
+      "id": "775a065c12",
+      "date": "2026-09-23",
+      "category": "fix",
+      "scope": "jobs",
+      "title": "Stop the minute worker keeping Neon awake 24/7"
+    },
+    {
+      "id": "3b3e7f0176",
+      "date": "2026-09-05",
+      "category": "feature",
+      "scope": "respond",
+      "title": "Tour booking, reminders, and same-day no-show recovery"
+    },
+    {
       "id": "572c54df1f",
       "date": "2026-09-05",
       "category": "feature",

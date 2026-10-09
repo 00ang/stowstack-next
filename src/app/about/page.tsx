@@ -115,15 +115,13 @@ export default function AboutPage() {
           />
 
           <p>
-            Every dollar of ad spend gets tracked to the phone call, the
-            walk-in, and the move-in. Not a guess and not a model. The actual
-            unit that got rented, traced back to the ad that filled it.
+            You mark a move-in when it happens. The report shows where that
+            person came from: the ad, the page, or the office.
           </p>
 
           <p>
-            That changes what you do next. Spend that looks good on paper but
-            never fills a unit gets cut. What works gets more. The cost of
-            filling a unit comes down, and every month you know why.
+            That is what you look at next. Spend that is not filling units is
+            the spend you can stop. What is filling units is the spend you keep.
           </p>
 
           <p style={{ color: "var(--text-primary)", fontWeight: 500 }}>

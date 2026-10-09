@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { CAL_BOOKING_URL } from "@/lib/booking";
+import { Logo } from "@/components/brand/logo";
 
 /**
  * Sticky header shared across the /tools pages. No hooks, so it works in both
@@ -34,18 +35,8 @@ export default function ToolHeader({
           >
             <ArrowLeft size={20} />
           </Link>
-          <Link href="/" className="hover:opacity-80 transition-opacity">
-            <span
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-                fontSize: 17,
-                color: "var(--color-dark)",
-              }}
-            >
-              storage<span style={{ color: "var(--brand-ads)" }}>ads</span>
-            </span>
+          <Link href="/" className="hover:opacity-80 transition-opacity" aria-label="StorageAds">
+            <Logo mark={28} />
           </Link>
         </div>
         <a

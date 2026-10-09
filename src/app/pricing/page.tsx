@@ -407,7 +407,7 @@ export default function PricingPage() {
               },
               {
                 price: "$750-1,500/mo on StorageAds",
-                copy: "You get Meta ads + Google PPC + retargeting driving traffic to ad-specific landing pages with embedded storEDGE rental flow. Every move-in traced to the ad that produced it. A/B testing based on revenue. Cost per move-in drops every month.",
+                copy: "You get Meta ads, Google ads, and retargeting, each pointed at its own page with the storEDGE reserve flow. You mark a move-in when it happens, and the report shows where that person came from.",
                 isHighlighted: true,
               },
             ].map((item) => (

@@ -52,7 +52,7 @@ describe("deriveMarketingRoi", () => {
     expect(d.monthsToFill).toBeCloseTo(4, 5);
   });
 
-  it("uses the operator-average cost per move-in by default", () => {
+  it("starts from a sample cost per move-in the operator replaces", () => {
     expect(MARKETING_ROI_DEFAULTS.costPerMoveIn).toBe(DEFAULT_COST_PER_MOVE_IN);
   });
 

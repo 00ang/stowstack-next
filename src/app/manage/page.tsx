@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { savePortalSession } from "@/lib/portal-helpers";
+import { Logo } from "@/components/brand/logo";
 
 /**
  * Invite entry for the facility tools. Clients don't come through here: their
@@ -58,7 +59,7 @@ export default function ManageInvitePage() {
     <main className="flex min-h-screen items-center justify-center bg-[var(--color-light)] px-4 py-16 text-[var(--color-dark)]">
       <div className="w-full max-w-md">
         <header className="mb-8 text-center">
-          <div className="text-2xl font-semibold lowercase tracking-tight">storageads</div>
+          <div className="flex justify-center"><Logo mark={36} /></div>
           <h1 className="mt-6 text-2xl font-semibold tracking-tight">Set up your facility</h1>
           <p className="mt-2 text-sm leading-relaxed text-[var(--color-body-text)]">
             Got an invite code from us? Add your facility and you&apos;re in.

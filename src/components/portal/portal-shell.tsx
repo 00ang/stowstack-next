@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback, createContext, useContext } f
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Building2,
   Mail,
   Send,
   Loader2,
@@ -27,6 +26,7 @@ import { clearOntologyCache } from "@/components/ontology/use-ontology";
 import { FlowProvider, clearFlowSession } from "@/components/flow/flow-context";
 import { FlowBar, whereFrom } from "@/components/flow/flow-bar";
 import { surfaceOf } from "@/lib/flow";
+import { Logo } from "@/components/brand/logo";
 
 /* ─── context ─── */
 
@@ -183,8 +183,8 @@ function LoginForm({ onSuccess }: { onSuccess: (client: ClientData) => void }) {
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-light)] px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-dark)]/[0.06]">
-            <Building2 className="h-7 w-7 text-[var(--color-dark)]" />
+          <div className="mx-auto mb-4 flex justify-center">
+            <Logo mark={40} />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-dark)]">Client Portal</h1>
           <p className="mt-2 text-sm text-[var(--color-mid-gray)]">
@@ -410,7 +410,10 @@ function PortalHeader({ client, onToggle, onLogout, expanded, toggleRef }: { cli
       <button ref={toggleRef} type="button" onClick={onToggle} aria-label="Open navigation menu" aria-expanded={expanded} aria-controls="portal-mobile-nav" className="rounded-lg p-2 text-[var(--color-body-text)] hover:bg-[var(--color-light-gray)] md:hidden">
         <Menu className="h-5 w-5" />
       </button>
-      <h1 className="text-base font-semibold text-[var(--color-dark)]">{portalNavTitle(pathname)}</h1>
+      <Link href="/portal" aria-label="StorageAds" className="shrink-0">
+        <Logo mark={22} />
+      </Link>
+      <h1 className="min-w-0 truncate text-base font-semibold text-[var(--color-dark)]">{portalNavTitle(pathname)}</h1>
       <div className="ml-auto flex items-center gap-3">
         <span className="hidden text-xs text-[var(--color-mid-gray)] sm:inline">{client.email}</span>
         <button type="button" onClick={onLogout} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs text-[var(--color-body-text)] hover:text-[var(--color-dark)]">

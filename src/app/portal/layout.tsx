@@ -3,7 +3,8 @@ import { IBM_Plex_Mono, Manrope } from "next/font/google";
 import { PortalShell } from "@/components/portal/portal-shell";
 
 export const metadata: Metadata = {
-  title: "Client Portal | StorageAds",
+  // Root layout already appends " | StorageAds".
+  title: "Client Portal",
   description:
     "Access your StorageAds dashboard: attribution, campaign performance, and facility analytics.",
 };

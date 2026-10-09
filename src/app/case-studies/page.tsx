@@ -3,19 +3,20 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { CASE_STUDIES } from "@/types/case-study";
 import { CAL_BOOKING_URL } from "@/lib/booking";
+import { Logo } from "@/components/brand/logo";
 
 export const metadata: Metadata = {
   title: "Case Studies | StorageAds",
-  description: "Attributed move-ins from real storage facilities, tracked from ad click to signed lease.",
+  description: "How StorageAds turns ad spend into reservations: ads, a page for each one, and follow-up to a lease.",
   openGraph: {
     title: "Case Studies | StorageAds",
-    description: "Attributed move-ins from real storage facilities, tracked from ad click to signed lease.",
+    description: "How StorageAds turns ad spend into reservations: ads, a page for each one, and follow-up to a lease.",
     url: "https://storageads.com/case-studies",
   },
   twitter: {
     card: "summary_large_image",
     title: "Case Studies | StorageAds",
-    description: "Attributed move-ins from real storage facilities.",
+    description: "How StorageAds turns ad spend into reservations.",
   },
 };
 
@@ -24,8 +25,8 @@ export default function CaseStudiesIndexPage() {
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-light)" }}>
       <header className="border-b" style={{ borderColor: "var(--color-light-gray)" }}>
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold" style={{ fontFamily: "var(--font-heading)", color: "var(--color-dark)" }}>
-            <span>storage</span><span style={{ color: "var(--color-gold)" }}>ads</span>
+          <Link href="/" aria-label="StorageAds">
+            <Logo mark={28} />
           </Link>
           <a
             href={CAL_BOOKING_URL}
@@ -50,7 +51,7 @@ export default function CaseStudiesIndexPage() {
           className="text-base text-center max-w-xl mx-auto mb-12"
           style={{ fontFamily: "var(--font-body)", color: "var(--color-body-text)" }}
         >
-          Every number here is tracked from ad click to signed lease.
+          Ads in the trade area. A page for each one. A reservation you follow to a lease. You mark the move-in, and the report shows where that person came from.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -120,7 +121,7 @@ export default function CaseStudiesIndexPage() {
         {/* CTA */}
         <div className="text-center mt-12">
           <p className="text-sm mb-4" style={{ fontFamily: "var(--font-body)", color: "var(--color-body-text)" }}>
-            Want results like these for your facility?
+            See what the system would do at your facility.
           </p>
           <Link
             href="/audit-tool"

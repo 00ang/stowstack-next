@@ -1,7 +1,8 @@
 import { AdminShell } from "@/components/admin/admin-shell";
 
 export const metadata = {
-  title: "Admin | StorageAds",
+  // Root layout already appends " | StorageAds".
+  title: "Admin",
   robots: { index: false, follow: false },
 };
 

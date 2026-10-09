@@ -20,7 +20,7 @@ const ROWS = [
     label: "Landing Pages",
     diy: "Your homepage (2% conv)",
     agency: "Generic template (3-4% conv)",
-    storageads: "Ad-specific pages (8.7% conv)",
+    storageads: "A page for every ad",
   },
   {
     label: "Rental Flow",
@@ -32,7 +32,7 @@ const ROWS = [
     label: "Move-in Visibility",
     diy: '"We got some calls this month"',
     agency: "Clicks and impressions (40% may be existing tenants)",
-    storageads: "Cost per move-in by specific ad",
+    storageads: "You mark the move-in. The report shows the source.",
   },
   {
     label: "Ad Channels",
@@ -62,7 +62,7 @@ const ROWS = [
     label: "Time to Results",
     diy: "Months (if ever)",
     agency: "30-60 days (maybe)",
-    storageads: "7 days to first leads",
+    storageads: "Turn it on, then run it",
   },
   {
     label: "Follow-Up",

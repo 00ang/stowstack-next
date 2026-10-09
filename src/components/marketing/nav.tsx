@@ -6,6 +6,7 @@ import { ArrowRight, ChevronRight } from "lucide-react";
 import { Dot, Label, MONO } from "@/components/mono";
 import PaletteSwitch from "@/components/palette-switch";
 import { CAL_BOOKING_URL } from "@/lib/booking";
+import { Logo } from "@/components/brand/logo";
 
 /* ── Link configuration ── */
 const SECTION_LINKS = [
@@ -317,19 +318,8 @@ export default function Nav() {
         <div className="max-w-[1280px] mx-auto h-full flex items-center justify-between px-4 sm:px-6">
           {/* Logo + LIVE tag */}
           <div className="flex items-center gap-3 relative z-10">
-            <Link href="/" className="hover:opacity-80 transition-opacity">
-              <span
-                style={{
-                  fontFamily: MONO.serif,
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                  fontSize: 18,
-                  color: MONO.textAccent,
-                }}
-              >
-                storage<span style={{ color: "var(--brand-ads)" }}>ads</span>
-                <span style={{ color: MONO.textFaint, fontWeight: 400 }}>/attr</span>
-              </span>
+            <Link href="/" className="hover:opacity-80 transition-opacity" aria-label="StorageAds">
+              <Logo mark={32} />
             </Link>
             <span
               className="hidden sm:inline-flex items-center gap-1.5"
