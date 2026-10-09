@@ -11,6 +11,7 @@ import {
   insertVariations,
 } from "@/lib/creative-generation";
 import { generateLandingPage } from "@/lib/landing-page-generation";
+import { publishPage } from "@/lib/page-blocks/persist";
 import { adaptForFacility, persistAdaptedDraft } from "@/lib/proven-ads/adapt";
 import { loadFacilitySnapshot } from "@/lib/proven-ads/facility-snapshot";
 import { messagingLive } from "@/lib/messaging";
@@ -281,9 +282,10 @@ const proven: Exec = async (ctx, node, prior) => {
 
 const page: Exec = async (ctx, node, prior) => {
   const slug = node.slug || `${ctx.funnelId.slice(0, 8)}-${node.id}`;
+  const linked = param(node, "page") || prior?.ref?.pageId;
   let row =
-    (prior?.ref?.pageId
-      ? await db.landing_pages.findFirst({ where: { id: prior.ref.pageId, facility_id: ctx.facility.id } })
+    (linked
+      ? await db.landing_pages.findFirst({ where: { id: linked, facility_id: ctx.facility.id } })
       : null) ??
     (await db.landing_pages.findFirst({ where: { funnel_id: ctx.funnelId, slug: { startsWith: slug } } }));
 
@@ -296,17 +298,24 @@ const page: Exec = async (ctx, node, prior) => {
       adVariationId: ad ?? null,
       slug,
       funnelId: ctx.funnelId,
-      publish: true,
+      publish: false,
     });
     row = made.page;
-  } else if (row.status !== "published") {
-    row = await db.landing_pages.update({ where: { id: row.id }, data: { status: "published", published_at: new Date() } });
   }
 
-  const url = pageUrl(ctx.base, row.slug);
+  // Publish the draft that is there (an operator's page, or the one just
+  // generated). A later edit stays a draft until this runs again.
+  let live: { slug: string };
+  try {
+    live = await publishPage(row.id);
+  } catch (err) {
+    return result("failed", "The page didn’t publish.", { error: err instanceof Error ? err.message : "publish failed" });
+  }
+
+  const url = pageUrl(ctx.base, live.slug);
   const host = url.replace(/^https?:\/\//, "");
   return done(`Live at ${host}.`, {
-    ref: { pageId: row.id, slug: row.slug, url },
+    ref: { pageId: row.id, slug: live.slug, url },
     href: url,
     hrefLabel: "Open the page",
     external: true,

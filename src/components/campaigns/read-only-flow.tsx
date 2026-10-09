@@ -19,6 +19,7 @@ export function ReadOnlyFlow({
   edgeLabels,
   published,
   fixHref,
+  toolLink,
 }: {
   graph: FunnelGraph;
   ctx: FunnelContext;
@@ -31,6 +32,8 @@ export function ReadOnlyFlow({
   /** Each function's result from the last publish. */
   published?: Record<string, NodeResult>;
   fixHref?: (tool: string) => string | null;
+  /** Where a function's own work opens. The page opens its editor. */
+  toolLink?: (nodeId: string) => { href: string; label: string } | null;
 }) {
   const order = topo(graph);
   const counts = readyCount(graph);
@@ -119,10 +122,16 @@ export function ReadOnlyFlow({
               {(() => {
                 const r = published?.[n.id];
                 const fix = r?.fix && fixHref ? fixHref(r.fix.tool) : null;
-                if (!r || (!r.href && !fix)) return null;
+                const work = n.type === "page" ? toolLink?.(n.id) : null;
+                if (!work && (!r || (!r.href && !fix))) return null;
                 return (
                   <div className="flex flex-wrap gap-2 border-x border-b border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2">
-                    {r.href && (
+                    {work && (
+                      <a href={work.href} data-fill="1" className="act-fill inline-flex h-9 items-center px-3 text-[13px] font-extrabold">
+                        {work.label}
+                      </a>
+                    )}
+                    {r?.href && (
                       <a
                         href={r.href}
                         target={r.external ? "_blank" : undefined}
@@ -133,7 +142,7 @@ export function ReadOnlyFlow({
                         {r.hrefLabel ?? "Open"}
                       </a>
                     )}
-                    {fix && r.fix && (
+                    {fix && r?.fix && (
                       <a href={fix} data-fill="3" className="act-fill inline-flex h-9 items-center px-3 text-[13px] font-extrabold">
                         {r.fix.label}
                       </a>
