@@ -1,5 +1,5 @@
 import { readGraph } from "./schema";
-import type { FunnelGraph, NodeType } from "./types";
+import type { FunnelGraph, NodeParams, NodeType } from "./types";
 
 /**
  * An existing funnel row, as the list API returns it. Converted to
@@ -51,7 +51,7 @@ export function graphFromRecord(record: FunnelRecord): FunnelGraph {
       type: "page" as NodeType,
       x: 40 + 2 * 236,
       y: 50 + i * 190,
-      params: {},
+      params: (page.id ? { page: page.id } : {}) as NodeParams,
       slug: page.slug || undefined,
     };
     nodes.push(node);

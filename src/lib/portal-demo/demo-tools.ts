@@ -1,6 +1,8 @@
 import { demoRows, DEMO_FACILITY_ID } from "./demo-rows";
 import { demoPublishAnswer } from "./demo-publish";
 import { demoLedgerAnswer } from "./demo-ledger";
+import { blocksToSections, publicView, sectionsToBlocks, snapshotOf } from "@/lib/page-blocks";
+import { sampleFallDraft } from "@/lib/page-blocks/sample";
 
 /**
  * The facility tools in the sample portal: Landing Pages, Tracking Links,
@@ -80,34 +82,72 @@ function newId(prefix: string): string {
 
 /* ─── landing pages ─── */
 
+function liveUnits(now: Date) {
+  return demoRows(now).units.map((u) => ({
+    key: u.unitType,
+    name: u.unitType,
+    size: u.sizeLabel ?? u.unitType,
+    rate: u.webRate,
+    vacant: Math.max(0, u.total - u.occupied),
+    total: u.total,
+    features: u.features,
+    climate: /climate/i.test(u.unitType),
+  }));
+}
+
+function pageSections(p: { id: string; slug: string; title: string }, now: Date) {
+  if (p.slug === "maple-fall-move") {
+    return blocksToSections(sampleFallDraft().blocks).map((s, i) => ({ id: `${p.id}-${i}`, ...s }));
+  }
+  const units = demoRows(now).units.filter((u) => u.total - u.occupied > 0).slice(0, 4);
+  return [
+    { id: `${p.id}-hero`, section_type: "hero", sort_order: 0, config: { headline: p.title, subheadline: "Drive-up and climate units on Maple Street.", facilityName: "Maple Street Storage", backgroundImage: "" } },
+    {
+      id: `${p.id}-units`,
+      section_type: "unit_types",
+      sort_order: 1,
+      config: { headline: "Available units", live: true, sizeKeys: units.map((u) => u.unitType) },
+    },
+    { id: `${p.id}-ask`, section_type: "ask", sort_order: 2, config: { headline: "Leave your number. We’ll get back to you." } },
+    { id: `${p.id}-loc`, section_type: "location_map", sort_order: 3, config: { headline: "Find the facility", address: "Maple Street, Springfield", hours: "Office open 7 days. Gate 6am to 10pm.", phone: "" } },
+  ];
+}
+
 function pageRecords(now: Date, made: Made) {
   const rows = demoRows(now);
-  const units = rows.units.filter((u) => u.total - u.occupied > 0);
-  const base = rows.pages.map((p) => ({
-    id: p.id,
-    facility_id: DEMO_FACILITY_ID,
-    slug: p.slug,
-    title: p.title,
-    status: p.status,
-    variation_ids: p.variationIds,
-    meta_title: p.title,
-    meta_description: `${p.title}. Reserve online at Maple Street Storage.`,
-    created_at: p.createdAt,
-    updated_at: p.publishedAt ?? p.createdAt,
-    published_at: p.publishedAt ?? undefined,
-    sections: [
-      { id: `${p.id}-hero`, section_type: "hero", sort_order: 0, config: { headline: p.title, subheadline: "Drive-up and climate units on Maple Street. Reserve online in two minutes.", ctaText: "Reserve now", ctaUrl: "#cta", badgeText: "", style: "light" } },
-      {
-        id: `${p.id}-units`,
-        section_type: "unit_types",
-        sort_order: 1,
-        config: {
-          headline: "Available units",
-          units: units.slice(0, 4).map((u) => ({ name: u.unitType, size: u.sizeLabel ?? u.unitType, price: `$${u.webRate}/mo`, features: u.features })),
-        },
-      },
-    ],
-  }));
+  const base = rows.pages.map((p) => {
+    const sections = pageSections(p, now);
+    const published = p.status === "published";
+    const snapshot = published
+      ? snapshotOf({
+          title: p.slug === "maple-fall-move" ? sampleFallDraft().title : p.title,
+          metaTitle: p.title,
+          metaDescription: `${p.title}. Sample page for Maple Street Storage.`,
+          storedgeWidgetUrl: null,
+          editor: "blocks",
+          blocks: sectionsToBlocks(sections),
+        })
+      : null;
+    return {
+      id: p.id,
+      facility_id: DEMO_FACILITY_ID,
+      funnel_id: p.funnelId,
+      slug: p.slug,
+      title: p.slug === "maple-fall-move" ? sampleFallDraft().title : p.title,
+      status: p.status,
+      variation_ids: p.variationIds,
+      meta_title: p.title,
+      meta_description: `${p.title}. Sample page for Maple Street Storage.`,
+      theme: { editor: "blocks" },
+      storedge_widget_url: null as string | null,
+      version: 0,
+      created_at: p.createdAt,
+      updated_at: p.publishedAt ?? p.createdAt,
+      published_at: p.publishedAt ?? undefined,
+      published_snapshot: snapshot,
+      sections,
+    };
+  });
   const madePages = Object.values(made.pages).filter((p) => !base.some((b) => b.id === p.id));
   return [...madePages, ...base].map((p) => ({ ...p, ...(made.pages[String(p.id)] ?? {}) }));
 }
@@ -117,9 +157,37 @@ function landingPages(url: URL, method: string, raw: string | undefined, now: Da
   const id = url.searchParams.get("id");
   if (method === "GET") {
     const pages = pageRecords(now, made);
+    const slug = url.searchParams.get("slug");
+    if (slug) {
+      const page = pages.find((p) => p.slug === slug);
+      if (!page) return { status: 404, body: { error: "Page not found" } };
+      const view = publicView({
+        status: String(page.status ?? "draft"),
+        title: String(page.title ?? ""),
+        metaTitle: typeof page.meta_title === "string" ? page.meta_title : null,
+        metaDescription: typeof page.meta_description === "string" ? page.meta_description : null,
+        storedgeWidgetUrl: typeof page.storedge_widget_url === "string" ? page.storedge_widget_url : null,
+        themeEditor: "blocks",
+        sections: Array.isArray(page.sections) ? page.sections : [],
+        snapshot: page.published_snapshot,
+      });
+      if (!view) return { status: 404, body: { error: "Page not found" } };
+      return ok({
+        page: {
+          ...page,
+          title: view.title,
+          meta_title: view.metaTitle,
+          meta_description: view.metaDescription,
+          storedge_widget_url: view.storedgeWidgetUrl,
+          theme: { editor: "blocks" },
+          sections: view.sections.map((s, i) => ({ id: `live-${i}`, ...s })),
+          liveUnits: liveUnits(now),
+        },
+      });
+    }
     if (id) {
       const page = pages.find((p) => p.id === id);
-      return page ? ok({ page }) : { status: 404, body: { error: "Page not found" } };
+      return page ? ok({ page: { ...page, liveUnits: liveUnits(now) } }) : { status: 404, body: { error: "Page not found" } };
     }
     return ok({ pages });
   }
@@ -142,7 +210,19 @@ function landingPages(url: URL, method: string, raw: string | undefined, now: Da
     const title = typeof input.title === "string" && input.title ? input.title : "New page";
     const slug = typeof input.slug === "string" && input.slug ? input.slug : `maple-${pageId.slice(-5)}`;
     const at = new Date().toISOString();
-    made.pages[pageId] = { id: pageId, facility_id: DEMO_FACILITY_ID, slug, title, status: "draft", sections: input.sections ?? [], created_at: at, updated_at: at };
+    made.pages[pageId] = {
+      id: pageId,
+      facility_id: DEMO_FACILITY_ID,
+      funnel_id: typeof input.funnelId === "string" ? input.funnelId : null,
+      slug,
+      title,
+      status: "draft",
+      theme: input.theme ?? { editor: "blocks" },
+      storedge_widget_url: typeof input.storedgeWidgetUrl === "string" ? input.storedgeWidgetUrl : null,
+      sections: input.sections ?? [],
+      created_at: at,
+      updated_at: at,
+    };
     write(made);
     return ok({ page: made.pages[pageId] }, 201);
   }
@@ -649,6 +729,28 @@ export function demoToolAnswer(url: URL, method: string, raw: string | undefined
   switch (url.pathname) {
     case "/api/landing-pages":
       return landingPages(url, method, raw, now);
+    case "/api/landing-pages/publish": {
+      if (method !== "POST") return { status: 405, body: { error: "Not in the sample portal." } };
+      const input = body(raw);
+      const id = typeof input.id === "string" ? input.id : "";
+      const made = read();
+      const page = pageRecords(now, made).find((p) => p.id === id);
+      if (!page) return { status: 404, body: { error: "Page not found" } };
+      const sections = Array.isArray(page.sections) ? page.sections : [];
+      const snapshot = snapshotOf({
+        title: String(page.title ?? "Page"),
+        metaTitle: typeof page.meta_title === "string" ? page.meta_title : null,
+        metaDescription: typeof page.meta_description === "string" ? page.meta_description : null,
+        storedgeWidgetUrl: typeof page.storedge_widget_url === "string" ? page.storedge_widget_url : null,
+        editor: "blocks",
+        blocks: sectionsToBlocks(sections),
+      });
+      const prev = typeof page.version === "number" ? page.version : 0;
+      const version = prev + 1;
+      made.pages[id] = { ...page, status: "published", published_snapshot: snapshot, published_at: new Date().toISOString(), version, theme: { editor: "blocks" } };
+      write(made);
+      return ok({ ok: true, slug: page.slug, version, title: page.title, href: `/lp/${page.slug}` });
+    }
     case "/api/landing-pages/generate":
       return method === "POST" ? generatePage(raw, now) : null;
     case "/api/utm-links":

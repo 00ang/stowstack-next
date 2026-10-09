@@ -958,6 +958,19 @@ model landing_page_sections {
   @@index([landing_page_id], map: "idx_lp_sections_page")
 }
 
+/// One row each time a page is published. The public URL serves the latest snapshot, not the draft.
+model landing_page_versions {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  landing_page_id String        @db.Uuid
+  version         Int
+  snapshot        Json
+  published_at    DateTime      @default(now()) @db.Timestamptz(6)
+  landing_pages   landing_pages @relation(fields: [landing_page_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([landing_page_id, version], map: "landing_page_versions_page_version")
+  @@index([landing_page_id], map: "idx_lp_versions_page")
+}
+
 model landing_pages {
   id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   facility_id           String                  @db.Uuid
@@ -974,8 +987,11 @@ model landing_pages {
   created_at            DateTime                @default(now()) @db.Timestamptz(6)
   updated_at            DateTime                @updatedAt @default(now()) @db.Timestamptz(6)
   published_at          DateTime?               @db.Timestamptz(6)
+  /// Live copy. Draft edits stay in landing_page_sections until the page is published again.
+  published_snapshot    Json?
   call_tracking_numbers call_tracking_numbers[]
   landing_page_sections landing_page_sections[]
+  landing_page_versions landing_page_versions[]
   facilities            facilities              @relation(fields: [facility_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   funnels               funnels?                @relation(fields: [funnel_id], references: [id], onUpdate: NoAction)
   partial_leads         partial_leads[]

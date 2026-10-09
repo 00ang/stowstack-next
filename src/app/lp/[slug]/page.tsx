@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTrackingParams } from "@/hooks/use-tracking-params";
+import { BlockPage } from "@/components/landing/block-page";
+import { sectionsToBlocks, type LiveUnit } from "@/lib/page-blocks";
+import { bootPortalDemo, isPortalDemo } from "@/lib/portal-demo/demo-mode";
 import {
   Phone,
   MapPin,
@@ -48,9 +51,12 @@ interface LandingPage {
     accentColor?: string;
     /** Switched on by the campaign that owns the page (src/lib/campaign-publish). */
     features?: { tour?: boolean; reserve?: string };
+    /** Set by the campaign page editor. The public page renders blocks in order. */
+    editor?: string;
   };
   storedge_widget_url?: string;
   sections: Section[];
+  liveUnits?: LiveUnit[];
 }
 
 /* ═══════════════════════════════════════════════════════ */
@@ -1013,6 +1019,9 @@ function ExitIntentPopup({
 /* ═══════════════════════════════════════════════════════ */
 
 export default function LandingPageRoute() {
+  // A sample tab opened with ?demo answers from the sample, not the database.
+  // Real pages have neither the flag nor the query, so this does nothing there.
+  if (typeof window !== "undefined") bootPortalDemo();
   const { slug } = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
   const [page, setPage] = useState<LandingPage | null>(null);
@@ -1241,6 +1250,23 @@ export default function LandingPageRoute() {
           Go to homepage
         </Link>
       </div>
+    );
+  }
+
+  if (page.theme?.editor === "blocks") {
+    const hero = page.sections.find((s) => s.section_type === "hero")?.config ?? {};
+    return (
+      <BlockPage
+        title={page.title}
+        blocks={sectionsToBlocks(page.sections)}
+        units={page.liveUnits ?? []}
+        facilityName={typeof hero.facilityName === "string" ? hero.facilityName : undefined}
+        phone={trackingPhone || (typeof hero.phone === "string" ? hero.phone : null)}
+        storedgeUrl={page.storedge_widget_url}
+        facilityId={page.facility_id}
+        pageId={page.id}
+        sample={typeof window !== "undefined" && isPortalDemo()}
+      />
     );
   }
 
