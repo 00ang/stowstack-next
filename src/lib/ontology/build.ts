@@ -308,7 +308,9 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
         { label: "Leads, 30 days", value: String(pageLeads30.get(p.id) ?? 0) },
       ],
       actions: [
-        { label: "Edit page", tool: "landing-pages" },
+        p.funnelId
+          ? { label: "Open the page", href: `/portal/campaigns/${p.funnelId}/page?page=${p.id}` }
+          : { label: "Edit page", tool: "landing-pages" },
         { label: "Make a tracking link", tool: "utm-links" },
       ],
       order: [status === "published" ? 0 : 1, -time(p.publishedAt ?? p.createdAt)],
@@ -765,7 +767,9 @@ export function buildOntology(raw: RawFacility, now: Date): Ontology {
       why: convLeads > 0
         ? `Your other pages turn about 1 in ${Math.max(1, Math.round(convVisits / convLeads))} visits into a lead.`
         : `${p.visits30} people looked and left without asking.`,
-      action: { label: "Edit page", tool: "landing-pages" },
+      action: p.funnelId
+        ? { label: "Open the page", href: `/portal/campaigns/${p.funnelId}/page?page=${p.id}` }
+        : { label: "Edit page", tool: "landing-pages" },
     });
   }
 

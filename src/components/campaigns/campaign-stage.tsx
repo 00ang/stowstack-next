@@ -130,8 +130,17 @@ export function CampaignStage({
   // In the portal, a function opens its own tool with the object it works on in focus.
   const toolLink: ToolLinkFor = (nodeId) => {
     const node = draft.graph.nodes.find((n) => n.id === nodeId);
-    const target = node ? NODE_TOOL[node.type] : undefined;
-    if (!node || !target) return null;
+    if (!node) return null;
+    // The page opens in this campaign, not in the old landing-page tool.
+    if (node.type === "page") {
+      const q = new URLSearchParams({ node: node.id });
+      const pageId = typeof node.params.page === "string" ? node.params.page : "";
+      if (pageId) q.set("page", pageId);
+      else if (node.slug) q.set("slug", node.slug);
+      return { href: `/portal/campaigns/${funnelId}/page?${q}`, label: "Open the page" };
+    }
+    const target = NODE_TOOL[node.type];
+    if (!target) return null;
     const subject = nodeSubject(draft.graph, node, ontologyData?.objects ?? []);
     return { href: actionHref({ label: target.label, tool: target.tool }, subject?.address ?? null), label: target.label };
   };
@@ -395,6 +404,7 @@ export function CampaignStage({
               edgeLabels={edgeLabels}
               published={published}
               fixHref={fixHref}
+              toolLink={shared ? toolLink : undefined}
             />
           </div>
         ) : (

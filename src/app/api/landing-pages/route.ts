@@ -4,6 +4,8 @@ import { jsonResponse, errorResponse, getOrigin, corsResponse, isAdminRequest, r
 import { getSession } from "@/lib/session-auth";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
+import { publicView, sectionsNeedLiveUnits, shouldFreezePrevious } from "@/lib/page-blocks";
+import { freezeCurrent, loadLiveUnits, publishPage } from "@/lib/page-blocks/persist";
 
 export async function OPTIONS(req: NextRequest) {
   return corsResponse(getOrigin(req));
@@ -29,13 +31,62 @@ export async function GET(req: NextRequest) {
       orderBy: { sort_order: "asc" },
     });
 
+    // Admin preview shows the draft. Everyone else gets the published
+    // snapshot, so an edit in progress doesn't change the live page.
+    if (!preview) {
+      const theme = page.theme && typeof page.theme === "object" && !Array.isArray(page.theme) ? (page.theme as { editor?: string }) : {};
+      const view = publicView({
+        status: page.status,
+        title: page.title,
+        metaTitle: page.meta_title,
+        metaDescription: page.meta_description,
+        storedgeWidgetUrl: page.storedge_widget_url,
+        themeEditor: theme.editor === "blocks" ? "blocks" : "legacy",
+        sections,
+        snapshot: page.published_snapshot,
+      });
+      if (!view) return errorResponse("Page not found", 404, origin);
+      const served = view.sections.map((s, i) => ({ id: `live-${i}`, ...s }));
+      const liveUnits = sectionsNeedLiveUnits(served) ? await loadLiveUnits(page.facility_id).catch(() => []) : [];
+      const nextTheme = {
+        ...(page.theme && typeof page.theme === "object" && !Array.isArray(page.theme) ? page.theme : {}),
+        ...(view.editor === "blocks" ? { editor: "blocks" } : {}),
+      };
+      return jsonResponse(
+        {
+          page: {
+            ...page,
+            title: view.title,
+            meta_title: view.metaTitle,
+            meta_description: view.metaDescription,
+            storedge_widget_url: view.storedgeWidgetUrl ?? page.storedge_widget_url,
+            theme: nextTheme,
+            sections: served,
+            liveUnits,
+          },
+        },
+        200,
+        origin,
+      );
+    }
+
     return jsonResponse({ page: { ...page, sections } }, 200, origin);
   }
 
-  // Admin access by ID or facility
+  // Admin, partner session, or the facility's own portal (manage cookie).
   const isAdmin = isAdminRequest(req);
   const session = !isAdmin ? await getSession(req) : null;
-  if (!isAdmin && !session) return errorResponse("Unauthorized", 401, origin);
+  if (!isAdmin && !session) {
+    const askedFacility = url.searchParams.get("facility_id") || url.searchParams.get("facilityId");
+    const askedId = url.searchParams.get("id");
+    let owns: string | null = askedFacility;
+    if (!owns && askedId) {
+      const row = await db.landing_pages.findUnique({ where: { id: askedId }, select: { facility_id: true } });
+      owns = row?.facility_id ?? null;
+    }
+    const denied = await requireFacilityAccess(req, owns);
+    if (denied) return denied;
+  }
 
   const facilityId = url.searchParams.get("facility_id") || url.searchParams.get("facilityId");
   const id = url.searchParams.get("id");
@@ -94,6 +145,7 @@ export async function POST(req: NextRequest) {
       variationIds,
       sections,
       cloneFrom,
+      funnelId,
     } = body;
     const pageTitle: string | undefined = title || name;
 
@@ -182,6 +234,7 @@ export async function POST(req: NextRequest) {
           og_image_url: ogImageUrl ?? null,
           variation_ids: Array.isArray(variationIds) ? variationIds : [],
           published_at: nowPublished ? new Date() : null,
+          ...(funnelId ? { funnel_id: funnelId } : {}),
         },
       });
 
@@ -255,6 +308,13 @@ export async function PATCH(req: NextRequest) {
 
     const sections = updates.sections;
     delete updates.sections;
+    const publishing = updates.status === "published";
+    // First edit of a live page that predates snapshots: freeze what is
+    // live now, then write the draft. An explicit publish skips this and
+    // snapshots the new sections below.
+    if (sections && shouldFreezePrevious({ status: page.status, hasSnapshot: page.published_snapshot != null, publishing })) {
+      await freezeCurrent(id);
+    }
 
     const fieldMap: Record<string, string> = {
       metaTitle: "meta_title",
@@ -326,6 +386,12 @@ export async function PATCH(req: NextRequest) {
 
       return { updated, updatedSections };
     });
+
+    if (publishing) {
+      const live = await publishPage(id);
+      const fresh = await db.landing_pages.findUnique({ where: { id } });
+      return jsonResponse({ page: { ...fresh, sections: updatedSections }, published: live }, 200, origin);
+    }
 
     return jsonResponse({ page: { ...updated, sections: updatedSections } }, 200, origin);
   } catch (err) {

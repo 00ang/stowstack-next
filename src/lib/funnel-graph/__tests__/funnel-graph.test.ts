@@ -422,6 +422,7 @@ describe("graphFromRecord", () => {
     expect(types).toContain("follow");
     const page = graph.nodes.find((n) => n.type === "page");
     expect(page?.slug).toBe("fall-move");
+    expect(page?.params.page).toBe("p1");
     expect(graph.edges.some((e) => e.to === page?.id)).toBe(true);
     expect(graph.nodes.find((n) => n.type === "follow")?.params.steps).toBe("3");
     // A channel is never described as live just because the funnel row is.

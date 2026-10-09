@@ -208,7 +208,7 @@ export const CATALOG: Record<NodeType, NodeDef> = {
     endpoint: "POST /api/landing-pages/generate",
     paused: false,
     publish: (n) =>
-      `Writes /lp/${n.slug || "…"} to match the ad and puts it live. Every link to it is tagged to this campaign.`,
+      `Puts /lp/${n.slug || "…"} live from the page you edited. Ads in this campaign point at it.`,
   },
   reserve: {
     type: "reserve",
