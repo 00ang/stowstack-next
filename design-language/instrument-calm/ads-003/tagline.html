@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>StorageAds · Ads that feel like instruments.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@600&family=Manrope:wght@600;800&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink:#16161A; --sky:#93AFE7; --sage:#E4EADE; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background:#E0E0E5; font-family: Manrope, system-ui, sans-serif; color: var(--ink); padding: 32px; }
+  .sheet { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .ad { position: relative; overflow: hidden; background: #fff; color: var(--ink); flex: none; }
+  .k { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 18px; color: #525766; }
+  h1 { font-weight: 800; letter-spacing: -0.04em; line-height: .94; }
+  .row { display: flex; align-items: center; gap: 14px; }
+  .word { font-weight: 800; letter-spacing: -0.03em; }
+  .sky { background: var(--sky); overflow: hidden; }
+  .sky img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; image-rendering: pixelated; }
+  .pane { background: #fff; border: 1px solid #121214; }
+  .awning { display: flex; border-bottom: 1px solid #121214; }
+  .awning i { flex: 1; display: block; height: 22px; }
+  .awning i:nth-child(1) { background: #E8281E; }
+  .awning i:nth-child(2) { background: #396335; }
+  .awning i:nth-child(3) { background: #2054B7; }
+
+  #t1 { width: 1080px; height: 1080px; background: var(--sky); }
+  #t1 .sky { height: 560px; }
+  #t1 .pane { position: absolute; left: 48px; right: 48px; bottom: 48px; }
+  #t1 .bar { display: flex; justify-content: space-between; border-bottom: 1px solid #121214; padding: 14px 22px; }
+  #t1 h1 { font-size: 72px; padding: 28px 28px 32px; }
+
+  #t2 { width: 1080px; height: 1080px; padding: 72px 64px 56px; display: flex; flex-direction: column; }
+  #t2 h1 { font-size: 108px; margin-top: 28px; }
+  #t2 .foot { margin-top: auto; }
+
+  #t3 { width: 1080px; height: 1080px; background: var(--sage); padding: 72px 64px 56px; display: flex; flex-direction: column; }
+  #t3 h1 { font-size: 100px; margin-top: 36px; }
+  #t3 .mark { margin-top: 8px; }
+  #t3 .foot { margin-top: auto; }
+
+  #t4 { width: 1080px; height: 1920px; display: flex; flex-direction: column; }
+  #t4 .mid { flex: 1; padding: 88px 72px 64px; display: flex; flex-direction: column; }
+  #t4 h1 { font-size: 118px; margin-top: 48px; }
+  #t4 .foot { margin-top: auto; }
+
+  #t5 { width: 1200px; height: 628px; display: grid; grid-template-columns: 420px 1fr; }
+  #t5 .copy { padding: 44px 48px 36px; display: flex; flex-direction: column; }
+  #t5 h1 { font-size: 64px; margin-top: 18px; }
+  #t5 .foot { margin-top: auto; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <article class="ad" id="t1" data-name="09-tagline-sky">
+    <div class="sky"><img src="sky-1080.png" alt="" /></div>
+    <div class="pane">
+      <div class="bar"><span class="k">Tagline</span><span class="k">01</span></div>
+      <h1>Ads that feel like instruments.</h1>
+    </div>
+  </article>
+
+  <article class="ad" id="t2" data-name="10-tagline-poster">
+    <div class="row">
+      <svg width="56" height="56" viewBox="0 0 120 120" aria-hidden="true"><rect x="16" y="54" width="66" height="56" fill="#16161A"/><rect x="16" y="18" width="12" height="42" fill="#16161A"/><rect x="34" y="8" width="12" height="52" fill="#16161A"/><rect x="52" y="14" width="12" height="46" fill="#16161A"/><rect x="70" y="24" width="12" height="36" fill="#16161A"/><rect x="82" y="60" width="24" height="14" fill="#16161A"/></svg>
+      <span class="word" style="font-size:36px">StorageAds</span>
+    </div>
+    <h1>Ads that feel like instruments.</h1>
+    <p class="k foot">storageads.com</p>
+  </article>
+
+  <article class="ad" id="t3" data-name="11-tagline-sage">
+    <p class="k">Tagline</p>
+    <h1>Ads that feel like instruments.</h1>
+    <svg class="mark" width="280" height="28" viewBox="0 0 280 28" aria-hidden="true"><path d="M6 16 C 40 8, 90 22, 140 12 C 190 4, 230 20, 274 10" fill="none" stroke="#83372F" stroke-width="4" stroke-linecap="round"/></svg>
+    <div class="foot row">
+      <svg width="48" height="48" viewBox="0 0 120 120" aria-hidden="true"><rect x="16" y="54" width="66" height="56" fill="#16161A"/><rect x="16" y="18" width="12" height="42" fill="#16161A"/><rect x="34" y="8" width="12" height="52" fill="#16161A"/><rect x="52" y="14" width="12" height="46" fill="#16161A"/><rect x="70" y="24" width="12" height="36" fill="#16161A"/><rect x="82" y="60" width="24" height="14" fill="#16161A"/></svg>
+      <span class="word" style="font-size:32px">StorageAds</span>
+    </div>
+  </article>
+
+  <article class="ad" id="t4" data-name="12-tagline-story">
+    <div class="awning" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="mid">
+      <svg width="160" height="160" viewBox="0 0 120 120" aria-hidden="true"><rect x="16" y="54" width="66" height="56" fill="#16161A"/><rect x="16" y="18" width="12" height="42" fill="#16161A"/><rect x="34" y="8" width="12" height="52" fill="#16161A"/><rect x="52" y="14" width="12" height="46" fill="#16161A"/><rect x="70" y="24" width="12" height="36" fill="#16161A"/><rect x="82" y="60" width="24" height="14" fill="#16161A"/></svg>
+      <h1>Ads that feel like instruments.</h1>
+      <p class="k foot">storageads.com</p>
+    </div>
+  </article>
+
+  <article class="ad" id="t5" data-name="13-tagline-landscape">
+    <div class="sky"><img src="sky-side.png" alt="" /></div>
+    <div class="copy">
+      <p class="k">Tagline</p>
+      <h1>Ads that feel like instruments.</h1>
+      <div class="foot row">
+        <svg width="40" height="40" viewBox="0 0 120 120" aria-hidden="true"><rect x="16" y="54" width="66" height="56" fill="#16161A"/><rect x="16" y="18" width="12" height="42" fill="#16161A"/><rect x="34" y="8" width="12" height="52" fill="#16161A"/><rect x="52" y="14" width="12" height="46" fill="#16161A"/><rect x="70" y="24" width="12" height="36" fill="#16161A"/><rect x="82" y="60" width="24" height="14" fill="#16161A"/></svg>
+        <span class="word" style="font-size:26px">StorageAds</span>
+      </div>
+    </div>
+  </article>
+
+</div>
+</body>
+</html>
