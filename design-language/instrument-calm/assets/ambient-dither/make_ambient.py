@@ -43,21 +43,21 @@ def paint(field, layers):
 def mountain():
     xn, yn = grids()
     n = smooth_noise((H, W), scale=280, seed=51, octaves=4)
-    # One high peak, one shoulder. yn is 0 at the top, so a smaller ridge is taller.
-    ridge = (
-        0.62
-        - 0.36 * np.exp(-((xn - 0.38) ** 2) / 0.012)
-        - 0.18 * np.exp(-((xn - 0.74) ** 2) / 0.018)
-        + (n - 0.5) * 0.03
-    )
-    far = 0.50 - 0.08 * np.exp(-((xn - 0.58) ** 2) / 0.04)
+    # Matterhorn, the Zermatt side. Long left ridge, a horn, then a steep right face.
+    # Smaller y is higher. The peak sits under the logo, inside the square crop.
+    xs = np.array([0.00, 0.18, 0.28, 0.36, 0.42, 0.47, 0.50, 0.525, 0.56, 0.64, 0.76, 0.88, 1.00])
+    ys = np.array([0.96, 0.82, 0.66, 0.50, 0.36, 0.26, 0.22, 0.34, 0.46, 0.56, 0.66, 0.78, 0.92])
+    ridge = np.interp(xn[0], xs, ys)
+    ridge = np.broadcast_to(ridge, (H, W)).astype(np.float32).copy()
+    ridge += (n - 0.5) * 0.012
     inside = yn > ridge
-    far_in = (yn > far) & ~inside
-    depth = np.clip((yn - ridge) * 1.8, 0, 1)
-    slate = np.where(inside, (0.22 + 0.40 * depth) * (0.75 + 0.25 * n), 0)
-    slate = np.maximum(slate, np.where(far_in, 0.16 + 0.08 * n, 0))
-    cap = np.clip((ridge + 0.09 - yn) / 0.09, 0, 1)
-    snow = np.where(yn > ridge - 0.012, cap * (0.75 + 0.25 * n), 0)
+    depth = np.clip((yn - ridge) * 1.6, 0, 1)
+    slate = np.where(inside, (0.22 + 0.42 * depth) * (0.75 + 0.25 * n), 0)
+    # Snow sits thicker on the horn than on the lower ridges.
+    horn = np.clip((0.40 - ridge) / 0.32, 0, 1)
+    thick = 0.03 + 0.08 * horn
+    cap = np.clip((ridge + thick - yn) / thick, 0, 1)
+    snow = np.where(yn > ridge - 0.008, cap * (0.8 + 0.2 * n), 0)
     # The sky is stipple, not a wash. Blue field, then purple, pink, and orange
     # dots that get denser toward the horizon.
     grain = smooth_noise((H, W), scale=90, seed=57, octaves=3)
