@@ -27,7 +27,7 @@
   #t1 { width: 1080px; height: 1080px; background: var(--sky); }
   #t1 .sky { height: 560px; }
   #t1 .pane { position: absolute; left: 48px; right: 48px; bottom: 48px; }
-  #t1 .bar { display: flex; justify-content: space-between; border-bottom: 1px solid #121214; padding: 14px 22px; }
+  #t1 .bar { display: flex; align-items: center; gap: 14px; border-bottom: 1px solid #121214; padding: 16px 22px; }
   #t1 h1 { font-size: 72px; padding: 28px 28px 32px; }
 
   #t2 { width: 1080px; height: 1080px; padding: 72px 64px 56px; display: flex; flex-direction: column; }
@@ -56,7 +56,10 @@
   <article class="ad" id="t1" data-name="09-tagline-sky">
     <div class="sky"><img src="sky-1080.png" alt="" /></div>
     <div class="pane">
-      <div class="bar"><span class="k">Tagline</span><span class="k">01</span></div>
+      <div class="bar">
+        <svg width="44" height="44" viewBox="0 0 120 120" aria-hidden="true"><rect x="16" y="54" width="66" height="56" fill="#16161A"/><rect x="16" y="18" width="12" height="42" fill="#16161A"/><rect x="34" y="8" width="12" height="52" fill="#16161A"/><rect x="52" y="14" width="12" height="46" fill="#16161A"/><rect x="70" y="24" width="12" height="36" fill="#16161A"/><rect x="82" y="60" width="24" height="14" fill="#16161A"/></svg>
+        <span class="word" style="font-size:32px">StorageAds</span>
+      </div>
       <h1>Ads that feel like instruments.</h1>
     </div>
   </article>
