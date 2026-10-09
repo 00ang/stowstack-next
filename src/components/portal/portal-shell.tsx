@@ -450,8 +450,8 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
   // Onboarding runs its own steps; the next-move bar waits until it is done.
   const pathname = usePathname();
   const onboarding = pathname.startsWith("/portal/onboarding");
-  // A campaign's builder takes the whole window: no page scroll, the nav as a rail.
-  const builder = surfaceOf(pathname) === "campaign";
+  // Campaigns and Tools take the window: a rail, no page scroll, the next move pinned.
+  const builder = surfaceOf(pathname) === "campaign" || surfaceOf(pathname) === "tools";
   // Boot the sample portal first (/portal?demo) so the session it reads is the sample's.
   const [session, setSession] = useState<PortalSession | null>(() => {
     bootPortalDemo();

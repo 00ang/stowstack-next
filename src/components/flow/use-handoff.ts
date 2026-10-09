@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useToolFocus } from "@/components/ontology/tool-focus";
 import { useFlow } from "./flow-context";
@@ -26,21 +26,43 @@ export function useHandoff(): (handoff: Handoff | null) => void {
   const router = useRouter();
   const setOverride = flow?.setOverride;
   const refresh = flow?.refresh;
+  // Only withdraw an offer this tool made. A parent (the tools track) may
+  // already be showing a move; mounting the tool must not wipe it.
+  const owned = useRef(false);
 
-  useEffect(() => () => setOverride?.(null), [setOverride]);
+  useEffect(
+    () => () => {
+      if (owned.current) setOverride?.(null);
+    },
+    [setOverride],
+  );
 
   const focusAddress = useToolFocus()?.address ?? null;
+  const prevFocus = useRef<string | null | undefined>(undefined);
   useEffect(() => {
-    setOverride?.(null);
+    if (prevFocus.current === undefined) {
+      prevFocus.current = focusAddress;
+      return;
+    }
+    if (prevFocus.current === focusAddress) return;
+    prevFocus.current = focusAddress;
+    if (owned.current) {
+      owned.current = false;
+      setOverride?.(null);
+    }
   }, [focusAddress, setOverride]);
 
   return useCallback(
     (handoff: Handoff | null) => {
       if (!setOverride) return;
       if (!handoff) {
-        setOverride(null);
+        if (owned.current) {
+          owned.current = false;
+          setOverride(null);
+        }
         return;
       }
+      owned.current = true;
       refresh?.();
       setOverride({
         sentence: handoff.sentence,

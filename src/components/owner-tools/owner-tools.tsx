@@ -38,6 +38,11 @@ import {
 import type { FacilityProp } from "@/components/admin/facility-tabs/facility-overview/types";
 import { useOntology } from "@/components/ontology/use-ontology";
 import { FocusBar, ToolFocusProvider } from "@/components/ontology/tool-focus";
+import { useFlow } from "@/components/flow/flow-context";
+import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
+import type { ToolKey } from "@/lib/ontology/types";
+import { buildTrack, ensureStation, trackChoices } from "@/lib/tools-track/build";
+import { ToolsTrack } from "@/components/owner-tools/tools-track";
 
 /**
  * The facility tools, for owners: the same components the admin facility
@@ -252,24 +257,39 @@ export function OwnerTools(props: OwnerToolsProps) {
 function OwnerToolsInner({ defaultFacilityId, upgradeHref, campaignsBase }: OwnerToolsProps) {
   const [facilities, setFacilities] = useState<ToolFacility[]>([]);
   const [facilityId, setFacilityId] = useState<string | null>(null);
+  const [sample, setSample] = useState(false);
   // Deep link: /portal/tools?tool=landing-pages&focus=units/10x10. Read through
   // the router, not window.location: on an in-app link the new page renders
   // before the browser's URL changes, so a one-time read saw the old page's URL
   // and dropped the tool and its focus. The focus stays across tool switches
   // until the owner clears it.
   const searchParams = useSearchParams();
+  const flow = useFlow();
   const requested = searchParams.get("tool");
   const tool = requested && TOOL_KEYS.has(requested) ? requested : "overview";
   const focus = searchParams.get("focus");
+  const view = searchParams.get("view");
+  const drawerShut = searchParams.get("drawer") === "shut";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // history.replaceState keeps the tool switch instant; Next syncs it into useSearchParams.
-  const clearFocus = useCallback(() => {
+  useEffect(() => {
+    setSample(isPortalDemo());
+  }, []);
+
+  // history.replaceState keeps the switch instant; Next syncs it into useSearchParams.
+  const setParams = useCallback((changes: Record<string, string | null>) => {
     const url = new URL(window.location.href);
-    url.searchParams.delete("focus");
+    for (const [k, v] of Object.entries(changes)) {
+      if (v == null || v === "") url.searchParams.delete(k);
+      else url.searchParams.set(k, v);
+    }
     window.history.replaceState(null, "", url);
   }, []);
+
+  const clearFocus = useCallback(() => {
+    setParams({ focus: null });
+  }, [setParams]);
 
   const pickTool = useCallback((key: string, params?: Record<string, string>) => {
     const url = new URL(window.location.href);
@@ -312,11 +332,31 @@ function OwnerToolsInner({ defaultFacilityId, upgradeHref, campaignsBase }: Owne
     load();
   }, [load]);
 
-  const ontology = useOntology(focus && facilityId ? { kind: "manage", facilityId } : null);
-  const focused = focus ? ontology.data?.objects.find((o) => o.address === focus) ?? null : null;
+  const ontology = useOntology(facilityId && (campaignsBase || focus) ? { kind: "manage", facilityId } : null);
+  const by = flow?.pace && flow.pace.target > 0 ? `${flow.pace.monthShort} ${flow.pace.daysInMonth}` : null;
+  const built =
+    ontology.data && campaignsBase
+      ? buildTrack({ ontology: ontology.data, focus, by, working: flow?.working ?? null })
+      : null;
+  const track = built && ontology.data ? ensureStation(built, requested, ontology.data) : built;
+  const requestedOnTrack = !!(requested && track?.stations.some((s) => s.tool === requested));
+  // A deep link to a tool that isn't a station on this track (Video, the Ad
+  // Generator, …) still opens that tool. The track stays one click away.
+  const explicitOtherTool = !!(requested && TOOL_KEYS.has(requested) && requested !== "overview" && track && !requestedOnTrack);
+  const listMode = !campaignsBase || view === "list" || explicitOtherTool;
+  const focusAddress = focus ?? (!listMode ? track?.focus ?? null : null);
+  const focused = focusAddress ? ontology.data?.objects.find((o) => o.address === focusAddress) ?? null : null;
+  const openTool: ToolKey | null =
+    !track || listMode ? null : requestedOnTrack ? (requested as ToolKey) : drawerShut ? null : track.now;
   // Hold the tool back for the moment it takes to read the focus, so it mounts
   // once, already knowing what it was opened for.
-  const waitingForFocus = !!focus && ontology.loading && !ontology.data;
+  const waitingForFocus = !!focusAddress && ontology.loading && !ontology.data;
+
+  const onOpen = useCallback((key: ToolKey) => setParams({ tool: key, drawer: null, view: null, focus: track?.focus ?? focus }), [setParams, track?.focus, focus]);
+  const onCloseDrawer = useCallback(() => setParams({ tool: null, drawer: "shut" }), [setParams]);
+  const onSelectFocus = useCallback((address: string) => setParams({ focus: address, tool: null, drawer: null }), [setParams]);
+  const onAllTools = useCallback(() => setParams({ view: "list", drawer: null, tool: openTool }), [setParams, openTool]);
+  const onShowTrack = useCallback(() => setParams({ view: null, drawer: null, tool: null }), [setParams]);
 
   if (loading) {
     return (
@@ -341,10 +381,84 @@ function OwnerToolsInner({ defaultFacilityId, upgradeHref, campaignsBase }: Owne
   const selectClass =
     "w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--color-dark)] outline-none focus:border-[var(--color-dark)]/50";
 
+  if (!listMode) {
+    if (!track || !ontology.data) {
+      return (
+        <div className="flex flex-1 items-center justify-center py-24 text-[var(--color-body-text)]">
+          <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Reading your facility…
+        </div>
+      );
+    }
+    const campaignsHref = campaignsBase
+      ? focused?.type === "campaigns"
+        ? `${campaignsBase}/${encodeURIComponent(focused.id)}`
+        : campaignsBase
+      : undefined;
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        {facilities.length > 1 && (
+          <div className="shrink-0 px-4 pt-3">
+            <label htmlFor="tools-facility" className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-mid-gray)]">
+              Facility
+            </label>
+            <select id="tools-facility" value={facility.id} onChange={(e) => setFacilityId(e.target.value)} className={selectClass}>
+              {facilities.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <ToolsTrack
+          track={track}
+          ontology={ontology.data}
+          openTool={openTool}
+          sample={sample}
+          choices={trackChoices(ontology.data)}
+          campaignsBase={campaignsBase}
+          onSelectFocus={onSelectFocus}
+          onOpen={onOpen}
+          onClose={onCloseDrawer}
+          onAllTools={onAllTools}
+          onFullTool={onAllTools}
+          toolPane={
+            openTool && !waitingForFocus ? (
+              <ToolFocusProvider object={focused}>
+                <ToolContent
+                  key={`${facility.id}:${openTool}`}
+                  tool={openTool}
+                  facility={facility}
+                  onUpdate={load}
+                  upgradeHref={upgradeHref}
+                  openTool={pickTool}
+                  campaignsHref={campaignsHref}
+                />
+              </ToolFocusProvider>
+            ) : (
+              <div className="flex items-center justify-center py-16 text-[var(--color-body-text)]">
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading…
+              </div>
+            )
+          }
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-full flex-col md:flex-row">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
       {/* Picker: grouped list on desktop, selects on mobile */}
-      <aside className="shrink-0 border-b border-[var(--border-subtle)] px-4 py-3 md:w-56 md:border-b-0 md:border-r md:px-3 md:py-5">
+      <aside className="shrink-0 border-b border-[var(--border-subtle)] px-4 py-3 md:min-h-0 md:w-56 md:overflow-y-auto md:border-b-0 md:border-r md:px-3 md:py-5">
+        {campaignsBase && (
+          <button
+            type="button"
+            onClick={onShowTrack}
+            className="mb-3 w-full border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-2.5 py-2 text-left text-[13px] font-extrabold text-[var(--ic-ink)]"
+          >
+            Track
+          </button>
+        )}
         {facilities.length > 1 && (
           <div className="mb-3 md:mb-5 md:px-1">
             <label htmlFor="tools-facility" className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-mid-gray)]">
@@ -418,7 +532,7 @@ function OwnerToolsInner({ defaultFacilityId, upgradeHref, campaignsBase }: Owne
         </nav>
       </aside>
 
-      <section className="min-w-0 flex-1 px-4 py-5 md:px-6 md:py-6">
+      <section className="min-h-0 min-w-0 flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6">
         {focused && (
           <FocusBar
             object={focused}
