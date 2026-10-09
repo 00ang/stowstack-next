@@ -11,6 +11,10 @@ import {
   Sparkles,
 } from "lucide-react"
 import { type LandingPageRecord } from "./lp-builder-types"
+import { useToolFocus } from "@/components/ontology/tool-focus"
+import { useFlow } from "@/components/flow/flow-context"
+import { FocusScopeToggle } from "@/components/ontology/focus-scope"
+import { linkedIds, splitByFocus } from "@/lib/tools-track/focus-match"
 
 const FUNNEL_OPTIONS = [
   {
@@ -71,6 +75,18 @@ export function PageList({
   const [showGenerate, setShowGenerate] = useState(false)
   const [funnelStage, setFunnelStage] = useState("consideration")
   const [archetype, setArchetype] = useState("")
+  const focus = useToolFocus()
+  const ontology = useFlow()?.ontology
+  const [scope, setScope] = useState<{ address: string | null; showAll: boolean }>({ address: null, showAll: false })
+  const showAll = scope.address === (focus?.address ?? null) && scope.showAll
+  const { named } = splitByFocus(
+    focus,
+    pages,
+    (p) => `${p.title} ${p.slug}`,
+    (p) => p.id,
+    focus ? linkedIds(ontology, focus.address, "pages") : new Set(),
+  )
+  const visible = focus && !showAll ? named : pages
   return (
     <div className="space-y-4">
       <div className="border border-black/[0.08] rounded-xl bg-white overflow-hidden">
@@ -83,6 +99,17 @@ export function PageList({
               <p className="text-xs sm:text-sm text-[#9CA3AF]">
                 Ad-specific pages for this facility
               </p>
+              {focus && (
+                <div className="mt-2">
+                  <FocusScopeToggle
+                    name={focus.name}
+                    named={named.length}
+                    total={pages.length}
+                    showAll={showAll}
+                    onToggle={() => setScope({ address: focus.address, showAll: !showAll })}
+                  />
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {onGenerate && (
@@ -212,9 +239,9 @@ export function PageList({
             </div>
           )}
 
-          {pages.length > 0 && (
+          {visible.length > 0 && (
             <div className="space-y-2">
-              {pages.map((p) => (
+              {visible.map((p) => (
                 <div
                   key={p.id}
                   className="flex items-center justify-between p-4 rounded-xl border border-black/[0.08] cursor-pointer hover:bg-black/[0.03] transition-all"

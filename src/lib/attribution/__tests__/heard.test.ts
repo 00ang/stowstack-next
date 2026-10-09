@@ -58,7 +58,9 @@ describe("signed links", () => {
     const [data, sig] = t.split(".");
     const forged = Buffer.from(JSON.stringify({ tid: "b", exp: Date.now() + 60_000 })).toString("base64url");
     expect(verifyToken("heard", `${forged}.${sig}`)).toBeNull();
-    expect(verifyToken("heard", `${data}.x${sig.slice(1)}`)).toBeNull();
+    // Replacing the first character with "x" is a no-op when the signature already starts with x.
+    const flipped = `${sig[0] === "A" ? "B" : "A"}${sig.slice(1)}`;
+    expect(verifyToken("heard", `${data}.${flipped}`)).toBeNull();
     expect(verifyToken("heard", signToken("heard", { tid: "a" }, -1))).toBeNull();
   });
 

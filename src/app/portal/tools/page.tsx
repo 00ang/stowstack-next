@@ -10,5 +10,9 @@ import { OwnerTools } from "@/components/owner-tools/owner-tools";
  */
 export default function PortalToolsPage() {
   const { client } = usePortal();
-  return <OwnerTools defaultFacilityId={client.facilityId} upgradeHref="/portal/messages" campaignsBase="/portal/campaigns" />;
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <OwnerTools defaultFacilityId={client.facilityId} upgradeHref="/portal/messages" campaignsBase="/portal/campaigns" />
+    </div>
+  );
 }
