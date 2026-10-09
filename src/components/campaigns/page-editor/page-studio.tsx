@@ -463,7 +463,7 @@ export function PageStudio({ funnelId }: { funnelId: string }) {
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <div className={`${pane === "edit" ? "flex" : "hidden"} min-h-0 w-full flex-col overflow-y-auto border-[var(--ic-ink)] md:flex md:w-[380px] md:shrink-0 md:border-r`}>
+        <div className={`${pane === "edit" ? "flex" : "hidden"} min-h-0 w-full max-md:w-full flex-col overflow-y-auto border-[var(--ic-ink)] md:flex md:w-[380px] md:max-w-[380px] md:shrink-0 md:basis-[380px] md:border-r`}>
           <ol className="flex flex-col gap-2 p-3">
             {blocks.map((block, index) => (
               <li
