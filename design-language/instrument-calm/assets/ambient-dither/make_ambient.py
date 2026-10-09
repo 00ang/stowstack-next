@@ -82,28 +82,41 @@ def forest():
 
 def tulips():
     yy, xx = np.mgrid[0:H, 0:W]
-    crayon = np.zeros((H, W), np.float32)
-    peri = np.zeros((H, W), np.float32)
+    # A mixed bed. No yellow. The top stays open sage so a logo can sit there.
+    blooms = {
+        "red": (hx("#E8281E"), np.zeros((H, W), np.float32)),
+        "crayon": (CRAYON, np.zeros((H, W), np.float32)),
+        "blue": (hx("#2054B7"), np.zeros((H, W), np.float32)),
+        "peri": (PERI, np.zeros((H, W), np.float32)),
+        "green": (hx("#396335"), np.zeros((H, W), np.float32)),
+        "white": (WHITE, np.zeros((H, W), np.float32)),
+        "teal": (TEAL, np.zeros((H, W), np.float32)),
+    }
+    names = list(blooms)
     stem = np.zeros((H, W), np.float32)
     leaf = np.zeros((H, W), np.float32)
     rng = np.random.default_rng(73)
-    for row, y0, count in ((0, 150, 16), (1, 300, 18), (2, 470, 16)):
+    n = 0
+    for y0, count in ((250, 15), (400, 17), (560, 15)):
         for i in range(count):
-            cx = int((i + 0.5) * W / count + rng.uniform(-18, 18))
-            cy = int(y0 + rng.uniform(-36, 36))
-            rx = int(rng.uniform(16, 26))
-            ry = int(rng.uniform(22, 34))
+            cx = int((i + 0.5) * W / count + rng.uniform(-22, 22))
+            cy = int(max(200, y0 + rng.uniform(-28, 28)))
+            rx = int(rng.uniform(18, 30))
+            ry = int(rng.uniform(24, 38))
             cup = ((xx - cx) / rx) ** 2 + ((yy - cy) / ry) ** 2
-            tone = np.clip(1.05 - cup, 0, 1) ** 0.7
-            if (row + i) % 2 == 0:
-                crayon = np.maximum(crayon, tone * 0.8)
-            else:
-                peri = np.maximum(peri, tone * 0.75)
-            col = (np.abs(xx - cx) <= 1.5) & (yy > cy + ry * 0.2) & (yy < cy + ry + 70)
+            tone = np.clip(1.05 - cup, 0, 1) ** 0.65
+            key = names[n % len(names)]
+            n += 1
+            blooms[key] = (blooms[key][0], np.maximum(blooms[key][1], tone * 0.82))
+            col = (np.abs(xx - cx) <= 1.6) & (yy > cy + ry * 0.15) & (yy < cy + ry + 78)
             stem = np.maximum(stem, np.where(col, 0.8, 0))
-            leaves = ((yy - (cy + ry)) / 18) ** 2 + ((xx - cx) / 34) ** 2
-            leaf = np.maximum(leaf, np.where((leaves < 1) & (yy > cy), 0.45, 0))
-    return paint(SAGE, [(leaf, TEAL, 76), (stem, OLIVE, 77), (peri, PERI, 78), (crayon, CRAYON, 79)])
+            leaves = ((yy - (cy + ry * 0.6)) / 20) ** 2 + ((xx - cx) / 36) ** 2
+            leaf = np.maximum(leaf, np.where((leaves < 1) & (yy > cy), 0.4, 0))
+    layers = [(leaf, OLIVE, 76), (stem, OLIVE, 77)]
+    for i, key in enumerate(names):
+        ink, tone = blooms[key]
+        layers.append((tone, ink, 80 + i))
+    return paint(SAGE, layers)
 
 
 def beach():
@@ -115,7 +128,8 @@ def beach():
     water = (yn >= horizon) & (yn < shore)
     depth = np.clip((yn - horizon) / np.maximum(shore - horizon, 1e-3), 0, 1)
     teal = np.where(water, 0.28 + 0.5 * depth * (0.55 + 0.45 * fine), 0)
-    cloud = np.clip((n - 0.58) * 4.5, 0, 1) * np.clip((horizon - yn) * 3.2, 0, 1)
+    # Leave a flat sky band at the top for the logo.
+    cloud = np.clip((n - 0.58) * 4.5, 0, 1) * np.clip((horizon - yn) * 3.2, 0, 1) * np.clip((yn - 0.22) * 8, 0, 1)
     # Broken foam, not ruled lines.
     wave = np.sin(yn * 70 + xn * 8 + fine * 6)
     foam_wave = water & (wave > 0.72) & (depth > 0.2) & (fine > 0.4)
