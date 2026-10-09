@@ -33,6 +33,18 @@ function fold(value: string): string {
   return value.toLowerCase().replace(/×/g, "x").replace(/\s+/g, "");
 }
 
+/** Two unit types can share a size label (drive-up 10x10 and climate 10x10). The form needs both, with different keys. */
+export function askSizeOptions(units: LiveUnit[]): { key: string; label: string }[] {
+  const sizes = units.map((u) => u.size || u.name);
+  const shared = new Set(sizes.filter((s, i) => sizes.indexOf(s) !== i));
+  return units.map((u, i) => {
+    const size = u.size || u.name;
+    const hint = u.features.find((f) => f && f !== size) || (u.name !== size ? u.name : "");
+    const label = shared.has(size) && hint ? `${size} · ${hint}` : size;
+    return { key: u.key || `${label}-${i}`, label };
+  });
+}
+
 function unitsFor(block: Block, all: LiveUnit[]): LiveUnit[] {
   const keys = Array.isArray(block.config.sizeKeys) ? (block.config.sizeKeys as unknown[]) : [];
   const want = new Set(keys.filter((k): k is string => typeof k === "string").map(fold));
@@ -107,7 +119,7 @@ export function BlockPage({
             <Ask
               key={block.id}
               block={block}
-              sizes={units.map((u) => u.size || u.name)}
+              sizes={askSizeOptions(units)}
               facilityId={facilityId}
               pageId={pageId}
               inert={!!onText || !!sample}
@@ -258,7 +270,7 @@ function Ask({
   sample,
 }: {
   block: Block;
-  sizes: string[];
+  sizes: { key: string; label: string }[];
   facilityId?: string;
   pageId?: string;
   inert?: boolean;
@@ -339,7 +351,7 @@ function Ask({
                 <select className={field} style={{ fontSize: 16 }} value={size} onChange={(e) => setSize(e.target.value)}>
                   <option value="">Not sure yet</option>
                   {sizes.map((s) => (
-                    <option key={s}>{s}</option>
+                    <option key={s.key} value={s.label}>{s.label}</option>
                   ))}
                 </select>
               </label>

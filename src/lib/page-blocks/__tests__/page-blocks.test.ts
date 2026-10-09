@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { askSizeOptions } from "@/components/landing/block-page";
 import { applyFix, findBlock, headlinesMatch, pageInsights, sectionsToBlocks, textOf } from "../index";
 import { blocksToSections } from "../blocks";
 import { nextVersion, publicView, sameSnapshot, shouldFreezePrevious, snapshotOf } from "../publish";
@@ -205,5 +206,18 @@ describe("publishing and versioning", () => {
     });
     expect(sameSnapshot(snap, changed)).toBe(false);
     expect(nextVersion({ lastVersion: 1, previous: snap, next: changed })).toEqual({ version: 2, write: true });
+  });
+});
+
+describe("ask size options", () => {
+  it("keeps two unit types that share a size label", () => {
+    const options = askSizeOptions([
+      { key: "10x10", name: "10x10", size: "10' x 10'", rate: 119, vacant: 18, total: 80, features: ["Drive-up"], climate: false },
+      { key: "10x10 Climate", name: "10x10 Climate", size: "10' x 10'", rate: 139, vacant: 12, total: 40, features: ["Climate controlled"], climate: true },
+    ]);
+    expect(options.map((o) => o.key)).toEqual(["10x10", "10x10 Climate"]);
+    expect(new Set(options.map((o) => o.label)).size).toBe(2);
+    expect(options[0].label).toMatch(/Drive-up/);
+    expect(options[1].label).toMatch(/Climate/);
   });
 });

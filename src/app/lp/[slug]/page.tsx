@@ -640,6 +640,20 @@ function CTAChapter({
 /*  ASK — the on-page lead form                            */
 /* ═══════════════════════════════════════════════════════ */
 
+/** Same size string can mean two unit types. Name the difference so the form can tell them apart. */
+function askSizeLabels(units: { name?: string; size?: string; features?: string[] }[]): string[] {
+  const labels = units.map((u) => (u.size || u.name || "").trim()).filter(Boolean);
+  const shared = new Set(labels.filter((s, i) => labels.indexOf(s) !== i));
+  return units
+    .map((u) => {
+      const size = (u.size || u.name || "").trim();
+      if (!size) return "";
+      const hint = u.features?.find((f) => f && f !== size) || (u.name && u.name !== size ? u.name : "");
+      return shared.has(size) && hint ? `${size} · ${hint}` : size;
+    })
+    .filter(Boolean);
+}
+
 const WHEN: [string, string][] = [
   ["this_week", "This week"],
   ["this_month", "This month"],
@@ -763,8 +777,8 @@ function AskChapter({
                   <label htmlFor="ask-size" className={label}>Size</label>
                   <select id="ask-size" className={field} style={fieldSize} value={size} onChange={(e) => setSize(e.target.value)}>
                     <option value="">Not sure yet</option>
-                    {sizes.map((s) => (
-                      <option key={s} value={s}>{s}</option>
+                    {sizes.map((s, i) => (
+                      <option key={`${s}-${i}`} value={s}>{s}</option>
                     ))}
                   </select>
                 </div>
@@ -1360,7 +1374,7 @@ export default function LandingPageRoute() {
       <AskChapter
         page={page}
         facilityName={facilityName}
-        sizes={unitItems.map((u) => u.size || u.name || "").filter(Boolean)}
+        sizes={askSizeLabels(unitItems)}
         hasReserve={!!externalUrl}
       />
       {sectionByType("features") && (
