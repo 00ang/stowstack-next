@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Manrope } from "next/font/google";
 import { PortalShell } from "@/components/portal/portal-shell";
+import "@/components/design/dl003/dl003.css";
 
 export const metadata: Metadata = {
   // Root layout already appends " | StorageAds".

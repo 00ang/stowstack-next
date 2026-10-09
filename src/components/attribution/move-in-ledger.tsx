@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { LedgerRow, LedgerSummary } from "@/lib/attribution/ledger-rows";
 import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
+import { Question } from "@/components/design/dl003/ui";
 
 /**
  * Where move-ins came from: one line of insight, the unsure matches to settle,
@@ -140,6 +141,16 @@ export function MoveInLedger({ facilityId }: { facilityId: string }) {
   const line = insight(rows);
 
   return (
+    <div data-dl003="ledger">
+      {sample && (
+        <div className="mb-3">
+          <Question
+            kicker="003 · one question · sky stays off this table"
+            q="How did these move-ins find you?"
+            a="Each row is one move-in and the evidence for it. A dither plate behind this table would hide the words, so the sky stops above the page."
+          />
+        </div>
+      )}
     <div role="region" aria-label="Where your move-ins came from" className="border border-[var(--ic-ink,#121214)] bg-white p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -293,6 +304,7 @@ export function MoveInLedger({ facilityId }: { facilityId: string }) {
           })}
         </ol>
       )}
+    </div>
     </div>
   );
 }

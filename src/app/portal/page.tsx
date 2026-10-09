@@ -35,6 +35,8 @@ import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { PullIndicator } from "@/components/ui/pull-indicator";
 import { PortalFacilitySection } from "@/components/ontology/portal-facility-section";
 import { clearOntologyCache } from "@/components/ontology/use-ontology";
+import { HomeAtmosphere } from "@/components/design/dl003/ui";
+import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
 
 /* ─── types ─── */
 
@@ -61,13 +63,16 @@ export default function PortalDashboard() {
     },
   });
 
+  const sample = isPortalDemo();
+
   return (
     <div
       ref={containerRef as React.RefObject<HTMLDivElement>}
-      className="mx-auto max-w-3xl px-4 pb-24 pt-6 h-full overflow-y-auto"
+      className="h-full overflow-y-auto pb-24"
     >
       <PullIndicator pullDistance={pullDistance} refreshing={refreshing} threshold={80} />
-      <div className="space-y-8">
+      {sample && <HomeAtmosphere />}
+      <div className="mx-auto max-w-3xl space-y-8 px-4 pt-6">
         <WelcomeBanner key={`welcome-${refreshKey}`} />
         <OnboardingProgress key={`onboarding-${refreshKey}`} />
         <PortalFacilitySection key={`facility-${refreshKey}`} />

@@ -1,0 +1,413 @@
+/* Design folder 003 mock. Sample portal only. Does not restyle approved buttons. */
+
+.d3-kicker {
+  font-family: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #525766;
+}
+
+.d3-sky {
+  position: relative;
+  background: #93afe7;
+  overflow: hidden;
+}
+.d3-sky picture,
+.d3-sky img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.d3-sky img {
+  object-fit: cover;
+  object-position: center top;
+  image-rendering: pixelated;
+}
+.d3-sky-hero { height: 168px; }
+.d3-sky-short { height: 112px; }
+.d3-sky-strip { height: 64px; }
+
+.d3-sky-chip {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  z-index: 1;
+  background: #fff;
+  border: 1px solid #121214;
+  padding: 3px 7px;
+  font-family: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #16161a;
+}
+
+.d3-pane {
+  background: #fff;
+  border: 1px solid #121214;
+  color: #16161a;
+  padding: 14px 16px 16px;
+}
+.d3-pane-overlap {
+  margin-top: -28px;
+  position: relative;
+  z-index: 1;
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+.d3-display {
+  margin: 8px 0 0;
+  font-weight: 800;
+  font-size: 28px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: #16161a;
+}
+.d3-lead {
+  margin: 6px 0 0;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.35;
+  color: #16161a;
+}
+
+.d3-sign {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  color: #16161a;
+}
+.d3-awning {
+  display: flex;
+  width: 132px;
+  height: 10px;
+  border: 1px solid #121214;
+}
+.d3-awning i { flex: 1; display: block; }
+.d3-awning i:nth-child(1) { background: #e8281e; }
+.d3-awning i:nth-child(2) { background: #396335; }
+.d3-awning i:nth-child(3) { background: #2054b7; }
+
+.d3-block { display: flex; flex-direction: column; gap: 10px; padding: 0 0 8px; }
+.d3-pad { padding: 0 16px; }
+
+.d3-levels {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.d3-level {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 132px;
+  background: #fff;
+  border: 1px solid #121214;
+  color: #16161a;
+  overflow: hidden;
+}
+.d3-level-name {
+  position: relative;
+  z-index: 1;
+  padding: 8px 8px 0;
+  font-family: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.d3-level-meter {
+  position: relative;
+  flex: 1;
+  min-height: 64px;
+  margin: 8px 8px 0;
+}
+.d3-level-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top: 1.5px solid #121214;
+}
+.d3-level-fill.fill { background: #b2e4ed; }
+.d3-level-fill.gain { background: #d9ffe5; }
+.d3-level-fill.risk { background: #ffeaeF; }
+.d3-level-num {
+  position: absolute;
+  left: 0;
+  bottom: 2px;
+  z-index: 1;
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #16161a;
+}
+.d3-level-num.risk { color: #c33b3e; }
+.d3-level-sub {
+  position: relative;
+  z-index: 1;
+  padding: 6px 8px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.d3-crayon {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  z-index: 2;
+  width: 78px;
+  text-align: center;
+  pointer-events: none;
+  color: #83372f;
+  font-weight: 800;
+  font-size: 12px;
+  line-height: 1.1;
+}
+.d3-crayon svg { display: block; width: 78px; height: 36px; }
+.d3-crayon span { display: block; margin-top: -6px; }
+
+.d3-q {
+  background: #e4eade;
+  border: 1px solid #121214;
+  padding: 12px 14px 14px;
+  color: #16161a;
+}
+.d3-q-white { background: #fff; }
+.d3-q h3 {
+  margin: 4px 0 0;
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.d3-q p {
+  margin: 6px 0 0;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.d3-live h3 {
+  margin: 4px 0 0;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: #16161a;
+}
+.d3-live p {
+  margin: 4px 0 0;
+  font-weight: 600;
+  font-size: 14.5px;
+  line-height: 1.35;
+  color: #16161a;
+}
+
+.d3-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 8px;
+  background: #fff;
+  border-bottom: 1px solid #121214;
+  color: #83372f;
+  font-weight: 800;
+  font-size: 14px;
+}
+.d3-note svg { flex: none; }
+
+.d3-sage-band {
+  background: #e4eade;
+  border-bottom: 1px solid #121214;
+}
+
+.d3-fig {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  border: 1px solid #121214;
+  background: #fff;
+  color: #16161a;
+}
+.d3-fig-plate {
+  position: relative;
+  min-height: 220px;
+  background: #537b88;
+  overflow: hidden;
+}
+.d3-fig-plate img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: auto;
+}
+.d3-fig-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  mix-blend-mode: multiply;
+}
+.d3-fig-copy { padding: 12px 14px 14px; }
+.d3-fig-copy h3 {
+  margin: 4px 0 0;
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.15;
+}
+.d3-fig-list {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.d3-fig-list li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-weight: 600;
+  font-size: 14.5px;
+  line-height: 1.3;
+}
+.d3-fig-list b {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #83372f;
+  border-radius: 50%;
+  color: #83372f;
+  font-weight: 800;
+  font-size: 13px;
+  display: grid;
+  place-items: center;
+}
+.d3-titleblock {
+  margin-top: 12px;
+  border: 1px solid #121214;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  font-family: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.d3-titleblock div { padding: 4px 6px; border-right: 1px solid #121214; border-bottom: 1px solid #121214; }
+.d3-titleblock div:nth-child(2n) { border-right: 0; }
+
+.funnel-canvas.d3-canvas-sky {
+  background-color: #93afe7;
+  background-image: url("/design/cloud-dither/cloud-dither-tile-1040.png");
+  background-size: 520px 520px;
+  image-rendering: pixelated;
+}
+.funnel-canvas.d3-canvas-sky .react-flow,
+.funnel-canvas.d3-canvas-sky .react-flow__renderer,
+.funnel-canvas.d3-canvas-sky .react-flow__pane,
+.funnel-canvas.d3-canvas-sky .react-flow__viewport {
+  background: transparent !important;
+}
+
+.d3-board {
+  background: #fff;
+  color: #16161a;
+  font-family: var(--font-manrope), Manrope, system-ui, sans-serif;
+  padding: 20px;
+}
+.d3-board h1 {
+  font-weight: 800;
+  font-size: 32px;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.d3-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.d3-col {
+  border: 1px solid #121214;
+  background: #fff;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+.d3-col .d3-sky-hero { height: 120px; }
+.d3-col .d3-sky-strip { height: 48px; }
+.d3-fake-toolbar {
+  border-top: 1px solid #121214;
+  background: #fff;
+  padding: 8px 10px;
+  font-weight: 800;
+  font-size: 14px;
+}
+.d3-empty {
+  margin: 16px;
+  border: 1px solid #121214;
+  background: #fff;
+  padding: 12px;
+}
+.d3-empty h3 { font-weight: 800; font-size: 16px; margin-top: 4px; }
+.d3-rec {
+  margin-top: 8px;
+  font-weight: 800;
+  font-size: 14px;
+}
+.d3-dont {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+.d3-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-weight: 600;
+}
+.d3-table th,
+.d3-table td {
+  border-bottom: 1px solid #121214;
+  text-align: left;
+  padding: 6px 8px;
+}
+.d3-table th {
+  font-family: var(--font-plex-mono), "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.d3-bad {
+  background: #93afe7 url("/design/cloud-dither/cloud-dither-desktop-1440.png") center top / cover;
+  image-rendering: pixelated;
+}
+.d3-bad table { background: transparent; }
+.d3-x {
+  color: #83372f;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 8px;
+}
+
+@media (max-width: 760px) {
+  .d3-sky-hero { height: 112px; }
+  .d3-sky-short { height: 88px; }
+  .d3-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .d3-level { min-height: 112px; }
+  .d3-fig { grid-template-columns: 1fr; }
+  .d3-fig-plate { min-height: 160px; }
+  .d3-display { font-size: 24px; }
+  .d3-cols, .d3-dont { grid-template-columns: 1fr; }
+  .d3-pane-overlap { margin-left: 10px; margin-right: 10px; margin-top: -18px; }
+  .d3-sign { flex-direction: column; align-items: flex-start; }
+  .d3-pane { padding: 12px; }
+}

@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import PaletteSwitch from "@/components/palette-switch";
 
-const HIDDEN_PREFIXES = ["/admin", "/portal", "/partner", "/manage"];
+const HIDDEN_PREFIXES = ["/admin", "/portal", "/partner", "/manage", "/dl003"];
 
 /**
  * In-flow theme row for public pages that do not render the marketing nav.

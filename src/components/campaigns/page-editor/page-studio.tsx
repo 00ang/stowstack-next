@@ -34,6 +34,7 @@ import {
   type PageInsight,
 } from "@/lib/page-blocks";
 import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
+import { SkyBand } from "@/components/design/dl003/ui";
 
 /**
  * Create and edit a campaign's landing page. Blocks reorder by drag or
@@ -396,6 +397,7 @@ export function PageStudio({ funnelId }: { funnelId: string }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[var(--ic-ground)] text-[var(--ic-ink)]">
+      {sample && <SkyBand variant="strip" label="003 · A sky · thin strip · editor stays white" />}
       <header className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2">
         <Link href={back} className="text-[13px] font-extrabold underline underline-offset-4">
           Campaign
@@ -713,7 +715,9 @@ function CreatePage({
     setBusy(null);
   }
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--ic-ground)] px-4 py-4 text-[var(--ic-ink)]">
+    <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--ic-ground)] text-[var(--ic-ink)]">
+      {sample && <SkyBand variant="strip" label="003 · A sky · thin strip · start a page" />}
+      <div className="px-4 py-4">
       <Link href={back} className="text-[13px] font-extrabold underline underline-offset-4">
         Campaign
       </Link>
@@ -762,6 +766,7 @@ function CreatePage({
           </ul>
         </>
       )}
+      </div>
     </div>
   );
 }
