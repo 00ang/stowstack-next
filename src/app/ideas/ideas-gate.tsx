@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { STORAGE_KEY } from "@/lib/admin-context";
+import { Logo } from "@/components/brand/logo";
 
 // Admin-gated viewer for the internal feature + idea doc. The strategy
 // content is never bundled client-side; we fetch it from /api/ideas-doc
@@ -88,17 +89,8 @@ export default function IdeasGate() {
         }}
       >
         <div className="mb-7 text-center">
-          <h1
-            className="mb-1"
-            style={{
-              fontFamily: FONT,
-              fontSize: "16px",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "#141413",
-            }}
-          >
-            storage<span style={{ color: "var(--brand-slate)" }}>ads</span>
+          <h1 className="mb-1 flex justify-center">
+            <Logo mark={28} />
           </h1>
           <p
             style={{

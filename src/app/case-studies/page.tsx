@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { CASE_STUDIES } from "@/types/case-study";
 import { CAL_BOOKING_URL } from "@/lib/booking";
+import { Logo } from "@/components/brand/logo";
 
 export const metadata: Metadata = {
   title: "Case Studies | StorageAds",
@@ -24,8 +25,8 @@ export default function CaseStudiesIndexPage() {
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-light)" }}>
       <header className="border-b" style={{ borderColor: "var(--color-light-gray)" }}>
         <div className="max-w-4xl mx-auto px-5 py-4 flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold" style={{ fontFamily: "var(--font-heading)", color: "var(--color-dark)" }}>
-            <span>storage</span><span style={{ color: "var(--color-gold)" }}>ads</span>
+          <Link href="/" aria-label="StorageAds">
+            <Logo mark={28} />
           </Link>
           <a
             href={CAL_BOOKING_URL}
