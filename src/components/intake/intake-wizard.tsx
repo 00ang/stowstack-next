@@ -27,6 +27,7 @@ export function IntakeWizard({
   steps,
   showContact,
   initialAnswers,
+  existing,
   onCreate,
   onFinished,
   finishLabel = "That's enough",
@@ -34,6 +35,7 @@ export function IntakeWizard({
   steps: IntakeStep[];
   showContact: boolean;
   initialAnswers?: Record<string, unknown> | null;
+  existing?: Created | null;
   onCreate: (input: {
     name: string;
     phone: string;
@@ -48,7 +50,7 @@ export function IntakeWizard({
   const [phase, setPhase] = useState<"contact" | "questions">(
     showContact ? "contact" : "questions"
   );
-  const [ids, setIds] = useState<Created | null>(null);
+  const [ids, setIds] = useState<Created | null>(existing ?? null);
   const [index, setIndex] = useState(0);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -64,6 +66,10 @@ export function IntakeWizard({
   const step = visible[index];
   const total = (showContact ? 1 : 0) + visible.length;
   const current = phase === "contact" ? 1 : (showContact ? 1 : 0) + index + 1;
+
+  useEffect(() => {
+    if (existing?.facilityId && existing.intakeToken) setIds(existing);
+  }, [existing?.facilityId, existing?.intakeToken]);
 
   useEffect(() => {
     return () => {

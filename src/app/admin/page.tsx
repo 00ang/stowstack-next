@@ -42,6 +42,8 @@ interface Lead {
   intakeAnswers: Record<string, unknown> | null;
   sortLast: boolean;
   sortLastReason: string;
+  sharedAuditSlug: string;
+  auditDeliveryError: string;
   status: string;
   pmsUploaded: boolean;
   followUpDate: string | null;
@@ -88,6 +90,7 @@ const STATUS_LABELS: Record<string, string> = {
   submitted: "Submitted",
   audit_generated: "Audit Ready",
   audit_sent: "Audit Sent",
+  audit_not_delivered: "Audit not delivered",
   form_sent: "Proposal Sent",
   form_completed: "Form Completed",
   call_scheduled: "Call Scheduled",
@@ -101,6 +104,7 @@ const STATUS_COLORS: Record<string, string> = {
   submitted: "bg-[var(--color-blue)]/20 text-[var(--color-blue)] border-[var(--color-blue)]/30",
   audit_generated: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
   audit_sent: "bg-teal-500/20 text-teal-400 border-teal-500/30",
+  audit_not_delivered: "bg-[var(--color-dark)]/10 text-[var(--color-body-text)] border-[var(--border-subtle)]",
   form_sent: "bg-amber-500/20 text-amber-400 border-amber-500/30",
   form_completed: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   call_scheduled: "bg-orange-500/20 text-orange-400 border-orange-500/30",
@@ -120,6 +124,7 @@ const FILTER_CHIPS = [
   "submitted",
   "audit_generated",
   "audit_sent",
+  "audit_not_delivered",
   "form_sent",
   "form_completed",
   "call_scheduled",
@@ -397,6 +402,30 @@ function LeadExpandedRow({
               ))}
             </div>
           )}
+
+          {lead.status === "audit_not_delivered" && (
+            <p className="text-xs text-[var(--color-body-text)]">
+              Audit not delivered{lead.auditDeliveryError ? `: ${lead.auditDeliveryError}` : "."}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={!lead.sharedAuditSlug}
+            onClick={async () => {
+              try {
+                await adminFetch("/api/audit-resend", {
+                  method: "POST",
+                  body: JSON.stringify({ facilityId: lead.id }),
+                });
+                onUpdate();
+              } catch {
+                onUpdate();
+              }
+            }}
+            className="text-sm text-[var(--color-dark)] underline disabled:no-underline disabled:opacity-40"
+          >
+            {lead.sharedAuditSlug ? "Resend audit" : "No audit on file"}
+          </button>
 
           {/* PMS Indicator */}
           <div className="flex items-center gap-2 text-xs">

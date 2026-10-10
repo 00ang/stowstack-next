@@ -84,25 +84,21 @@ export async function POST(req: NextRequest) {
     const aiAudit = (audit.audit_json as Record<string, unknown>) || {};
     const fs = (aiAudit.facility_summary as Record<string, unknown>) || {};
     const occupancy =
-      typeof fs.occupancy_estimate === "number" ? fs.occupancy_estimate : 80;
+      typeof fs.occupancy_estimate === "number" ? fs.occupancy_estimate : null;
     const totalUnits =
-      typeof fs.total_units_estimate === "number"
-        ? fs.total_units_estimate
-        : 200;
+      typeof fs.total_units_estimate === "number" ? fs.total_units_estimate : null;
     const vacantUnits =
       typeof fs.vacant_units_estimate === "number"
         ? fs.vacant_units_estimate
-        : Math.round(totalUnits * (1 - occupancy / 100));
+        : occupancy != null && totalUnits != null
+          ? Math.round(totalUnits * (1 - occupancy / 100))
+          : 0;
     const rl = (aiAudit.revenue_leakage as Record<string, unknown>) || {};
     const sf = (aiAudit.storageads_fit as Record<string, unknown>) || {};
     const recSpend =
-      typeof sf.projected_monthly_spend === "number"
-        ? sf.projected_monthly_spend
-        : 2000;
+      typeof sf.projected_monthly_spend === "number" ? sf.projected_monthly_spend : 0;
     const costPerMoveIn =
-      typeof sf.projected_cost_per_move_in === "number"
-        ? sf.projected_cost_per_move_in
-        : 50;
+      typeof sf.projected_cost_per_move_in === "number" ? sf.projected_cost_per_move_in : 0;
     const moveIns =
       recSpend > 0 ? Math.round(recSpend / costPerMoveIn) : 20;
 
@@ -125,17 +121,10 @@ export async function POST(req: NextRequest) {
         biggestIssue: facility.biggest_issue || "",
       },
       vacancyCost: {
-        monthlyLoss:
-          typeof rl.monthly_loss === "number"
-            ? rl.monthly_loss
-            : vacantUnits * 110,
-        annualLoss:
-          typeof rl.annual_loss === "number"
-            ? rl.annual_loss
-            : vacantUnits * 110 * 12,
+        monthlyLoss: typeof rl.monthly_loss === "number" ? rl.monthly_loss : 0,
+        annualLoss: typeof rl.annual_loss === "number" ? rl.annual_loss : 0,
         vacantUnits,
-        avgUnitRate:
-          typeof rl.per_unit_monthly === "number" ? rl.per_unit_monthly : 110,
+        avgUnitRate: typeof rl.per_unit_monthly === "number" ? rl.per_unit_monthly : 0,
       },
       marketOpportunity: {
         score: overallScore,
@@ -195,15 +184,15 @@ export async function POST(req: NextRequest) {
 
     // Email the audit to the lead
     const resendKey = process.env.RESEND_API_KEY;
-    if (resendKey && facility.contact_email) {
-      const firstName =
-        (facility.contact_name || "").trim().split(" ")[0] || "there";
-      const annualLoss =
-        typeof rl.annual_loss === "number"
-          ? rl.annual_loss
-          : viewAudit.vacancyCost.annualLoss;
-
-      void sendEmail({
+    const firstName =
+      (facility.contact_name || "").trim().split(" ")[0] || "there";
+    const annualLoss =
+      typeof rl.annual_loss === "number"
+        ? rl.annual_loss
+        : viewAudit.vacancyCost.annualLoss;
+    const operatorSend =
+      resendKey && facility.contact_email
+        ? await sendEmail({
         from: SENDERS.blake,
         to: facility.contact_email,
         cc: "anna@storageads.com",
@@ -237,14 +226,40 @@ export async function POST(req: NextRequest) {
                 <a href="tel:2699298541" style="color: #16a34a; text-decoration: none;">269-929-8541</a>
               </p>
             </div>`,
-      });
-    }
+        })
+        : null;
 
-    // Update facility pipeline
+    const delivered = Boolean(operatorSend?.ok && operatorSend.id);
     await db.facilities.update({
       where: { id: facilityId },
-      data: { pipeline_status: "audit_sent", updated_at: new Date() },
+      data: {
+        shared_audit_slug: slug,
+        updated_at: new Date(),
+        pipeline_status: delivered ? "audit_sent" : "audit_not_delivered",
+        audit_sent_at: delivered ? new Date() : null,
+        audit_email_id: delivered ? operatorSend?.id || null : null,
+        audit_delivery_error: delivered
+          ? null
+          : !facility.contact_email
+            ? "No email on file"
+            : operatorSend?.error || operatorSend?.skipReason || "Email was not accepted",
+      },
     });
+
+    if (!delivered) {
+      await db.activity_log
+        .create({
+          data: {
+            type: "audit_delivery_failed",
+            facility_id: facilityId,
+            facility_name: facility.name,
+            detail: !facility.contact_email
+              ? "No email on file"
+              : operatorSend?.error || operatorSend?.skipReason || "Email was not accepted",
+          },
+        })
+        .catch((err) => console.error("[activity_log] Fire-and-forget failed:", err));
+    }
 
     // Log activity (fire-and-forget)
     db.activity_log

@@ -29,6 +29,8 @@ function facilityToLead(
     intakeAnswers: row.intake_answers || null,
     sortLast: row.sort_last === true,
     sortLastReason: (row.sort_last_reason as string) || "",
+    sharedAuditSlug: (row.shared_audit_slug as string) || "",
+    auditDeliveryError: (row.audit_delivery_error as string) || "",
     status: row.pipeline_status || "submitted",
     pmsUploaded: row.pms_uploaded || false,
     followUpDate: row.follow_up_date || null,

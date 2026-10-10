@@ -12,6 +12,7 @@ import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { sendEmail, SENDERS } from "@/lib/email";
 import { escapeHtml } from "@/lib/validation";
+import { operatorAuditEmail } from "@/lib/audit-email";
 
 // Claude API call needs 30-60s for full diagnostic audit generation
 export const maxDuration = 120;
@@ -251,6 +252,8 @@ interface FullDiagnosticAudit {
     monthlyLoss: number;
     annualLoss: number;
     avgUnitRate: number;
+    /** False when we were not given a street rate. Dollar fields are then 0 on purpose. */
+    dollarsKnown?: boolean;
   };
 }
 
@@ -260,6 +263,7 @@ interface FullDiagnosticAudit {
 
 export const OCCUPANCY_MAP: Record<string, number> = {
   "Under 50%": 45,
+  "Under 60%": 50,
   "50–59%": 55,
   "60–69%": 65,
   "70–79%": 75,
@@ -278,6 +282,16 @@ export const UNIT_COUNT_MAP: Record<string, number> = {
   "750–999": 875,
   "1,000+": 1100,
 };
+
+/** Midpoint for a band we were actually given. Unknown bands stay unknown. */
+export function lookupBand(
+  map: Record<string, number>,
+  band: string | null | undefined
+): number | null {
+  if (!band) return null;
+  const value = map[band];
+  return typeof value === "number" ? value : null;
+}
 
 export function letterGrade(score: number): string {
   if (score >= 90) return "A";
@@ -511,11 +525,32 @@ function parseCSVRow(headers: string[], row: string[]): DiagnosticInput {
 /* ------------------------------------------------------------------ */
 
 function buildAuditPrompt(d: DiagnosticInput): string {
-  const occPct = OCCUPANCY_MAP[d.occupancy] || 75;
-  const totalUnits = UNIT_COUNT_MAP[d.totalUnits] || 300;
-  const vacantUnits = Math.round(totalUnits * (1 - occPct / 100));
+  const occPct = lookupBand(OCCUPANCY_MAP, d.occupancy);
+  const totalUnits = lookupBand(UNIT_COUNT_MAP, d.totalUnits);
+  const vacantUnits =
+    occPct != null && totalUnits != null
+      ? Math.round(totalUnits * (1 - occPct / 100))
+      : null;
+  const occLine =
+    occPct == null
+      ? `${d.occupancy || "Not provided"}. Do not estimate a percentage.`
+      : `${d.occupancy} (band midpoint ${occPct}%, not a measured figure)`;
+  const unitsLine =
+    totalUnits == null
+      ? `${d.totalUnits || "Not provided"}. Do not estimate a unit count.`
+      : `${d.totalUnits} (band midpoint ${totalUnits}, not a measured count)`;
+  const vacantLine =
+    vacantUnits == null
+      ? "Unknown. Do not invent a vacancy count or a dollar loss."
+      : `${vacantUnits} units, from the two bands above. No street rate was given, so do not turn this into dollars.`;
+  const list = (value?: string[]) =>
+    Array.isArray(value) && value.length ? value.join(", ") : "Not provided";
 
-  return `You are an elite self-storage marketing analyst who has audited 1,000+ facilities. Generate a comprehensive diagnostic audit for this facility based on their self-reported diagnostic form data, Google data, and competitive intelligence.
+  return `You write facility diagnostics for independent self-storage operators. Use only the facts in this prompt. If a line says "Not provided" or "Unknown", you do not know it.
+
+Do not invent occupancy, unit counts, street rates, move-in counts, dollar losses, or results from any other facility. There are no client results in this prompt. Do not make any up.
+
+If only a few operating facts are present, write a shorter audit: two or three categories you can actually speak to, and say what you were not told. Where a number was not given, use 0 and say the figure is unknown.
 
 ===== FACILITY PROFILE =====
 Name: ${d.facilityName}
@@ -528,26 +563,26 @@ Facility Stage: ${d.facilityAge}
 Manages: ${d.facilityCount}
 
 ===== OCCUPANCY SNAPSHOT =====
-Current Occupancy: ${d.occupancy} (~${occPct}%)
-Leasing Momentum: ${d.leasingMomentum}
-vs 6 Months Ago: ${d.occupancyVs6Months}
-vs Last Year: ${d.occupancyVsLastYear}
-Move-ins (30d): ${d.moveIns30Days}
-Move-outs (30d): ${d.moveOuts30Days}
-Total Units: ${d.totalUnits} (~${totalUnits})
-Estimated Vacant: ${vacantUnits}
+Current Occupancy: ${occLine}
+Leasing Momentum: ${d.leasingMomentum || "Not provided"}
+vs 6 Months Ago: ${d.occupancyVs6Months || "Not provided"}
+vs Last Year: ${d.occupancyVsLastYear || "Not provided"}
+Move-ins vs move-outs (30d): ${d.moveIns30Days || "Not provided"}
+Move-outs note: ${d.moveOuts30Days || "Not provided"}
+Total Units: ${unitsLine}
+Estimated Vacant: ${vacantLine}
 
 ===== UNIT MIX =====
-Types Offered: ${d.unitTypesOffered.join(", ")}
-Best Renting: ${d.bestRentingUnits.join(", ")}
-Hardest to Rent: ${d.hardestToRentUnits.join(", ")}
+Types Offered: ${list(d.unitTypesOffered)}
+Best Renting: ${list(d.bestRentingUnits)}
+Hardest to Rent: ${list(d.hardestToRentUnits)}
 Specific Vacancy Notes: ${d.specificVacancyNotes || "None"}
 Offline Units: ${d.offlineUnits}
 Mix Balance: ${d.unitMixBalance}
 
 ===== LEAD FLOW & CONVERSION =====
 Bigger Issue: ${d.biggerIssue}
-Lead Sources: ${d.leadSources.join(", ")}
+Lead Sources: ${list(d.leadSources)}
 Weekly Inquiries: ${d.weeklyInquiries}
 Why People Don't Rent: ${d.whyPeopleDontRent}
 Can Reserve Online: ${d.canReserveOnline}
@@ -564,7 +599,7 @@ No-Show Process: ${d.reservationNoShowProcess}
 Phone Closing Ability: ${d.phoneClosingAbility}
 
 ===== MARKETING & AD SPEND =====
-Currently Running: ${d.currentMarketing.join(", ")}
+Currently Running: ${list(d.currentMarketing)}
 Monthly Ad Spend: ${d.monthlyAdSpend}
 Google Ads Performance: ${d.googleAdsPerformance}
 Meta Ads Performance: ${d.metaAdsPerformance}
@@ -584,7 +619,7 @@ Responds to Reviews: ${d.respondsToReviews}
 Requests Reviews: ${d.requestsReviews}
 GBP Status: ${d.gbpStatus}
 GBP Post Frequency: ${d.gbpPostFrequency}
-Social Media: ${d.socialMedia.join(", ") || "None"}
+Social Media: ${list(d.socialMedia)}
 ${d.scrapedGoogleRating ? `Actual Google Rating (scraped): ${d.scrapedGoogleRating}` : ""}
 ${d.scrapedReviewCount ? `Actual Review Count (scraped): ${d.scrapedReviewCount}` : ""}
 
@@ -605,15 +640,15 @@ Office Hours: ${d.officeHours}
 Gate Access: ${d.gateAccessHours}
 Condition: ${d.facilityCondition}
 Age: ${d.facilityAgeYears}
-Security: ${d.securityFeatures.join(", ")}
-Amenities: ${d.amenities.join(", ")}
+Security: ${list(d.securityFeatures)}
+Amenities: ${list(d.amenities)}
 Recent Renovations: ${d.recentRenovations}
 
 ===== COMPETITION =====
 Top Competitors: ${d.topCompetitors}
 What Competitors Do Better: ${d.competitorAdvantages}
 What This Facility Does Better: ${d.yourAdvantages}
-Common Objections: ${d.commonObjections.join(", ")}
+Common Objections: ${list(d.commonObjections)}
 New Supply: ${d.newSupply}
 Market Saturation: ${d.marketSaturation}
 ${d.scrapedCompetitors?.length ? `\nScraped Competitor Data:\n${d.scrapedCompetitors.map((c, i) => `${i + 1}. ${c.name} — ${c.rating || "N/A"} rating (${c.reviewCount} reviews) — ${c.address}`).join("\n")}` : ""}
@@ -809,7 +844,7 @@ CRITICAL RULES:
 1. Each category MUST have exactly 2 green flags, exactly 1 yellow flag, exactly 3 red flags, and 2-4 actions.
 2. Each category MUST have a doNothingConsequence (2-3 sentences, specific to their data) and inactionCost (dollar amount).
 3. Reference the ACTUAL data from the diagnostic — not generic self-storage advice.
-4. The costOfInaction and ninetyDayProjection sections are REQUIRED. Use their actual move-in/move-out pace, unit count, and occupancy to calculate real projections. If move-outs are outpacing move-ins, project that forward. If they have no ECRI, calculate lost revenue per existing tenant.
+4. costOfInaction and ninetyDayProjection are required objects. If occupancy, unit count, or a street rate was not provided, set every dollar field to 0 and say in the text that the dollar figure is unknown. Do not multiply by an assumed rate.
 5. Actions must be things they can DO this week or this month — not vague strategies.
 6. Use operator language: "move-ins" not "customers", "units" not "rooms", "street rate" not "price".
 7. The doNothingConsequence should create URGENCY — paint a clear picture of the facility's trajectory if they ignore the findings. Reference competitors by name where provided.
@@ -905,6 +940,28 @@ export function parseCSVLine(line: string): string[] {
 /*  Route Handler                                                      */
 /* ------------------------------------------------------------------ */
 
+async function recordAuditFailure(facilityId: string, reason: string): Promise<void> {
+  const detail = reason.slice(0, 500);
+  await db.facilities
+    .update({
+      where: { id: facilityId },
+      data: {
+        pipeline_status: "audit_not_delivered",
+        audit_delivery_error: detail,
+      },
+    })
+    .catch((err) => console.error("[audit-generate] could not mark undelivered:", err));
+  await db.activity_log
+    .create({
+      data: {
+        type: "audit_delivery_failed",
+        facility_id: facilityId,
+        detail,
+      },
+    })
+    .catch((err) => console.error("[activity_log] audit failure log failed:", err));
+}
+
 export async function OPTIONS(req: NextRequest) {
   return corsResponse(getOrigin(req));
 }
@@ -974,14 +1031,19 @@ export async function POST(req: NextRequest) {
     const aiResult = await generateWithAI(prompt);
 
     if (!aiResult) {
+      if (facilityId) {
+        await recordAuditFailure(facilityId, "Generation returned nothing. Check the API key.");
+      }
       return errorResponse("Failed to generate audit — check API key", 500, origin);
     }
 
-    // Build full audit object
-    const occPct = OCCUPANCY_MAP[diagnostic.occupancy] || 75;
-    const totalUnits = UNIT_COUNT_MAP[diagnostic.totalUnits] || 300;
-    const vacantUnits = Math.round(totalUnits * (1 - occPct / 100));
-    const avgRate = 110;
+    // Vacancy dollars need a street rate. We don't have one, so we don't invent $110.
+    const occPct = lookupBand(OCCUPANCY_MAP, diagnostic.occupancy);
+    const totalUnits = lookupBand(UNIT_COUNT_MAP, diagnostic.totalUnits);
+    const vacantUnits =
+      occPct != null && totalUnits != null
+        ? Math.round(totalUnits * (1 - occPct / 100))
+        : 0;
 
     const categories = (aiResult.categories || []) as CategoryAudit[];
     const overallScore =
@@ -1027,9 +1089,10 @@ export async function POST(req: NextRequest) {
       ...(operatorAlignment ? { operatorAlignment } : {}),
       vacancyCost: {
         vacantUnits,
-        monthlyLoss: vacantUnits * avgRate,
-        annualLoss: vacantUnits * avgRate * 12,
-        avgUnitRate: avgRate,
+        monthlyLoss: 0,
+        annualLoss: 0,
+        avgUnitRate: 0,
+        dollarsKnown: false,
       },
     };
 
@@ -1048,7 +1111,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Also save to audits table if facilityId
+    const auditUrl = `https://storageads.com/audit/${slug}`;
+    const gradeText = letterGrade(overallScore);
+
     if (facilityId) {
       try {
         await db.audits.create({
@@ -1059,133 +1124,94 @@ export async function POST(req: NextRequest) {
             grade: letterGrade(overallScore),
           },
         });
-
-        await db.facilities.update({
-          where: { id: facilityId },
-          data: {
-            pipeline_status: "audit_generated",
-            shared_audit_slug: slug,
-            updated_at: new Date(),
-          },
-        });
-      } catch {
-        // Non-critical
+      } catch (err) {
+        console.error("[audit-generate] audits row failed:", err);
+        await db.activity_log
+          .create({
+            data: {
+              type: "audit_delivery_failed",
+              facility_id: facilityId,
+              detail: "Audit JSON was stored as a shared link, but the audits row did not save.",
+            },
+          })
+          .catch(() => undefined);
       }
+
+      await db.facilities.update({
+        where: { id: facilityId },
+        data: { shared_audit_slug: slug, updated_at: new Date() },
+      });
     }
 
-    const auditUrl = `https://storageads.com/audit/${slug}`;
+    const operatorHtml = operatorAuditEmail({
+      facilityName: diagnostic.facilityName || "Your facility",
+      summary: fullAudit.executiveSummary || "",
+      auditUrl,
+      score: overallScore,
+      grade: gradeText,
+      dollarsKnown: false,
+    });
 
-    // Diagnostic emails via the canonical email layer (validates, retries,
-    // honors EMAIL_DRY_RUN / EMAIL_REDIRECT_TO, skips cleanly when RESEND_API_KEY
-    // is unset, dedups on idempotencyKey).
-    const gradeText = letterGrade(overallScore);
-    const annualVacancyCost = fullAudit.vacancyCost.annualLoss;
-    const facilityNameSafe = escapeHtml(diagnostic.facilityName || "Your facility");
-    const adminEmail = process.env.ADMIN_EMAIL || "blake@storageads.com";
-
-    // Operator email — only when we captured an address to send it to.
+    let operatorSend: { ok: boolean; id?: string; error?: string; skipReason?: string } | null =
+      null;
     if (diagnostic.contactEmail) {
-      const scoreColor =
-        overallScore >= 80
-          ? "#22c55e"
-          : overallScore >= 60
-            ? "#6a9bcc"
-            : overallScore >= 40
-              ? "#AB5505"
-              : "#ef4444";
-      const summaryExcerpt = escapeHtml((fullAudit.executiveSummary || "").slice(0, 300));
-
-      const operatorHtml = `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin: 0; padding: 0; background-color: #faf9f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-    <!-- Header -->
-    <div style="text-align: center; margin-bottom: 32px;">
-      <h1 style="color: #141413; font-size: 22px; font-weight: 700; margin: 0 0 8px;">Your Facility Diagnostic is Ready</h1>
-      <p style="color: #6a6560; font-size: 14px; margin: 0;">${facilityNameSafe}</p>
-    </div>
-
-    <!-- Score Ring -->
-    <div style="text-align: center; margin-bottom: 32px;">
-      <div style="display: inline-block; width: 140px; height: 140px; position: relative;">
-        <svg viewBox="0 0 140 140" width="140" height="140">
-          <circle cx="70" cy="70" r="62" fill="none" stroke="#e8e6dc" stroke-width="10"/>
-          <circle cx="70" cy="70" r="62" fill="none" stroke="${scoreColor}" stroke-width="10"
-            stroke-dasharray="${(overallScore / 100) * 2 * Math.PI * 62} ${2 * Math.PI * 62}"
-            stroke-linecap="round" transform="rotate(-90 70 70)"/>
-          <text x="70" y="62" text-anchor="middle" fill="#141413" font-size="36" font-weight="bold" dominant-baseline="middle">${overallScore}</text>
-          <text x="70" y="88" text-anchor="middle" fill="#6a6560" font-size="12">/ 100 (${gradeText})</text>
-        </svg>
-      </div>
-    </div>
-
-    <!-- Executive Summary -->
-    <div style="background-color: #ffffff; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #e8e6dc;">
-      <h2 style="color: #141413; font-size: 16px; font-weight: 600; margin: 0 0 12px;">Executive Summary</h2>
-      <p style="color: #6a6560; font-size: 14px; line-height: 1.6; margin: 0;">${summaryExcerpt}${(fullAudit.executiveSummary || "").length > 300 ? "..." : ""}</p>
-    </div>
-
-    <!-- Vacancy Cost Teaser -->
-    ${annualVacancyCost > 0 ? `
-    <div style="background-color: #fef2f2; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 1px solid #fecaca;">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="font-size: 28px;">&#x26A0;&#xFE0F;</div>
-        <div>
-          <p style="color: #ef4444; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px;">Estimated Vacancy Cost</p>
-          <p style="color: #141413; font-size: 24px; font-weight: 700; margin: 0;">$${annualVacancyCost.toLocaleString()}<span style="color: #6a6560; font-size: 14px; font-weight: 400;">/year in lost revenue</span></p>
-        </div>
-      </div>
-    </div>
-    ` : ""}
-
-    <!-- CTA Button -->
-    <div style="text-align: center; margin-bottom: 40px;">
-      <a href="${auditUrl}" style="display: inline-block; padding: 16px 40px; background-color: #141413; color: #faf9f5; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 10px;">View Your Full Diagnostic</a>
-    </div>
-
-    <!-- Footer -->
-    <div style="text-align: center; border-top: 1px solid #e8e6dc; padding-top: 24px;">
-      <p style="color: #b0aea5; font-size: 12px; margin: 0;">Generated by <strong style="color: #141413;">StorageAds</strong> &middot; storageads.com</p>
-      <p style="color: #b0aea5; font-size: 11px; margin: 8px 0 0;">This diagnostic report will remain accessible for 90 days.</p>
-    </div>
-  </div>
-</body>
-</html>`;
-
-      void sendEmail({
+      operatorSend = await sendEmail({
         from: SENDERS.notifications,
         to: diagnostic.contactEmail,
-        subject: `Your StorageAds Facility Diagnostic is Ready: ${diagnostic.facilityName}`,
+        subject: `Your facility diagnostic is ready: ${diagnostic.facilityName}`,
         tags: [{ name: "type", value: "diagnostic_operator" }],
         idempotencyKey: `diagnostic-operator:${slug}`,
         html: operatorHtml,
-      }).catch((err) => console.error("[audit-generate] operator email failed:", err));
+      });
     }
 
-    // Always notify Blake that a diagnostic was generated — including quick
-    // diagnostics with no operator email — so generation is visible in the funnel.
-    void sendEmail({
+    const delivered = Boolean(operatorSend?.ok && operatorSend.id);
+    if (facilityId) {
+      if (delivered) {
+        await db.facilities.update({
+          where: { id: facilityId },
+          data: {
+            pipeline_status: "audit_sent",
+            audit_sent_at: new Date(),
+            audit_email_id: operatorSend?.id || null,
+            audit_delivery_error: null,
+          },
+        });
+        await db.activity_log
+          .create({
+            data: {
+              type: "audit_sent",
+              facility_id: facilityId,
+              facility_name: diagnostic.facilityName,
+              detail: `Diagnostic emailed to ${diagnostic.contactEmail}`,
+              meta: { slug, emailId: operatorSend?.id || null },
+            },
+          })
+          .catch((err) => console.error("[activity_log] audit_sent log failed:", err));
+      } else {
+        const reason = !diagnostic.contactEmail
+          ? "No email on file"
+          : operatorSend?.error || operatorSend?.skipReason || "Email was not accepted";
+        await recordAuditFailure(facilityId, reason);
+      }
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL || "blake@storageads.com";
+    await sendEmail({
       from: SENDERS.notifications,
       to: adminEmail,
-      subject: `Audit Generated: ${diagnostic.facilityName} (Score: ${overallScore}/100)`,
+      subject: `Audit generated: ${diagnostic.facilityName} (${overallScore}/100)`,
       tags: [{ name: "type", value: "diagnostic_generated" }],
       idempotencyKey: `diagnostic-generated:${slug}`,
       html: `
             <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <h2 style="margin: 0 0 12px; color: #141413;">Diagnostic Audit Generated</h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px 12px; border-bottom: 1px solid #e5e5e5; color: #666;">Facility</td><td style="padding: 8px 12px; border-bottom: 1px solid #e5e5e5;"><strong>${facilityNameSafe}</strong></td></tr>
-                <tr><td style="padding: 8px 12px; border-bottom: 1px solid #e5e5e5; color: #666;">Score</td><td style="padding: 8px 12px; border-bottom: 1px solid #e5e5e5;"><strong>${overallScore}/100 (${gradeText})</strong></td></tr>
-                <tr><td style="padding: 8px 12px; border-bottom: 1px solid #e5e5e5; color: #666;">Contact</td><td style="padding: 8px 12px; border-bottom: 1px solid #e5e5e5;">${escapeHtml(diagnostic.contactName || "N/A")} (${escapeHtml(diagnostic.contactEmail || "no email provided")})</td></tr>
-                <tr><td style="padding: 8px 12px; border-bottom: 1px solid #e5e5e5; color: #666;">Vacancy Cost</td><td style="padding: 8px 12px; border-bottom: 1px solid #e5e5e5;">$${annualVacancyCost.toLocaleString()}/yr</td></tr>
-              </table>
-              <p style="margin-top: 20px;">
-                <a href="${auditUrl}" style="display: inline-block; padding: 12px 24px; background: #141413; color: #faf9f5; text-decoration: none; border-radius: 8px; font-weight: 600;">View Audit</a>
-              </p>
+              <h2 style="margin: 0 0 12px; color: #16161A;">Diagnostic audit generated</h2>
+              <p><strong>${escapeHtml(diagnostic.facilityName || "")}</strong></p>
+              <p>Score ${overallScore}/100 (${gradeText})</p>
+              <p>Operator email: ${delivered ? "sent" : "not sent"}</p>
+              <p><a href="${auditUrl}">View audit</a></p>
             </div>`,
-    }).catch((err) => console.error("[audit-generate] admin notify failed:", err));
+    });
 
     return jsonResponse(
       {

@@ -16,7 +16,7 @@
 
 import { db } from "@/lib/db";
 import { enqueue } from "@/lib/jobs/queue";
-import { selfBaseUrl } from "@/lib/self-url";
+import { generateAuditInProcess } from "@/lib/run-diagnostic-audit";
 
 /** A submission with no audit after this long is stuck. */
 export const STUCK_AFTER_MINUTES = 10;
@@ -60,13 +60,10 @@ export async function retryStuckDiagnostics(opts: {
 } = {}): Promise<RetryResult> {
   const result: RetryResult = { stuck: 0, retried: 0, skipped: 0, failed: [] };
 
-  const adminSecret = process.env.ADMIN_SECRET;
-  if (!adminSecret || !process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.ADMIN_SECRET || !process.env.ANTHROPIC_API_KEY) {
     console.warn("[retry-diagnostic-audits] Missing ADMIN_SECRET or ANTHROPIC_API_KEY; skipping");
     return result;
   }
-
-  const appUrl = selfBaseUrl();
 
   const olderThan = new Date(Date.now() - (opts.olderThanMinutes ?? STUCK_AFTER_MINUTES) * 60_000);
   const newerThan = new Date(Date.now() - AUTO_RETRY_MAX_HOURS * 60 * 60_000);
@@ -99,17 +96,8 @@ export async function retryStuckDiagnostics(opts: {
     }
 
     try {
-      const res = await fetch(`${appUrl}/api/audit-generate-diagnostic`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Admin-Key": adminSecret },
-        body: JSON.stringify({ diagnosticJson, facilityId: facility.id }),
-      });
-      if (res.ok) {
-        result.retried++;
-      } else {
-        console.error(`[retry-diagnostic-audits] Audit generation returned ${res.status} for facility ${facility.id}`);
-        result.failed.push(facility.id);
-      }
+      await generateAuditInProcess(facility.id, diagnosticJson);
+      result.retried++;
     } catch (err) {
       console.error(`[retry-diagnostic-audits] Failed to retry facility ${facility.id}:`, err);
       result.failed.push(facility.id);

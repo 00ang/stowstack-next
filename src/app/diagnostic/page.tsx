@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 export default function DiagnosticPage() {
   return (
-    <div className="min-h-screen bg-[var(--bg-void)] text-[var(--text-primary)]">
+    <div className="min-h-screen bg-white text-[#16161A]">
       <DiagnosticForm />
     </div>
   );

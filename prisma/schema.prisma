@@ -470,6 +470,10 @@ model facilities {
   sort_last                    Boolean                        @default(false)
   sort_last_reason             String?
   sort_last_cleared_at         DateTime?                      @db.Timestamptz(6)
+  /// Set only after the operator email is accepted by Resend.
+  audit_sent_at                DateTime?                      @db.Timestamptz(6)
+  audit_email_id               String?                        @db.VarChar(120)
+  audit_delivery_error         String?
   lead_score                   Int?
   shared_audit_slug            String?                        @db.VarChar(120)
   updated_at                   DateTime                       @updatedAt @default(now()) @db.Timestamptz(6)
