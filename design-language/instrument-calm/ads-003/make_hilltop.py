@@ -1,0 +1,439 @@
+#!/usr/bin/env python3
+"""Hilltop ads. Visual grammar taken from the 1971 hilltop film, drawn in folder 003.
+
+What the stills do, and what these plates keep:
+  Low angle. The sky is the set. People stand at the bottom and look up.
+  Two kinds of light. A clear blue afternoon, and a backlight where the
+  color sits in the stipple (peach, pink, orange dots on the sky field).
+  A green hill. From above, the crowd is a shape on the grass.
+  A voiceover card. Short lines, then the name, on a white pane with a
+  hard offset so the words sit just off the picture.
+  A product plate. The mark on a clean card in front of the hill.
+  Film grain at 10% on the plate only.
+
+Left out on purpose: the bottle, the script, the song, the lyric card.
+The hand is the only person who fills a frame.
+"""
+import os, sys, math
+import numpy as np
+from PIL import Image, ImageDraw
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "tools"))
+import ic
+ic.MANROPE = os.path.join(HERE, "..", "..", "..", "src", "fonts", "Manrope-800.ttf")
+from ic import text, text_w, font, smooth_noise, dither_mask, apply_ink, hx
+
+OUT = os.path.join(HERE, "png")
+CELL = 2
+
+SKY = hx("#93AFE7")
+SLATE = hx("#7D8CA9")
+WHITE = (255, 255, 255)
+TEAL = hx("#537B88")
+OLIVE = hx("#5E604C")
+SAGE = hx("#E4EADE")
+CRAYON = hx("#83372F")
+PERI = hx("#707591")
+RED = hx("#E8281E")
+GREEN = hx("#396335")
+BLUE = hx("#2054B7")
+INK = hx("#16161A")
+LINE = hx("#121214")
+QUIET = hx("#525766")
+PEACH = hx("#E38B6C")
+PINK = hx("#E7A4C4")
+PURPLE = hx("#8E78C8")
+SKIN = hx("#E8B59A")
+
+CLOTH = [RED, GREEN, BLUE, CRAYON, PERI, TEAL, WHITE, PEACH, INK, SAGE]
+HAIR = [INK, CRAYON, SLATE, PEACH, PERI]
+HAND = [
+    (16, 54, 66, 56),
+    (16, 18, 12, 42),
+    (34, 8, 12, 52),
+    (52, 14, 12, 46),
+    (70, 24, 12, 36),
+    (82, 60, 24, 14),
+]
+
+
+def grids(w, h):
+    y, x = np.mgrid[0:h, 0:w].astype(np.float32)
+    return x / w, y / h
+
+
+def grain(img, amount=0.10, seed=3):
+    arr = np.asarray(img).astype(np.float32)
+    n = np.random.default_rng(seed).random(arr.shape[:2]).astype(np.float32)
+    arr = arr * (1 - amount) + (n * 255.0)[..., None] * amount
+    return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8))
+
+
+def stipple(img, tone, ink, seed):
+    return apply_ink(img, dither_mask(np.clip(tone, 0, 1), "stipple", seed, cell=CELL), ink)
+
+
+def logo(d, x, y, hand, fill, word=None, gap=16):
+    s = hand / 120.0
+    for rx, ry, rw, rh in HAND:
+        d.rectangle([x + rx * s, y + ry * s, x + (rx + rw) * s, y + (ry + rh) * s], fill=fill)
+    wp = word or int(hand * 0.62)
+    text(d, (x + hand + gap, y + hand * 0.58), "StorageAds", wp, 800, fill, anchor="lm", tracking=-0.03)
+    return hand + gap + text_w("StorageAds", wp, 800, tracking=-0.03)
+
+
+def logo_center(d, cx, y, hand, fill, word=None):
+    wp = word or int(hand * 0.62)
+    total = hand + 16 + text_w("StorageAds", wp, 800, tracking=-0.03)
+    logo(d, cx - total / 2, y, hand, fill, wp)
+
+
+def pane(d, box, shadow=10):
+    x0, y0, x1, y1 = box
+    d.rectangle([x0 + shadow, y0 + shadow, x1 + shadow, y1 + shadow], fill=LINE)
+    d.rectangle([x0, y0, x1, y1], fill=WHITE)
+    d.rectangle([x0, y0, x1, y1], outline=LINE, width=3)
+    return box
+
+
+def awning(d, x, y, w, h=22):
+    cw = w / 3.0
+    for i, c in enumerate((RED, GREEN, BLUE)):
+        d.rectangle([x + i * cw, y, x + (i + 1) * cw, y + h], fill=c)
+    d.rectangle([x, y, x + w, y + h], outline=LINE, width=2)
+
+
+def headline(d, xy, s, size, fill=INK, anchor="ls"):
+    # "s" is the baseline. "t" lifts the period up to the cap line.
+    text(d, xy, s, size, 800, fill, anchor=anchor, tracking=-0.035)
+
+
+def fit(s, size, maxw):
+    while size > 28 and text_w(s, size, 800, tracking=-0.035) > maxw:
+        size -= 2
+    return size
+
+
+def line_in_pane(d, box, s, size, xpad=36):
+    x0, y0, x1, y1 = box
+    size = fit(s, size, (x1 - x0) - xpad * 2)
+    ascent, descent = font(size, 800).getmetrics()
+    baseline = y0 + ((y1 - y0) - (ascent + descent)) / 2 + ascent
+    headline(d, (x0 + xpad, baseline), s, size, anchor="ls")
+    return size
+
+
+def dot_person(d, x, y, h, cloth, hair):
+    """Seen from the hill. A head and a shirt. No face, no stick legs."""
+    s = h / 100.0
+    d.rectangle([x - 9 * s, y - 8 * s, x + 9 * s, y + 14 * s], fill=cloth)
+    d.ellipse([x - 7 * s, y - 24 * s, x + 7 * s, y - 8 * s], fill=SKIN)
+    d.pieslice([x - 7 * s, y - 26 * s, x + 7 * s, y - 12 * s], 200, 340, fill=hair)
+
+
+def bust(d, x, y, h, cloth, hair):
+    """Head and shoulders, low angle. y is the shoulder line."""
+    s = h / 100.0
+    ow = max(2, int(round(2.4 * s)))
+    d.polygon(
+        [(x - 34 * s, y + 28 * s), (x - 26 * s, y - 6 * s), (x + 26 * s, y - 6 * s), (x + 34 * s, y + 28 * s)],
+        fill=cloth, outline=LINE, width=ow,
+    )
+    d.ellipse([x - 16 * s, y - 52 * s, x + 16 * s, y - 16 * s], fill=SKIN, outline=LINE, width=ow)
+    d.pieslice([x - 16 * s, y - 54 * s, x + 16 * s, y - 30 * s], 190, 350, fill=hair)
+    return (x, y - 52 * s)
+
+
+def walker(d, x, y, h, cloth, hair):
+    """Profile, walking right, along the ridge. No face."""
+    s = h / 100.0
+    ow = max(2, int(round(2 * s))) if h >= 120 else 0
+    sw = max(3, int(round(5 * s)))
+    d.line([(x - 2 * s, y - 30 * s), (x - 16 * s, y)], fill=INK, width=sw)
+    d.line([(x + 2 * s, y - 30 * s), (x + 18 * s, y)], fill=INK, width=sw)
+    d.polygon(
+        [(x - 12 * s, y - 68 * s), (x + 16 * s, y - 60 * s), (x + 12 * s, y - 26 * s), (x - 14 * s, y - 32 * s)],
+        fill=cloth, outline=LINE if ow else None, width=ow,
+    )
+    d.ellipse([x - 4 * s, y - 96 * s, x + 18 * s, y - 68 * s], fill=SKIN, outline=LINE if ow else None, width=ow)
+    d.pieslice([x - 2 * s, y - 100 * s, x + 20 * s, y - 72 * s], 200, 30, fill=hair)
+
+
+def ribbons(d, x, y, length, sw=5):
+    """One crayon ribbon and one periwinkle ribbon. The hand-layer pair."""
+    def strand(color, dx, phase):
+        pts = []
+        for i in range(18):
+            t = i / 17
+            pts.append((x + dx + math.sin(t * 3.2 + phase) * length * 0.08, y + t * length))
+        d.line(pts, fill=color, width=sw, joint="curve")
+    strand(CRAYON, -sw, 0.4)
+    strand(PERI, sw * 1.4, 1.6)
+
+
+def hill(w, h, horizon=0.28, seed=11, clear_logo=True):
+    xn, yn = grids(w, h)
+    n = smooth_noise((h, w), scale=240, seed=seed, octaves=4)
+    fine = smooth_noise((h, w), scale=56, seed=seed + 3, octaves=2)
+    img = Image.new("RGB", (w, h), SKY)
+    sky = yn < horizon
+    cloud = np.clip((n - 0.58) * 4.2, 0, 1) * sky * np.clip((horizon - yn) * 3.4, 0, 1)
+    if clear_logo:
+        cloud *= np.clip((np.abs(xn - 0.5) - 0.16) * 8, 0, 1)
+        cloud *= np.clip((yn - 0.02) * 10, 0, 1)
+    under = np.clip(np.roll(cloud, 8, axis=0) * 0.75, 0, 1)
+    img = stipple(img, under, SLATE, seed)
+    img = stipple(img, cloud, WHITE, seed + 1)
+    arr = np.array(img)
+    arr[yn >= horizon] = SAGE
+    img = Image.fromarray(arr)
+    olive = np.where(yn >= horizon, 0.16 + 0.42 * fine * np.clip((yn - horizon + 0.05) * 1.5, 0.3, 1), 0)
+    teal = np.where(yn >= horizon, 0.14 * n * np.clip((yn - 0.72) * 4, 0, 1), 0)
+    img = stipple(img, olive, OLIVE, seed + 2)
+    img = stipple(img, teal, TEAL, seed + 3)
+    return grain(img, 0.10, seed + 9)
+
+
+def crowd(d, w, h, y0, y1, seed=4, gap=None, n=90, h0=120, h1=70):
+    """An oval gathering on the grass. Nearer people are larger. Not a bottle."""
+    rng = np.random.default_rng(seed)
+    cx = w / 2
+    cy = (y0 + y1) / 2
+    rx = w * 0.36
+    ry = (y1 - y0) / 2
+    placed = []
+    for _ in range(n * 8):
+        if len(placed) >= n:
+            break
+        x = cx + rng.normal(0, rx * 0.70)
+        y = cy + rng.normal(0, ry * 0.70)
+        if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1:
+            continue
+        if x < 28 or x > w - 28 or y < 28 or y > h - 28:
+            continue
+        if gap and gap[0] < x < gap[1] and gap[2] < y < gap[3]:
+            continue
+        t = float(np.clip((y - y0) / max(1, y1 - y0), 0, 1))
+        hh = h0 + h1 * t
+        if any((x - px) ** 2 + (y - py) ** 2 < (hh * 0.28) ** 2 for px, py, _, _ in placed):
+            continue
+        placed.append((x, y, t, hh))
+    placed.sort(key=lambda p: p[1])
+    for i, (x, y, t, hh) in enumerate(placed):
+        dot_person(d, x, y, hh, CLOTH[i % len(CLOTH)], HAIR[(i * 3) % len(HAIR)])
+
+
+def hand_only(d, cx, y, hand, fill):
+    s = hand / 120.0
+    x = cx - hand / 2
+    for rx, ry, rw, rh in HAND:
+        d.rectangle([x + rx * s, y + ry * s, x + (rx + rw) * s, y + (ry + rh) * s], fill=fill)
+
+
+def lookup():
+    w = h = 1080
+    xn, yn = grids(w, h)
+    n = smooth_noise((h, w), scale=280, seed=21, octaves=4)
+    img = Image.new("RGB", (w, h), SKY)
+    # Clear blue, the low-angle frames. Clouds stay off the logo and off the people.
+    cloud = np.clip((n - 0.55) * 4.5, 0, 1)
+    cloud *= np.clip((np.abs(xn - 0.5) - 0.18) * 6, 0, 1)
+    cloud *= np.clip(yn * 5, 0, 1) * np.clip((0.55 - yn) * 4, 0, 1)
+    img = stipple(img, np.clip(np.roll(cloud, 10, 0) * 0.7, 0, 1), SLATE, 22)
+    img = stipple(img, cloud, WHITE, 23)
+    img = grain(img, 0.10, 24)
+    d = ImageDraw.Draw(img)
+    # Shoulders meet the pane. Heads sit in the sky. One pair of ribbons, off the face.
+    specs = [
+        (130, 900, 150),
+        (280, 880, 190),
+        (430, 860, 220),
+        (590, 830, 260),
+        (760, 860, 210),
+        (920, 890, 170),
+    ]
+    for i, (x, y, ht) in enumerate(specs):
+        bust(d, x, y, ht, CLOTH[i % len(CLOTH)], HAIR[i % len(HAIR)])
+    ribbons(d, 720, 740, 140, sw=8)
+    logo_center(d, w / 2, 48, 132, WHITE, word=84)
+    box = (48, 900, w - 58, h - 58)
+    pane(d, box)
+    line_in_pane(d, box, "Someone needs a unit.", 68)
+    return img
+
+
+def the_hill():
+    w = h = 1080
+    img = hill(w, h, horizon=0.30, seed=31)
+    d = ImageDraw.Draw(img)
+    crowd(d, w, h, 360, 790, seed=8, n=96, h0=120, h1=70)
+    logo_center(d, w / 2, 36, 128, WHITE, word=80)
+    box = (48, 820, w - 58, h - 58)
+    pane(d, box)
+    line_in_pane(d, box, "Fill the place.", 80)
+    return img
+
+
+def the_hour():
+    """Backlight. The color is the dots. The hand fills the frame the way a face did."""
+    w = h = 1080
+    xn, yn = grids(w, h)
+    n = smooth_noise((h, w), scale=180, seed=41, octaves=4)
+    fine = smooth_noise((h, w), scale=70, seed=42, octaves=3)
+    img = Image.new("RGB", (w, h), SKY)
+    halo = np.exp(-((xn - 0.50) ** 2) / 0.09 - ((yn - 0.32) ** 2) / 0.045)
+    blow = np.clip((n - 0.48) * 3.0, 0, 1) * np.clip((yn - 0.06) * 2.4, 0, 1)
+    blow = np.clip(blow * 0.65 + halo * 0.9, 0, 1)
+    pink = np.clip((yn - 0.16) * 1.8, 0, 0.75) * (0.35 + 0.65 * fine)
+    peach = np.clip((yn - 0.28) * 2.2, 0, 0.88) * (0.4 + 0.6 * n)
+    orange = np.clip((yn - 0.50) * 2.8, 0, 0.8) * (0.4 + 0.6 * fine)
+    img = stipple(img, pink, PINK, 43)
+    img = stipple(img, peach, PEACH, 44)
+    img = stipple(img, orange, hx("#E07A62"), 45)
+    img = stipple(img, blow, WHITE, 46)
+    img = grain(img, 0.10, 47)
+    d = ImageDraw.Draw(img)
+    hand_only(d, w / 2, 150, 420, WHITE)
+    box = (48, 820, w - 58, h - 58)
+    pane(d, box)
+    logo(d, 76, 842, 52, INK, word=26)
+    size = fit("Ads that feel like instruments.", 42, w - 200)
+    headline(d, (76, 990), "Ads that feel like instruments.", size)
+    return img
+
+
+def the_card():
+    w = h = 1080
+    img = hill(w, h, horizon=0.20, seed=51)
+    d = ImageDraw.Draw(img)
+    crowd(d, w, h, 680, 1040, seed=12, n=64, h0=110, h1=50)
+    logo_center(d, w / 2, 28, 100, WHITE, word=64)
+    box = (120, 210, w - 130, 720)
+    pane(d, box)
+    awning(d, 120, 210, (w - 130) - 120, 26)
+    lines = [("For independent operators.", 56), ("Same system the REITs run.", 64)]
+    y = 340
+    for line, size in lines:
+        size = fit(line, size, w - 340)
+        ascent, descent = font(size, 800).getmetrics()
+        headline(d, (w / 2, y), line, size, anchor="ms")
+        y += int((ascent + descent) * 1.15)
+    word = 52
+    hand = 80
+    total = hand + 16 + text_w("StorageAds", word, 800, tracking=-0.03)
+    logo(d, (w - total) / 2, y + 16, hand, INK, word=word)
+    return img
+
+
+def the_plate():
+    w = h = 1080
+    img = hill(w, h, horizon=0.30, seed=61, clear_logo=False)
+    d = ImageDraw.Draw(img)
+    # The mark sits in front of the hill. The crowd shows beside it and below it.
+    crowd(d, w, h, 500, 1040, seed=15, n=70, h0=120, h1=60, gap=(300, 780, 160, 720))
+    box = (300, 168, 780, 700)
+    pane(d, box, shadow=12)
+    hand_only(d, 540, 210, 220, INK)
+    ascent, descent = font(46, 800).getmetrics()
+    headline(d, (540, 470 + ascent), "StorageAds", 46, anchor="ms")
+    size = fit("Built to fill units.", 40, 420)
+    a2, d2 = font(size, 800).getmetrics()
+    headline(d, (540, 470 + ascent + descent + 28 + a2), "Built to fill units.", size, anchor="ms")
+    return img
+
+
+def the_line():
+    w, h = 1080, 1920
+    xn, yn = grids(w, h)
+    n = smooth_noise((h, w), scale=320, seed=71, octaves=4)
+    fine = smooth_noise((h, w), scale=90, seed=72, octaves=3)
+    ridge = 0.66 + 0.012 * np.sin((xn + 0.2) * math.pi * 1.4) + (fine - 0.5) * 0.008
+    above = yn < ridge
+    img = Image.new("RGB", (w, h), SKY)
+    purple = np.clip((yn - 0.08) * 1.6, 0, 0.72) * (0.35 + 0.65 * fine) * above
+    pink = np.clip((yn - 0.28) * 2.2, 0, 0.84) * (0.3 + 0.7 * n) * above
+    orange = np.clip((yn - 0.46) * 2.8, 0, 0.92) * (0.4 + 0.6 * fine) * above
+    blow = np.clip(1 - np.abs(yn - (ridge)) / 0.07, 0, 1) * 0.8
+    cloud = np.clip((n - 0.62) * 4, 0, 1) * np.clip((0.20 - yn) * 8, 0, 1)
+    cloud *= np.clip((np.abs(xn - 0.5) - 0.22) * 5, 0, 1)
+    img = stipple(img, purple, PURPLE, 73)
+    img = stipple(img, pink, PINK, 74)
+    img = stipple(img, orange, PEACH, 75)
+    img = stipple(img, blow, WHITE, 76)
+    img = stipple(img, cloud, WHITE, 77)
+    img = stipple(img, np.clip(np.roll(cloud, 8, 0) * 0.6, 0, 1), SLATE, 78)
+    arr = np.array(img)
+    arr[~above] = SAGE
+    img = Image.fromarray(arr)
+    olive = np.where(~above, 0.22 + 0.4 * fine, 0)
+    img = stipple(img, olive, OLIVE, 79)
+    img = grain(img, 0.10, 80)
+    d = ImageDraw.Draw(img)
+    rng = np.random.default_rng(18)
+    for i in range(13):
+        t = i / 12
+        x = 60 + t * 960 + rng.uniform(-8, 8)
+        ht = 70 + (t ** 1.35) * 210
+        yy = float(ridge[0, min(w - 1, int(x))]) * h + 6
+        walker(d, x, yy, ht, CLOTH[i % len(CLOTH)], HAIR[i % len(HAIR)])
+    logo_center(d, w / 2, 56, 150, WHITE, word=92)
+    box = (48, 1580, w - 58, h - 64)
+    pane(d, box)
+    line_in_pane(d, box, "The REITs already run this.", 60)
+    return img
+
+
+def contact(images):
+    """Vertical sheet, phone width, one caption under each."""
+    thumb_w = 540
+    gap = 28
+    caps = [
+        "14  Looking up. Clear blue. The sky is the set.",
+        "15  The hill. The crowd is the picture.",
+        "16  The hour. Warmth is in the dots.",
+        "17  The card. Short lines, then the name.",
+        "18  The plate. The mark in front of the hill.",
+        "19  The line. One lamp of sun, people along the ridge.",
+    ]
+    thumbs = []
+    for im in images:
+        tw = thumb_w
+        th = int(im.height * tw / im.width)
+        thumbs.append(im.resize((tw, th), Image.BOX))
+    cap_h = 64
+    H = gap + sum(t.height + cap_h + gap for t in thumbs)
+    sheet = Image.new("RGB", (thumb_w + gap * 2, H), hx("#E0E0E5"))
+    d = ImageDraw.Draw(sheet)
+    y = gap
+    for im, cap in zip(thumbs, caps):
+        sheet.paste(im, (gap, y))
+        y += im.height + 12
+        text(d, (gap, y), cap, 22, 700, INK, anchor="lt")
+        y += cap_h
+    return sheet
+
+
+def main():
+    os.makedirs(OUT, exist_ok=True)
+    ads = [
+        ("14-lookup.png", lookup()),
+        ("15-hill.png", the_hill()),
+        ("16-hour.png", the_hour()),
+        ("17-card.png", the_card()),
+        ("18-plate.png", the_plate()),
+        ("19-line.png", the_line()),
+    ]
+    images = []
+    for name, im in ads:
+        path = os.path.join(OUT, name)
+        im.save(path, "PNG", optimize=True)
+        print("wrote", path, im.size)
+        images.append(im)
+    sheet = contact(images)
+    sheet.save(os.path.join(OUT, "00-hilltop-set.png"), "PNG", optimize=True)
+    print("wrote", os.path.join(OUT, "00-hilltop-set.png"), sheet.size)
+
+
+if __name__ == "__main__":
+    main()
