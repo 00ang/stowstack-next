@@ -47,6 +47,7 @@ PURPLE = hx("#8E78C8")
 SKIN = hx("#E8B59A")
 
 CLOTH = [RED, GREEN, BLUE, CRAYON, PERI, TEAL, WHITE, PEACH, INK, SAGE]
+WALLS = [RED, GREEN, BLUE, CRAYON, PERI, TEAL, PEACH, OLIVE, SKY]
 HAIR = [INK, CRAYON, SLATE, PEACH, PERI]
 HAND = [
     (16, 54, 66, 56),
@@ -124,40 +125,59 @@ def line_in_pane(d, box, s, size, xpad=36):
     return size
 
 
-def dot_person(d, x, y, h, cloth, hair):
-    """Seen from the hill. A head and a shirt. No face, no stick legs."""
-    s = h / 100.0
-    d.rectangle([x - 9 * s, y - 8 * s, x + 9 * s, y + 14 * s], fill=cloth)
-    d.ellipse([x - 7 * s, y - 24 * s, x + 7 * s, y - 8 * s], fill=SKIN)
-    d.pieslice([x - 7 * s, y - 26 * s, x + 7 * s, y - 12 * s], 200, 340, fill=hair)
-
-
-def bust(d, x, y, h, cloth, hair):
-    """Head and shoulders, low angle. y is the shoulder line."""
-    s = h / 100.0
-    ow = max(2, int(round(2.4 * s)))
+def house(img, x, y, s, wall, seed):
+    """A unit in the facility-plate grammar: thin ink line, stippled wall, white roof."""
+    w, h, roof = s * 0.92, s * 0.56, s * 0.30
+    x0, y0 = int(round(x - w / 2)), int(round(y - h))
+    x1, y1 = int(round(x + w / 2)), int(round(y))
+    x0, y0 = max(0, x0), max(0, y0)
+    x1, y1 = min(img.width - 1, x1), min(img.height - 1, y1)
+    if x1 - x0 < 6 or y1 - y0 < 6:
+        return img
+    tone = np.full((y1 - y0, x1 - x0), 0.7, np.float32)
+    dw = max(2, int((x1 - x0) * 0.24))
+    dh = max(3, int((y1 - y0) * 0.46))
+    cx0 = max(0, (x1 - x0) // 2 - dw // 2)
+    tone[max(0, (y1 - y0) - dh):, cx0:cx0 + dw] = 0
+    mask = dither_mask(tone, "stipple", seed, cell=2)
+    arr = np.array(img)
+    sub = arr[y0:y0 + mask.shape[0], x0:x0 + mask.shape[1]]
+    mm = mask[:sub.shape[0], :sub.shape[1]]
+    sub[mm] = wall
+    arr[y0:y0 + sub.shape[0], x0:x0 + sub.shape[1]] = sub
+    img = Image.fromarray(arr)
+    d = ImageDraw.Draw(img)
+    d.rectangle([x0, y0, x1, y1], outline=INK, width=2)
     d.polygon(
-        [(x - 34 * s, y + 28 * s), (x - 26 * s, y - 6 * s), (x + 26 * s, y - 6 * s), (x + 34 * s, y + 28 * s)],
-        fill=cloth, outline=LINE, width=ow,
+        [(x0 - 2, y0), (x, y0 - roof), (x1 + 2, y0)],
+        fill=WHITE, outline=INK, width=2,
     )
-    d.ellipse([x - 16 * s, y - 52 * s, x + 16 * s, y - 16 * s], fill=SKIN, outline=LINE, width=ow)
-    d.pieslice([x - 16 * s, y - 54 * s, x + 16 * s, y - 30 * s], 190, 350, fill=hair)
-    return (x, y - 52 * s)
+    d.rectangle([x0 + cx0, y1 - dh, x0 + cx0 + dw, y1], outline=INK, width=1)
+    return img
 
 
-def walker(d, x, y, h, cloth, hair):
-    """Profile, walking right, along the ridge. No face."""
+def hat(d, x, y, s, color):
+    """The public mark. One brim, one crown. No face."""
+    sw = max(2, int(round(s / 14)))
+    k = s / 32.0
+    def P(px, py):
+        return (x + (px - 22) * k, y + (py - 70) * k)
+    d.line([P(6, 70), P(38, 70)], fill=color, width=sw)
+    crown = [(14, 70), (14, 52), (20, 52), (23, 44), (29, 44), (31, 52), (36, 52), (36, 70)]
+    d.line([P(a, b) for a, b in crown], fill=color, width=sw, joint="curve")
+
+
+def walker(d, x, y, h, color=INK):
+    """A person as a line icon, same stroke as the attention marks. No face."""
     s = h / 100.0
-    ow = max(2, int(round(2 * s))) if h >= 120 else 0
-    sw = max(3, int(round(5 * s)))
-    d.line([(x - 2 * s, y - 30 * s), (x - 16 * s, y)], fill=INK, width=sw)
-    d.line([(x + 2 * s, y - 30 * s), (x + 18 * s, y)], fill=INK, width=sw)
-    d.polygon(
-        [(x - 12 * s, y - 68 * s), (x + 16 * s, y - 60 * s), (x + 12 * s, y - 26 * s), (x - 14 * s, y - 32 * s)],
-        fill=cloth, outline=LINE if ow else None, width=ow,
-    )
-    d.ellipse([x - 4 * s, y - 96 * s, x + 18 * s, y - 68 * s], fill=SKIN, outline=LINE if ow else None, width=ow)
-    d.pieslice([x - 2 * s, y - 100 * s, x + 20 * s, y - 72 * s], 200, 30, fill=hair)
+    sw = max(2, int(round(h / 36)))
+    r = 7.5 * s
+    hy = y - 86 * s
+    d.ellipse([x - r, hy - r, x + r, hy + r], outline=color, width=sw)
+    d.line([(x, hy + r), (x + 2 * s, y - 34 * s)], fill=color, width=sw)
+    d.line([(x + 2 * s, y - 58 * s), (x + 16 * s, y - 46 * s)], fill=color, width=sw)
+    d.line([(x + 2 * s, y - 34 * s), (x - 14 * s, y)], fill=color, width=sw)
+    d.line([(x + 2 * s, y - 34 * s), (x + 16 * s, y)], fill=color, width=sw)
 
 
 def ribbons(d, x, y, length, sw=5):
@@ -192,36 +212,42 @@ def hill(w, h, horizon=0.28, seed=11, clear_logo=True):
     teal = np.where(yn >= horizon, 0.14 * n * np.clip((yn - 0.72) * 4, 0, 1), 0)
     img = stipple(img, olive, OLIVE, seed + 2)
     img = stipple(img, teal, TEAL, seed + 3)
+    # Sun on the grass, as dots. The aerial frames are lit from behind the hill.
+    sun = np.where((yn >= horizon) & (yn < horizon + 0.18), (0.10 + 0.18 * fine) * np.clip((horizon + 0.18 - yn) * 6, 0, 1), 0)
+    img = stipple(img, sun, PEACH, seed + 6)
+    img = stipple(img, sun * 0.35, PINK, seed + 7)
     return grain(img, 0.10, seed + 9)
 
 
-def crowd(d, w, h, y0, y1, seed=4, gap=None, n=90, h0=120, h1=70):
-    """An oval gathering on the grass. Nearer people are larger. Not a bottle."""
+def crowd(img, y0, y1, seed=4, gap=None, n=42, h0=64, h1=28):
+    """Households on the hill. An oval, nearer units larger. Not a bottle."""
+    w, h = img.size
     rng = np.random.default_rng(seed)
     cx = w / 2
     cy = (y0 + y1) / 2
-    rx = w * 0.36
+    rx = w * 0.38
     ry = (y1 - y0) / 2
     placed = []
-    for _ in range(n * 8):
+    for _ in range(n * 12):
         if len(placed) >= n:
             break
-        x = cx + rng.normal(0, rx * 0.70)
-        y = cy + rng.normal(0, ry * 0.70)
+        x = cx + rng.normal(0, rx * 0.62)
+        y = cy + rng.normal(0, ry * 0.62)
         if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1:
             continue
-        if x < 28 or x > w - 28 or y < 28 or y > h - 28:
+        if x < 40 or x > w - 40 or y < 40 or y > h - 20:
             continue
         if gap and gap[0] < x < gap[1] and gap[2] < y < gap[3]:
             continue
         t = float(np.clip((y - y0) / max(1, y1 - y0), 0, 1))
         hh = h0 + h1 * t
-        if any((x - px) ** 2 + (y - py) ** 2 < (hh * 0.28) ** 2 for px, py, _, _ in placed):
+        if any((x - px) ** 2 + (y - py) ** 2 < (max(hh, ph) * 0.72) ** 2 for px, py, ph in placed):
             continue
-        placed.append((x, y, t, hh))
+        placed.append((x, y, hh))
     placed.sort(key=lambda p: p[1])
-    for i, (x, y, t, hh) in enumerate(placed):
-        dot_person(d, x, y, hh, CLOTH[i % len(CLOTH)], HAIR[(i * 3) % len(HAIR)])
+    for i, (x, y, hh) in enumerate(placed):
+        img = house(img, x, y, hh, WALLS[i % len(WALLS)], seed + i)
+    return img
 
 
 def hand_only(d, cx, y, hand, fill):
@@ -243,19 +269,9 @@ def lookup():
     img = stipple(img, np.clip(np.roll(cloud, 10, 0) * 0.7, 0, 1), SLATE, 22)
     img = stipple(img, cloud, WHITE, 23)
     img = grain(img, 0.10, 24)
+    for i, (x, s) in enumerate(((160, 86), (330, 104), (520, 124), (730, 108), (920, 90))):
+        img = house(img, x, 908, s, WALLS[i], 40 + i)
     d = ImageDraw.Draw(img)
-    # Shoulders meet the pane. Heads sit in the sky. One pair of ribbons, off the face.
-    specs = [
-        (130, 900, 150),
-        (280, 880, 190),
-        (430, 860, 220),
-        (590, 830, 260),
-        (760, 860, 210),
-        (920, 890, 170),
-    ]
-    for i, (x, y, ht) in enumerate(specs):
-        bust(d, x, y, ht, CLOTH[i % len(CLOTH)], HAIR[i % len(HAIR)])
-    ribbons(d, 720, 740, 140, sw=8)
     logo_center(d, w / 2, 48, 132, WHITE, word=84)
     box = (48, 900, w - 58, h - 58)
     pane(d, box)
@@ -266,8 +282,8 @@ def lookup():
 def the_hill():
     w = h = 1080
     img = hill(w, h, horizon=0.30, seed=31)
+    img = crowd(img, 390, 790, seed=8, n=34, h0=78, h1=36)
     d = ImageDraw.Draw(img)
-    crowd(d, w, h, 360, 790, seed=8, n=96, h0=120, h1=70)
     logo_center(d, w / 2, 36, 128, WHITE, word=80)
     box = (48, 820, w - 58, h - 58)
     pane(d, box)
@@ -282,19 +298,19 @@ def the_hour():
     n = smooth_noise((h, w), scale=180, seed=41, octaves=4)
     fine = smooth_noise((h, w), scale=70, seed=42, octaves=3)
     img = Image.new("RGB", (w, h), SKY)
-    halo = np.exp(-((xn - 0.50) ** 2) / 0.09 - ((yn - 0.32) ** 2) / 0.045)
-    blow = np.clip((n - 0.48) * 3.0, 0, 1) * np.clip((yn - 0.06) * 2.4, 0, 1)
-    blow = np.clip(blow * 0.65 + halo * 0.9, 0, 1)
-    pink = np.clip((yn - 0.16) * 1.8, 0, 0.75) * (0.35 + 0.65 * fine)
-    peach = np.clip((yn - 0.28) * 2.2, 0, 0.88) * (0.4 + 0.6 * n)
-    orange = np.clip((yn - 0.50) * 2.8, 0, 0.8) * (0.4 + 0.6 * fine)
+    halo = np.exp(-((xn - 0.50) ** 2) / 0.07 - ((yn - 0.34) ** 2) / 0.035)
+    blow = np.clip((n - 0.42) * 2.6, 0, 1) * np.clip((yn - 0.04) * 2.2, 0, 1)
+    blow = np.clip(blow * 0.55 + halo * 0.95, 0, 1)
+    pink = np.clip((yn - 0.10) * 1.6, 0, 0.82) * (0.4 + 0.6 * fine)
+    peach = np.clip((yn - 0.22) * 2.0, 0, 0.9) * (0.45 + 0.55 * n)
+    orange = np.clip((yn - 0.42) * 2.4, 0, 0.88) * (0.45 + 0.55 * fine)
     img = stipple(img, pink, PINK, 43)
     img = stipple(img, peach, PEACH, 44)
     img = stipple(img, orange, hx("#E07A62"), 45)
     img = stipple(img, blow, WHITE, 46)
     img = grain(img, 0.10, 47)
     d = ImageDraw.Draw(img)
-    hand_only(d, w / 2, 150, 420, WHITE)
+    hand_only(d, w / 2, 120, 500, WHITE)
     box = (48, 820, w - 58, h - 58)
     pane(d, box)
     logo(d, 76, 842, 52, INK, word=26)
@@ -306,13 +322,13 @@ def the_hour():
 def the_card():
     w = h = 1080
     img = hill(w, h, horizon=0.20, seed=51)
+    img = crowd(img, 700, 1040, seed=12, n=22, h0=70, h1=24)
     d = ImageDraw.Draw(img)
-    crowd(d, w, h, 680, 1040, seed=12, n=64, h0=110, h1=50)
     logo_center(d, w / 2, 28, 100, WHITE, word=64)
     box = (120, 210, w - 130, 720)
     pane(d, box)
     awning(d, 120, 210, (w - 130) - 120, 26)
-    lines = [("For independent operators.", 56), ("Same system the REITs run.", 64)]
+    lines = [("A lot of lives.", 72), ("One place.", 84)]
     y = 340
     for line, size in lines:
         size = fit(line, size, w - 340)
@@ -329,9 +345,8 @@ def the_card():
 def the_plate():
     w = h = 1080
     img = hill(w, h, horizon=0.30, seed=61, clear_logo=False)
+    img = crowd(img, 560, 1040, seed=15, n=26, h0=64, h1=28, gap=(280, 800, 140, 730))
     d = ImageDraw.Draw(img)
-    # The mark sits in front of the hill. The crowd shows beside it and below it.
-    crowd(d, w, h, 500, 1040, seed=15, n=70, h0=120, h1=60, gap=(300, 780, 160, 720))
     box = (300, 168, 780, 700)
     pane(d, box, shadow=12)
     hand_only(d, 540, 210, 220, INK)
@@ -369,14 +384,14 @@ def the_line():
     olive = np.where(~above, 0.22 + 0.4 * fine, 0)
     img = stipple(img, olive, OLIVE, 79)
     img = grain(img, 0.10, 80)
+    x = 36.0
+    for i in range(8):
+        t = i / 7
+        s = 52 + (t ** 1.15) * 108
+        x += s * 1.05
+        yy = float(ridge[0, min(w - 1, int(min(x, w - 1)))]) * h + 2
+        img = house(img, x, yy, s, WALLS[i % len(WALLS)], 90 + i)
     d = ImageDraw.Draw(img)
-    rng = np.random.default_rng(18)
-    for i in range(13):
-        t = i / 12
-        x = 60 + t * 960 + rng.uniform(-8, 8)
-        ht = 70 + (t ** 1.35) * 210
-        yy = float(ridge[0, min(w - 1, int(x))]) * h + 6
-        walker(d, x, yy, ht, CLOTH[i % len(CLOTH)], HAIR[i % len(HAIR)])
     logo_center(d, w / 2, 56, 150, WHITE, word=92)
     box = (48, 1580, w - 58, h - 64)
     pane(d, box)
@@ -389,12 +404,12 @@ def contact(images):
     thumb_w = 540
     gap = 28
     caps = [
-        "14  Looking up. Clear blue. The sky is the set.",
-        "15  The hill. The crowd is the picture.",
-        "16  The hour. Warmth is in the dots.",
-        "17  The card. Short lines, then the name.",
+        "14  Looking up. The public, in the hat mark.",
+        "15  The hill. Households, side by side.",
+        "16  The hour. The light is the close-up.",
+        "17  The card. A lot of lives. One place.",
         "18  The plate. The mark in front of the hill.",
-        "19  The line. One lamp of sun, people along the ridge.",
+        "19  The line. Icons along the ridge.",
     ]
     thumbs = []
     for im in images:
