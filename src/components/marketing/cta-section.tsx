@@ -8,6 +8,7 @@ import { useInView } from "./use-in-view";
 import { CAL_BOOKING_URL, CAL_EMBED_SLUG } from "@/lib/booking";
 import Cite from "./cite";
 import { RevealText } from "./motion";
+import { useHumanProof } from "@/lib/use-human-proof";
 
 const TRUST_SIGNALS = [
   { icon: Shield, text: "No long-term contracts" },
@@ -28,6 +29,7 @@ export default function CTASection() {
   const [mobileTab, setMobileTab] = useState<"audit" | "call">("audit");
   const calContainerRef = useRef<HTMLDivElement>(null);
   const calInitRef = useRef(false);
+  const human = useHumanProof(true);
 
   // Initialize Cal.com embed using the official snippet pattern.
   // The snippet defines window.Cal as a queue, then loads the embed script,
@@ -179,14 +181,19 @@ export default function CTASection() {
     const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     try {
+      const humanProof = await human.proof();
       const res = await fetch("/api/audit-form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, ...(humanProof ? { humanProof } : {}) }),
         signal: controller.signal,
       });
       if (res.ok) {
         setIsSubmitted(true);
+      } else if (res.status === 403) {
+        human.invalidate();
+        const payload = await res.json().catch(() => null);
+        setSubmitError(payload?.error || "Confirm this browser before sending.");
       } else if (res.status === 429) {
         setSubmitError(
           "Too many requests from your network. Please wait a minute and try again."
@@ -204,7 +211,9 @@ export default function CTASection() {
       setSubmitError(
         aborted
           ? "The request took too long. Please check your connection and try again."
-          : "Network error. Please check your connection and try again."
+          : err instanceof Error && err.message.startsWith("Couldn't confirm")
+            ? err.message
+            : "Network error. Please check your connection and try again."
       );
     } finally {
       clearTimeout(timeoutId);

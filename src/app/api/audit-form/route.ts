@@ -5,7 +5,8 @@ import { corsResponse, getOrigin } from "@/lib/api-helpers";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidEmail, sanitizeString, escapeHtml } from "@/lib/validation";
-import { SENDERS, sendEmail } from "@/lib/email";
+import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
+import { humanProofError, verifyHumanProof } from "@/lib/human-check/server";
 import { answersJson, mergeIntakeAnswers } from "@/lib/intake/merge-answers";
 import { intakePhone, PHONE_SERVER_ERROR } from "@/lib/intake/phone";
 import { neutralSortReason, scoreAndStore } from "@/lib/intake/score-lead";
@@ -119,6 +120,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const proof = await verifyHumanProof(body.humanProof);
+    if (!proof.ok) {
+      return NextResponse.json({ error: humanProofError(proof.reason) }, { status: 403 });
+    }
+
     const resolvedFacilityName =
       facilityName || (source === "homepage_popup" ? "Homepage inquiry" : "Contact form");
     const resolvedLocation = location || "Not provided";
@@ -207,7 +213,7 @@ export async function POST(request: NextRequest) {
 
       await sendEmail({
         from: SENDERS.noreply,
-        to: [process.env.ADMIN_EMAIL || "blake@storageads.com"],
+        to: submissionNotifyRecipients(),
         subject,
         tags: [{ name: "type", value: source === "audit_form" ? "audit_request" : source }],
         html: `

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { jsonResponse, errorResponse, getOrigin, corsResponse } from "@/lib/api-helpers";
-import { SENDERS, sendEmail } from "@/lib/email";
+import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isValidEmail, sanitizeString } from "@/lib/validation";
 import { fireMetaCapi } from "@/lib/meta-capi";
@@ -305,6 +305,7 @@ export async function POST(req: NextRequest) {
       if (facility?.contact_email) {
         recipients.push(facility.contact_email);
       }
+      recipients.push(...submissionNotifyRecipients());
 
       void sendEmail({
         from: SENDERS.notifications,

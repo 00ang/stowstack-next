@@ -75,6 +75,30 @@ export const SENDERS = {
 
 export type SenderKey = keyof typeof SENDERS;
 
+const BLAKE_EMAIL = "blake@storageads.com";
+const ANGELO_EMAIL = "angelo@storageads.com";
+
+/**
+ * Internal alerts for a form submission or an audit request.
+ * Blake stays on the list. Angelo is copied. ADMIN_EMAIL is included when set.
+ */
+export function submissionNotifyRecipients(
+  extra: Array<string | null | undefined> = []
+): string[] {
+  const primary = process.env.ADMIN_EMAIL?.trim() || BLAKE_EMAIL;
+  const seen = new Set<string>();
+  const recipients: string[] = [];
+  for (const value of [primary, BLAKE_EMAIL, ANGELO_EMAIL, ...extra]) {
+    const email = value?.trim();
+    if (!email) continue;
+    const key = email.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    recipients.push(email);
+  }
+  return recipients;
+}
+
 /** Mailboxes a facility-scoped sender may speak from. */
 export type FacilityChannel = "notifications" | "reviews";
 

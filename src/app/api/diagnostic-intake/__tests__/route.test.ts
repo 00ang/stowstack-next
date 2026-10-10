@@ -5,10 +5,13 @@ import { createMockRequest } from "@/test/helpers";
 // module imports cleanly without a Resend client. (db is mocked globally in
 // src/test/setup.ts.) The guard/validation paths under test return before any
 // email or db call, so no further mocking is needed.
-vi.mock("@/lib/email", () => ({
-  sendEmail: vi.fn().mockResolvedValue({ ok: true }),
-  SENDERS: { default: "test@storageads.com", notifications: "notes@storageads.com" },
-}));
+vi.mock("@/lib/email", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/email")>("@/lib/email");
+  return {
+    ...actual,
+    sendEmail: vi.fn().mockResolvedValue({ ok: true }),
+  };
+});
 
 vi.mock("@/lib/diagnostic-retry", () => ({
   scheduleDiagnosticRetry: vi.fn().mockResolvedValue(undefined),

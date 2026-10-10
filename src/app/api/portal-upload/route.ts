@@ -10,7 +10,7 @@ import {
   corsResponse,
 } from "@/lib/api-helpers";
 import { authenticatePortalRequest } from "@/lib/portal-auth";
-import { SENDERS, sendEmail } from "@/lib/email";
+import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { escapeHtml } from "@/lib/validation";
@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
     // Send admin notification (fire-and-forget).
     void sendEmail({
       from: SENDERS.notifications,
-      to: [process.env.ADMIN_EMAIL || "blake@storageads.com"],
+      to: submissionNotifyRecipients(),
       subject: `PMS Report Uploaded: ${escapeHtml(facility?.name ?? "Unknown")} [${status}]`,
       tags: [{ name: "type", value: "portal_upload" }],
       html: `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; max-width: 480px;">

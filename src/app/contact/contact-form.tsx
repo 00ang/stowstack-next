@@ -4,11 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check } from "lucide-react";
 import { CAL_BOOKING_URL } from "@/lib/booking";
+import { useHumanProof } from "@/lib/use-human-proof";
 
 export default function ContactForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const human = useHumanProof(true);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,6 +30,7 @@ export default function ContactForm() {
     const timeoutId = window.setTimeout(() => controller.abort(), 20000);
 
     try {
+      const humanProof = await human.proof();
       const res = await fetch("/api/audit-form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -37,11 +40,16 @@ export default function ContactForm() {
           email: payload.email,
           phone: payload.phone,
           message: payload.message,
+          ...(humanProof ? { humanProof } : {}),
         }),
         signal: controller.signal,
       });
       if (res.ok) {
         setSubmitted(true);
+      } else if (res.status === 403) {
+        human.invalidate();
+        const body = await res.json().catch(() => null);
+        setError(body?.error || "Confirm this browser before sending.");
       } else if (res.status === 429) {
         setError("Too many requests. Wait a minute and try again.");
       } else {
@@ -53,7 +61,9 @@ export default function ContactForm() {
       setError(
         aborted
           ? "The request took too long. Check your connection."
-          : "Network error. Check your connection."
+          : err instanceof Error && err.message.startsWith("Couldn't confirm")
+            ? err.message
+            : "Network error. Check your connection."
       );
     } finally {
       window.clearTimeout(timeoutId);

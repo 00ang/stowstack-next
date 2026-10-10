@@ -10,7 +10,7 @@ import {
 } from "@/lib/api-helpers";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
-import { sendEmail, SENDERS } from "@/lib/email";
+import { sendEmail, SENDERS, submissionNotifyRecipients } from "@/lib/email";
 import { escapeHtml } from "@/lib/validation";
 import { operatorAuditEmail } from "@/lib/audit-email";
 
@@ -1196,7 +1196,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const adminEmail = process.env.ADMIN_EMAIL || "blake@storageads.com";
+    const adminEmail = submissionNotifyRecipients();
     await sendEmail({
       from: SENDERS.notifications,
       to: adminEmail,

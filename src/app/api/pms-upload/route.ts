@@ -8,7 +8,7 @@ import {
   corsResponse,
   isAdminRequest,
 } from "@/lib/api-helpers";
-import { SENDERS, sendEmail } from "@/lib/email";
+import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidEmail, sanitizeString, escapeHtml } from "@/lib/validation";
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     void sendEmail({
       from: SENDERS.notifications,
-      to: [process.env.ADMIN_EMAIL || "blake@storageads.com", "anna@storageads.com"],
+      to: submissionNotifyRecipients(["anna@storageads.com"]),
       subject: `PMS Report Uploaded: ${escapeHtml(facilityName)}`,
       tags: [{ name: "type", value: "pms_upload" }],
       html: `<div style="font-family: sans-serif; padding: 20px;">

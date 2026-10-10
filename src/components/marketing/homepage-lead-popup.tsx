@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { IntakeWizard } from "@/components/intake/intake-wizard";
 import { POPUP_STEPS } from "@/lib/intake/questions";
+import { useHumanProof } from "@/lib/use-human-proof";
 
 const STORAGE_KEY = "sa_homepage_lead_dismissed";
 const SHOW_DELAY_MS = 8000;
@@ -20,6 +21,7 @@ export default function HomepageLeadPopup() {
   const [done, setDone] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const human = useHumanProof(show);
 
   const remember = useCallback((value: "dismissed" | "submitted") => {
     try {
@@ -181,6 +183,7 @@ export default function HomepageLeadPopup() {
               const controller = new AbortController();
               const timeoutId = window.setTimeout(() => controller.abort(), 15000);
               try {
+                const humanProof = await human.proof();
                 const res = await fetch("/api/audit-form", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -192,10 +195,12 @@ export default function HomepageLeadPopup() {
                     consent: input.consent,
                     website_url: input.website,
                     elapsedSeconds: input.elapsedSeconds,
+                    ...(humanProof ? { humanProof } : {}),
                   }),
                 });
                 const payload = await res.json().catch(() => null);
                 if (!res.ok || !payload?.facilityId || !payload?.intakeToken) {
+                  if (res.status === 403) human.invalidate();
                   if (res.status === 429) throw new Error("Too many requests. Try again in a minute.");
                   throw new Error(payload?.error || "Couldn't send. Please try again.");
                 }
