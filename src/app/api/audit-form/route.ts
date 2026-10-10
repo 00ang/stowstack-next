@@ -7,6 +7,7 @@ import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidEmail, sanitizeString, escapeHtml } from "@/lib/validation";
 import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
 import { humanProofError, verifyHumanProof } from "@/lib/human-check/server";
+import { leadTextIsAutomated } from "@/lib/spam-text";
 import { answersJson, mergeIntakeAnswers } from "@/lib/intake/merge-answers";
 import { intakePhone, PHONE_SERVER_ERROR } from "@/lib/intake/phone";
 import { neutralSortReason, scoreAndStore } from "@/lib/intake/score-lead";
@@ -123,6 +124,14 @@ export async function POST(request: NextRequest) {
     const proof = await verifyHumanProof(body.humanProof);
     if (!proof.ok) {
       return NextResponse.json({ error: humanProofError(proof.reason) }, { status: 403 });
+    }
+
+    // A solved browser check still lets a headless browser through. Random
+    // tokens in the name, facility, or city are not a real audit request.
+    // Pretend it saved so the bot does not rewrite the fields and try again.
+    if (leadTextIsAutomated({ name, facilityName, location })) {
+      console.info("[audit-form] dropped random field text");
+      return NextResponse.json({ success: true });
     }
 
     const resolvedFacilityName =

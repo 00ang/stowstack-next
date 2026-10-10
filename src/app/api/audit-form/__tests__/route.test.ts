@@ -131,6 +131,23 @@ describe("POST /api/audit-form", () => {
     expect(m.activity_log.create).toHaveBeenCalled();
   });
 
+  it("drops a proved request whose name, facility, and city are random tokens", async () => {
+    const res = await post(
+      proved({
+        name: "PpGLJz0lct",
+        email: "debbieransomeiu280@gmail.com",
+        facilityName: "JlDSdbF6Rp",
+        location: "g8cDAvrmd4",
+      })
+    );
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toEqual({ success: true });
+    expect(m.facilities.create).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+    expect(m.activity_log.create).not.toHaveBeenCalled();
+  });
+
   it("rejects a scripted post before saving a lead or emailing anyone", async () => {
     const res = await post(valid);
     expect(res.status).toBe(403);
