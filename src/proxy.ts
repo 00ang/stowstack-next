@@ -93,6 +93,7 @@ export function isCsrfExempt(req: NextRequest): boolean {
   // Public, unauthenticated lead-capture endpoints. No session to protect
   // via CSRF; abuse is bounded by per-IP rate limits at the route level.
   if (path === "/api/audit-form") return true;
+  if (path === "/api/places-suggest") return true;
   if (path === "/api/consumer-lead") return true;
   if (path === "/api/diagnostic-intake") return true;
   if (path === "/api/facility-lookup") return true;

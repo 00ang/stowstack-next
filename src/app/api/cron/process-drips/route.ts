@@ -149,6 +149,7 @@ export async function GET(request: NextRequest) {
             FROM drip_sequences ds
             JOIN facilities f ON ds.facility_id = f.id
             WHERE ds.status = 'active' AND ds.next_send_at <= NOW() AND ds.id > ${cursor}::uuid
+              AND COALESCE(f.sort_last, false) = false
             ORDER BY ds.id ASC
             LIMIT ${BATCH_SIZE}
           `;
@@ -159,6 +160,7 @@ export async function GET(request: NextRequest) {
             FROM drip_sequences ds
             JOIN facilities f ON ds.facility_id = f.id
             WHERE ds.status = 'active' AND ds.next_send_at <= NOW()
+              AND COALESCE(f.sort_last, false) = false
             ORDER BY ds.id ASC
             LIMIT ${BATCH_SIZE}
           `;

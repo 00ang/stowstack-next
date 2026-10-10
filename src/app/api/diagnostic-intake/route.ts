@@ -222,45 +222,16 @@ export async function POST(req: NextRequest) {
       responses?.[
         "About where is your facility sitting today (overall occupancy)?"
       ] || "";
-    const occupancyMap: Record<string, string> = {
-      "Under 50%": "below-60",
-      "50–59%": "below-60",
-      "60–69%": "60-75",
-      "70–79%": "60-75",
-      "80–84%": "75-85",
-      "85–89%": "85-95",
-      "90–94%": "85-95",
-      "95%+": "above-95",
-    };
 
     const totalUnitsRaw =
       responses?.[
         "What is your total unit count (approximately)?"
       ] || "";
-    const unitCountMap: Record<string, string> = {
-      "Under 100": "under-100",
-      "100–199": "100-300",
-      "200–349": "100-300",
-      "350–499": "300-500",
-      "500–749": "500+",
-      "750–999": "500+",
-      "1,000+": "500+",
-    };
 
     const biggestIssueRaw =
       responses?.[
         "What feels like the bigger issue right now?"
       ] || "";
-    const issueMap: Record<string, string> = {
-      "Not enough leads coming in": "filling-units",
-      "Plenty of leads, not enough are converting to move-ins":
-        "competitive-pressure",
-      "Both — not enough leads AND they're not converting": "filling-units",
-      "Revenue per unit is too low": "revenue",
-      "Operations are stretched thin": "operations",
-      "Not sure where to start": "filling-units",
-      "Not sure": "filling-units",
-    };
 
     // Lead scoring — prioritize follow-up based on diagnostic responses
     const urgencyRaw = responses?.["How soon are you looking to take action?"] || "";
@@ -302,9 +273,10 @@ export async function POST(req: NextRequest) {
         contact_email: contactEmail,
         contact_phone: contactPhone || null,
         website: websiteUrl || null,
-        occupancy_range: occupancyMap[occupancyRaw] || "60-75",
-        total_units: unitCountMap[totalUnitsRaw] || "100-300",
-        biggest_issue: issueMap[biggestIssueRaw] || "filling-units",
+        // Raw answer only. A skip stays null. Never invent "60-75" / "100-300".
+        occupancy_range: occupancyRaw || null,
+        total_units: totalUnitsRaw || null,
+        biggest_issue: biggestIssueRaw || null,
         lead_score: leadScore,
         status: "intake",
         pipeline_status: "diagnostic_submitted",
