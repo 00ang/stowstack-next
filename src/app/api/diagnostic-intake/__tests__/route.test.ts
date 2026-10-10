@@ -7,10 +7,25 @@ import { createMockRequest } from "@/test/helpers";
 // email or db call, so no further mocking is needed.
 vi.mock("@/lib/email", () => ({
   sendEmail: vi.fn().mockResolvedValue({ ok: true }),
-  SENDERS: { default: "test@storageads.com" },
+  SENDERS: { default: "test@storageads.com", notifications: "notes@storageads.com" },
 }));
 
+vi.mock("@/lib/diagnostic-retry", () => ({
+  scheduleDiagnosticRetry: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("next/server", async () => {
+  const actual = await vi.importActual<typeof import("next/server")>("next/server");
+  return { ...actual, after: vi.fn() };
+});
+
+import { db } from "@/lib/db";
 import { POST } from "../route";
+
+const facilities = db as unknown as {
+  facilities: { create: ReturnType<typeof vi.fn> };
+  activity_log: { create: ReturnType<typeof vi.fn> };
+};
 
 const PATH = "/api/diagnostic-intake";
 
@@ -38,6 +53,44 @@ describe("POST /api/diagnostic-intake — payload-size guard", () => {
       responses: { note: "occupancy is around 80%" },
     });
     expect(res.status).toBe(400);
+  });
+
+  it("does not store made-up bands when occupancy, units, or the issue are skipped", async () => {
+    facilities.facilities = { create: vi.fn().mockResolvedValue({ id: "fac-1" }) };
+    facilities.activity_log = { create: vi.fn().mockResolvedValue({}) };
+
+    const res = await post({
+      facilityName: "Main Street Storage",
+      contactEmail: "owner@mainstreet.test",
+      responses: {},
+    });
+    expect(res.status).toBe(201);
+    const data = facilities.facilities.create.mock.calls[0][0].data;
+    expect(data.occupancy_range).toBeNull();
+    expect(data.total_units).toBeNull();
+    expect(data.biggest_issue).toBeNull();
+    expect(JSON.stringify(data)).not.toContain("60-75");
+    expect(JSON.stringify(data)).not.toContain("100-300");
+    expect(JSON.stringify(data)).not.toContain("filling-units");
+  });
+
+  it("stores the raw band the operator picked", async () => {
+    facilities.facilities = { create: vi.fn().mockResolvedValue({ id: "fac-1" }) };
+    facilities.activity_log = { create: vi.fn().mockResolvedValue({}) };
+
+    const res = await post({
+      facilityName: "Main Street Storage",
+      contactEmail: "owner@mainstreet.test",
+      responses: {
+        "About where is your facility sitting today (overall occupancy)?": "60–69%",
+        "What is your total unit count (approximately)?": "200–349",
+      },
+    });
+    expect(res.status).toBe(201);
+    const data = facilities.facilities.create.mock.calls[0][0].data;
+    expect(data.occupancy_range).toBe("60–69%");
+    expect(data.total_units).toBe("200–349");
+    expect(data.biggest_issue).toBeNull();
   });
 
   it("does not false-trigger when responses is absent", async () => {

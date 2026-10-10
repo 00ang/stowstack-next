@@ -1,39 +1,25 @@
 "use client";
 
 /**
- * Homepage lead popup: name + phone, first-month-free offer.
- *
- * TODO(pricing): FAQ still says "month four is free"
- * (src/components/marketing/faq.tsx). This popup offers first month free
- * as requested for go-live. Do not invent a reconciled offer. Blake needs
- * to pick one claim before launch.
+ * Homepage lead popup. Step 1 is name and phone, saved immediately.
+ * The rest is one question per screen. Closing later still leaves the lead.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, X } from "lucide-react";
+import { X } from "lucide-react";
+import { IntakeWizard } from "@/components/intake/intake-wizard";
+import { POPUP_STEPS } from "@/lib/intake/questions";
 
 const STORAGE_KEY = "sa_homepage_lead_dismissed";
 const SHOW_DELAY_MS = 8000;
 const MOBILE_FALLBACK_MS = 12000;
-
-function isUsPhone(value: string): boolean {
-  const digits = value.replace(/[^\d]/g, "");
-  if (digits.length === 10) return true;
-  if (digits.length === 11 && digits.startsWith("1")) return true;
-  return false;
-}
+const INK = "#16161A";
 
 export default function HomepageLeadPopup() {
   const [show, setShow] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [website, setWebsite] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const nameRef = useRef<HTMLInputElement>(null);
 
   const remember = useCallback((value: "dismissed" | "submitted") => {
     try {
@@ -58,10 +44,16 @@ export default function HomepageLeadPopup() {
 
   const dismiss = useCallback(() => {
     setShow(false);
-    remember("dismissed");
-  }, [remember]);
+    remember(done ? "submitted" : "dismissed");
+  }, [remember, done]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("intake") === "1") {
+      setShow(true);
+      return;
+    }
     if (alreadyHandled()) return;
 
     const delay = window.setTimeout(open, SHOW_DELAY_MS);
@@ -84,7 +76,6 @@ export default function HomepageLeadPopup() {
   useEffect(() => {
     if (!show) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    nameRef.current?.focus();
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -117,73 +108,14 @@ export default function HomepageLeadPopup() {
     };
   }, [show, dismiss]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (submitting || submitted) return;
-    if (!name.trim() || !isUsPhone(phone) || !consent) {
-      setError(
-        !consent
-          ? "Check the box so we can call or text you."
-          : !isUsPhone(phone)
-            ? "Enter a valid US phone number."
-            : "Name and phone are required."
-      );
-      return;
-    }
-
-    if (website.trim() !== "") {
-      setSubmitted(true);
-      remember("submitted");
-      window.setTimeout(dismiss, 2500);
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
-
-    try {
-      const res = await fetch("/api/audit-form", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          source: "homepage_popup",
-          name: name.trim(),
-          phone: phone.trim(),
-          consent: true,
-        }),
-        signal: controller.signal,
-      });
-      if (res.ok) {
-        setSubmitted(true);
-        remember("submitted");
-        window.setTimeout(() => setShow(false), 2800);
-      } else if (res.status === 429) {
-        setError("Too many requests. Try again in a minute.");
-      } else {
-        const payload = await res.json().catch(() => null);
-        setError(payload?.error || "Couldn't send. Please try again.");
-      }
-    } catch (err) {
-      const aborted = err instanceof DOMException && err.name === "AbortError";
-      setError(
-        aborted
-          ? "Request timed out. Check your connection."
-          : "Network error. Please try again."
-      );
-    } finally {
-      window.clearTimeout(timeoutId);
-      setSubmitting(false);
-    }
-  }
-
   if (!show) return null;
+
+  const auditHref = token ? `/diagnostic?t=${encodeURIComponent(token)}` : "/diagnostic";
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-end justify-center p-0 sm:items-center sm:p-4"
-      style={{ background: "rgba(28, 26, 22, 0.55)" }}
+      className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-4"
+      style={{ background: "rgba(22, 22, 26, 0.45)" }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) dismiss();
       }}
@@ -193,137 +125,95 @@ export default function HomepageLeadPopup() {
         role="dialog"
         aria-modal="true"
         aria-labelledby="homepage-lead-title"
-        className="relative w-full max-w-md rounded-t-2xl p-6 shadow-xl sm:rounded-2xl sm:p-8"
+        className="relative max-h-[100dvh] w-full max-w-md overflow-y-auto p-5 sm:p-8"
         style={{
-          background: "var(--color-light)",
-          border: "1px solid var(--color-light-gray)",
+          background: "#FFFFFF",
+          color: INK,
+          border: "1px solid #E0E0E5",
         }}
       >
         <button
           type="button"
           onClick={dismiss}
-          className="absolute right-3 top-3 rounded-full p-2 transition-colors hover:bg-[var(--color-light-gray)]"
+          className="absolute right-2 top-2 p-2"
           aria-label="Close"
         >
-          <X className="h-5 w-5" style={{ color: "var(--color-mid-gray)" }} />
+          <X className="h-5 w-5" style={{ color: "#525766" }} />
         </button>
 
-        {submitted ? (
-          <div className="py-6 text-center" role="status" aria-live="polite">
-            <p
-              className="text-lg font-semibold"
-              style={{ color: "var(--color-dark)" }}
-            >
-              Got it. We&apos;ll call you.
-            </p>
-            <p className="mt-2 text-sm" style={{ color: "var(--color-body-text)" }}>
-              First month is free. We&apos;ll walk through your facility on the call.
-            </p>
-          </div>
-        ) : (
-          <>
-            <p
-              className="mb-2 text-xs font-medium uppercase tracking-wider"
-              style={{ color: "var(--text-tertiary)" }}
-            >
-              First month free
-            </p>
+        <p
+          className="mb-3 pr-8 text-xs font-semibold uppercase tracking-wider"
+          style={{ color: "#525766" }}
+        >
+          First month of StorageAds free
+        </p>
+
+        {done ? (
+          <div role="status">
             <h2
               id="homepage-lead-title"
-              className="mb-2 text-xl font-semibold"
-              style={{ color: "var(--color-dark)" }}
+              className="text-[1.65rem] font-extrabold leading-tight tracking-tight"
+              style={{ color: INK, fontFamily: "var(--font-manrope), Manrope, sans-serif" }}
             >
-              Leave your name and number.
+              Got it. We&apos;ll call you.
             </h2>
-            <p className="mb-5 text-sm" style={{ color: "var(--color-body-text)" }}>
-              We&apos;ll call and walk through what the system would do at your facility.
+            <p className="mt-3 text-sm leading-relaxed" style={{ color: "#3F4350" }}>
+              Your first month of StorageAds is free once your ads go live. We&apos;ll walk
+              through your facility on the call.
             </p>
-
-            <form onSubmit={handleSubmit} className="space-y-3" noValidate>
-              <input
-                type="text"
-                name="website_url"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  left: "-10000px",
-                  width: 1,
-                  height: 1,
-                  opacity: 0,
-                  pointerEvents: "none",
-                }}
-              />
-              <div>
-                <label htmlFor="homepage-lead-name" className="sr-only">
-                  Your name
-                </label>
-                <input
-                  ref={nameRef}
-                  id="homepage-lead-name"
-                  name="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
-                  autoComplete="name"
-                  autoCapitalize="words"
-                  required
-                  className="input-field w-full"
-                />
-              </div>
-              <div>
-                <label htmlFor="homepage-lead-phone" className="sr-only">
-                  Phone number
-                </label>
-                <input
-                  id="homepage-lead-phone"
-                  name="phone"
-                  type="tel"
-                  inputMode="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Phone number"
-                  autoComplete="tel"
-                  required
-                  className="input-field w-full"
-                />
-              </div>
-              <label className="flex items-start gap-2 text-xs" style={{ color: "var(--color-mid-gray)" }}>
-                <input
-                  type="checkbox"
-                  checked={consent}
-                  onChange={(e) => setConsent(e.target.checked)}
-                  className="mt-0.5"
-                  required
-                />
-                <span>
-                  I agree StorageAds can call or text me about this offer. Reply STOP
-                  to opt out. Message and data rates may apply.
-                </span>
-              </label>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="btn-primary flex w-full items-center justify-center gap-2"
-              >
-                {submitting ? "Sending…" : "Claim first month free"}
-                {!submitting && <ArrowRight className="h-4 w-4" />}
-              </button>
-              {error && (
-                <p
-                  role="alert"
-                  aria-live="assertive"
-                  className="text-center text-xs"
-                  style={{ color: "var(--color-red)" }}
-                >
-                  {error}
-                </p>
-              )}
-            </form>
-          </>
+            <p className="mt-3 text-sm leading-relaxed" style={{ color: "#525766" }}>
+              Ad spend is yours, paid to Meta or Google. At least $20 a day, about $600 for
+              the month.
+            </p>
+            <a
+              href={auditHref}
+              className="btn-primary mt-6 flex w-full items-center justify-center"
+              style={{ minHeight: 52 }}
+            >
+              Want your free audit? 2 more minutes
+            </a>
+          </div>
+        ) : (
+          <IntakeWizard
+            steps={POPUP_STEPS}
+            showContact
+            onCreate={async (input) => {
+              const controller = new AbortController();
+              const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+              try {
+                const res = await fetch("/api/audit-form", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  signal: controller.signal,
+                  body: JSON.stringify({
+                    source: "homepage_popup",
+                    name: input.name,
+                    phone: input.phone,
+                    consent: input.consent,
+                    website_url: input.website,
+                    elapsedSeconds: input.elapsedSeconds,
+                  }),
+                });
+                const payload = await res.json().catch(() => null);
+                if (!res.ok || !payload?.facilityId || !payload?.intakeToken) {
+                  if (res.status === 429) throw new Error("Too many requests. Try again in a minute.");
+                  throw new Error(payload?.error || "Couldn't send. Please try again.");
+                }
+                setToken(payload.intakeToken);
+                return { facilityId: payload.facilityId, intakeToken: payload.intakeToken };
+              } catch (err) {
+                const aborted = err instanceof DOMException && err.name === "AbortError";
+                if (aborted) throw new Error("Request timed out. Check your connection.");
+                throw err;
+              } finally {
+                window.clearTimeout(timeoutId);
+              }
+            }}
+            onFinished={() => {
+              setDone(true);
+              remember("submitted");
+            }}
+          />
         )}
       </div>
     </div>

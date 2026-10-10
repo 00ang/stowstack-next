@@ -26,6 +26,11 @@ function facilityToLead(
     totalUnits: row.total_units || "",
     biggestIssue: row.biggest_issue || "",
     formNotes: row.form_notes || null,
+    intakeAnswers: row.intake_answers || null,
+    sortLast: row.sort_last === true,
+    sortLastReason: (row.sort_last_reason as string) || "",
+    sharedAuditSlug: (row.shared_audit_slug as string) || "",
+    auditDeliveryError: (row.audit_delivery_error as string) || "",
     status: row.pipeline_status || "submitted",
     pmsUploaded: row.pms_uploaded || false,
     followUpDate: row.follow_up_date || null,
@@ -78,17 +83,14 @@ export async function GET(req: NextRequest) {
     }
 
     const sort = url.searchParams.get("sort") || "newest";
-    let orderBy: Record<string, string>;
-    switch (sort) {
-      case "oldest":
-        orderBy = { created_at: "asc" };
-        break;
-      case "name":
-        orderBy = { contact_name: "asc" };
-        break;
-      default:
-        orderBy = { created_at: "desc" };
-    }
+    // sort_last leads sit under the others. Nothing is hidden.
+    const recency =
+      sort === "oldest"
+        ? { created_at: "asc" as const }
+        : sort === "name"
+          ? { contact_name: "asc" as const }
+          : { created_at: "desc" as const };
+    const orderBy = [{ sort_last: "asc" as const }, recency];
 
     const [total, facilities] = await Promise.all([
       db.facilities.count({ where }),
@@ -208,7 +210,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { id, status, note, pmsUploaded, followUpDate, grantPortalAccess } =
+    const { id, status, note, pmsUploaded, followUpDate, grantPortalAccess, promote } =
       body || {};
     if (!id) return errorResponse("Missing lead ID", 400, origin);
 
@@ -249,6 +251,29 @@ export async function PATCH(req: NextRequest) {
         200,
         origin
       );
+    }
+
+    if (promote === true) {
+      await db.facilities.update({
+        where: { id },
+        data: {
+          sort_last: false,
+          sort_last_reason: null,
+          sort_last_cleared_at: new Date(),
+        },
+      });
+      db.activity_log
+        .create({
+          data: {
+            type: "lead_moved_up",
+            facility_id: id,
+            lead_name: facility.contact_name || "",
+            facility_name: facility.name || "",
+            detail: "Moved up in the pipeline",
+            meta: {},
+          },
+        })
+        .catch((err) => console.error("[activity_log] Fire-and-forget failed:", err));
     }
 
     // Build dynamic update

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getSampleAuditData, SAMPLE_AUDIT_SLUG } from "@/lib/sample-audit";
+import { getSampleIntakeAudit, SAMPLE_INTAKE_SLUG } from "@/lib/sample-intake-audit";
 import {
   BarChart3,
   DollarSign,
@@ -148,6 +149,7 @@ interface DiagnosticAudit {
     monthlyLoss: number;
     annualLoss: number;
     avgUnitRate: number;
+    dollarsKnown?: boolean;
   };
 }
 
@@ -195,7 +197,9 @@ export async function generateMetadata({
   const data =
     slug === SAMPLE_AUDIT_SLUG
       ? (getSampleAuditData() as unknown as AuditData)
-      : await loadAudit(slug);
+      : slug === SAMPLE_INTAKE_SLUG
+        ? (getSampleIntakeAudit() as unknown as AuditData)
+        : await loadAudit(slug);
   if (!data) {
     return { title: "Audit Not Found | StorageAds" };
   }
@@ -501,13 +505,16 @@ export default async function SharedAuditPage({
 }) {
   const { slug } = await params;
   const { sample } = await searchParams;
-  const isSampleSlug = slug === SAMPLE_AUDIT_SLUG;
+  const isSampleSlug = slug === SAMPLE_AUDIT_SLUG || slug === SAMPLE_INTAKE_SLUG;
   const isSample = sample === "true" || isSampleSlug;
   // The public sample lives in /lib (not the DB) so it never expires, never
   // inflates view counts, and renders even if the DB is unreachable.
-  const data = isSampleSlug
-    ? (getSampleAuditData() as unknown as AuditData)
-    : await loadAudit(slug);
+  const data =
+    slug === SAMPLE_INTAKE_SLUG
+      ? (getSampleIntakeAudit() as unknown as AuditData)
+      : isSampleSlug
+        ? (getSampleAuditData() as unknown as AuditData)
+        : await loadAudit(slug);
 
   if (!data) {
     return (
@@ -754,7 +761,13 @@ export default async function SharedAuditPage({
         })()}
 
         {/* Vacancy Cost Alert */}
-        {vacancyCost && vacancyCost.vacantUnits > 0 && (
+        {vacancyCost && vacancyCost.dollarsKnown === false && vacancyCost.vacantUnits > 0 && (
+          <p className="mb-8 text-sm text-[var(--text-secondary)]">
+            About {vacancyCost.vacantUnits} units look empty from the bands you gave.
+            No dollar figure. We don&apos;t have a street rate.
+          </p>
+        )}
+        {vacancyCost && vacancyCost.vacantUnits > 0 && vacancyCost.dollarsKnown !== false && (
           <div className="rounded-2xl bg-red-500/5 border border-red-500/15 p-6 mb-8">
             <div className="flex items-start gap-3 mb-4">
               <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0 mt-0.5">

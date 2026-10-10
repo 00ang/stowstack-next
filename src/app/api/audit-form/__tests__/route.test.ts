@@ -3,9 +3,20 @@ import { createMockRequest } from "@/test/helpers";
 
 vi.mock("@/lib/db", () => ({
   db: {
-    facilities: { create: vi.fn() },
+    facilities: {
+      create: vi.fn(),
+      update: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+    },
     activity_log: { create: vi.fn().mockResolvedValue({}) },
   },
+}));
+
+vi.mock("@/lib/intake/score-lead", () => ({
+  scoreAndStore: vi.fn().mockResolvedValue(undefined),
+  neutralSortReason: (honeypot: boolean) =>
+    honeypot ? "A hidden field was filled." : "Sorted lower for a look.",
 }));
 
 vi.mock("@/lib/with-rate-limit", () => ({
@@ -19,10 +30,16 @@ vi.mock("@/lib/email", () => ({
 
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-import { POST } from "../route";
+import { scoreAndStore } from "@/lib/intake/score-lead";
+import { PATCH, POST } from "../route";
 
 const m = db as unknown as {
-  facilities: { create: ReturnType<typeof vi.fn> };
+  facilities: {
+    create: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    findFirst: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+  };
   activity_log: { create: ReturnType<typeof vi.fn> };
 };
 const notify = sendEmail as unknown as ReturnType<typeof vi.fn>;
@@ -31,6 +48,16 @@ function post(body: unknown) {
   return POST(
     createMockRequest("http://localhost:3000/api/audit-form", {
       method: "POST",
+      headers: { origin: "http://localhost:3000" },
+      body,
+    })
+  );
+}
+
+function patch(body: unknown) {
+  return PATCH(
+    createMockRequest("http://localhost:3000/api/audit-form", {
+      method: "PATCH",
       headers: { origin: "http://localhost:3000" },
       body,
     })
@@ -50,6 +77,8 @@ const valid = {
 beforeEach(() => {
   vi.clearAllMocks();
   m.facilities.create.mockResolvedValue({ id: "fac-1" });
+  m.facilities.update.mockResolvedValue({ id: "fac-1" });
+  m.facilities.findFirst.mockResolvedValue({ id: "fac-1", intake_answers: {} });
   m.activity_log.create.mockResolvedValue({});
 });
 
@@ -119,8 +148,17 @@ describe("POST /api/audit-form", () => {
         name: "Homepage inquiry",
         pipeline_status: "submitted",
         form_notes: "homepage_popup:first_month_free",
+        total_units: null,
+        occupancy_range: null,
+        biggest_issue: null,
       }),
     });
+    const created = m.facilities.create.mock.calls[0][0].data;
+    expect(created.intake_answers).toMatchObject({ source: "homepage_popup", consent: true });
+    expect(created.intake_answers.units).toBeUndefined();
+    expect(created.intake_answers.occupancy).toBeUndefined();
+    expect(created.intake_token).toEqual(expect.any(String));
+    expect(scoreAndStore).toHaveBeenCalledWith("fac-1");
     expect(m.activity_log.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         type: "lead_created",
@@ -148,7 +186,7 @@ describe("POST /api/audit-form", () => {
     expect(m.facilities.create).not.toHaveBeenCalled();
   });
 
-  it("swallows honeypot submissions", async () => {
+  it("saves a honeypot hit and sorts it last instead of dropping it", async () => {
     const res = await post({
       source: "homepage_popup",
       name: "Bot",
@@ -157,6 +195,63 @@ describe("POST /api/audit-form", () => {
       website_url: "https://spam.test",
     });
     expect(res.status).toBe(200);
-    expect(m.facilities.create).not.toHaveBeenCalled();
+    expect(m.facilities.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        sort_last: true,
+        sort_last_reason: "A hidden field was filled.",
+      }),
+    });
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("accepts an international number with a country code", async () => {
+    const res = await post({
+      source: "homepage_popup",
+      name: "Ayrshire Owner",
+      phone: "+44 141 555 0100",
+      consent: true,
+    });
+    expect(res.status).toBe(200);
+    expect(m.facilities.create.mock.calls[0][0].data.contact_phone).toBe("+441415550100");
+  });
+
+  it("saves one answer and does not invent the ones still blank", async () => {
+    m.facilities.findFirst.mockResolvedValue({
+      id: "fac-1",
+      intake_answers: { source: "homepage_popup", consent: true },
+    });
+    const res = await patch({
+      facilityId: "fac-1",
+      intakeToken: "tok",
+      answers: { role: "Owner" },
+    });
+    expect(res.status).toBe(200);
+    const data = m.facilities.update.mock.calls[0][0].data;
+    expect(data.intake_answers.role).toBe("Owner");
+    expect(data.intake_answers.occupancy).toBeUndefined();
+    expect(data.intake_answers.units).toBeUndefined();
+    expect(data.total_units).toBeUndefined();
+    expect(data.occupancy_range).toBeUndefined();
+    expect(data.biggest_issue).toBeUndefined();
+    expect(scoreAndStore).toHaveBeenCalledWith("fac-1");
+  });
+
+  it("clears a skipped answer instead of storing a default band", async () => {
+    m.facilities.findFirst.mockResolvedValue({
+      id: "fac-1",
+      intake_answers: { role: "Owner", occupancy: "60–69%", units: "200–349" },
+    });
+    const res = await patch({
+      facilityId: "fac-1",
+      intakeToken: "tok",
+      answers: { occupancy: null, units: "skip" },
+    });
+    expect(res.status).toBe(200);
+    const data = m.facilities.update.mock.calls[0][0].data;
+    expect(data.intake_answers.occupancy).toBeUndefined();
+    expect(data.intake_answers.units).toBeUndefined();
+    expect(data.intake_answers.role).toBe("Owner");
+    expect(data.occupancy_range).toBeNull();
+    expect(data.total_units).toBeNull();
   });
 });

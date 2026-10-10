@@ -1,7 +1,6 @@
 import { NextRequest, after } from "next/server";
 import { db } from "@/lib/db";
 import { scheduleDiagnosticRetry } from "@/lib/diagnostic-retry";
-import { selfBaseUrl } from "@/lib/self-url";
 import {
   jsonResponse,
   errorResponse,
@@ -11,7 +10,13 @@ import {
 import { SENDERS, sendEmail } from "@/lib/email";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
-import { isValidEmail, escapeHtml } from "@/lib/validation";
+import { isValidEmail, escapeHtml, sanitizeString } from "@/lib/validation";
+import { randomBytes } from "crypto";
+import { intakePhone } from "@/lib/intake/phone";
+import { answersJson } from "@/lib/intake/merge-answers";
+import { diagnosticFromLead } from "@/lib/intake/to-diagnostic";
+import { neutralSortReason } from "@/lib/intake/score-lead";
+import { generateAuditInProcess } from "@/lib/run-diagnostic-audit";
 
 // DB write + notification email + internal audit trigger. 120, not 30: the
 // audit trigger runs in after() and waits for generation (up to its own 120s)
@@ -183,6 +188,91 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+
+    const honeypot = typeof body.website_url === "string" ? body.website_url.trim() : "";
+
+    if (body?.mode === "start") {
+      const name = sanitizeString(body.name, 200);
+      const email = typeof body.email === "string" ? body.email.trim() : "";
+      const phone = typeof body.phone === "string" ? intakePhone(body.phone) : null;
+      if (!name || (!email && !phone)) {
+        return errorResponse("Name and an email or phone are required", 400, origin);
+      }
+      if (email && !isValidEmail(email)) {
+        return errorResponse("Invalid email format", 400, origin);
+      }
+      const hidden = Boolean(honeypot);
+      const token = randomBytes(24).toString("hex");
+      const facility = await db.facilities.create({
+        data: {
+          name: "Diagnostic inquiry",
+          location: "Not provided",
+          contact_name: name,
+          contact_email: email || null,
+          contact_phone: phone,
+          status: "intake",
+          pipeline_status: "diagnostic_submitted",
+          intake_token: token,
+          intake_answers: answersJson({
+            source: "diagnostic",
+            ...(hidden ? { hidden_field_filled: true } : {}),
+          }),
+          sort_last: hidden,
+          sort_last_reason: hidden ? neutralSortReason(true) : null,
+          occupancy_range: null,
+          total_units: null,
+          biggest_issue: null,
+        },
+      });
+      return jsonResponse({ success: true, facilityId: facility.id, intakeToken: token }, 201, origin);
+    }
+
+    if (body?.mode === "finish") {
+      const token = typeof body.intakeToken === "string" ? body.intakeToken : "";
+      const facilityId = typeof body.facilityId === "string" ? body.facilityId : "";
+      const email = typeof body.email === "string" ? body.email.trim() : "";
+      if (!token || !facilityId) return errorResponse("Missing lead", 400, origin);
+      const facility = await db.facilities.findFirst({
+        where: { id: facilityId, intake_token: token },
+      });
+      if (!facility) return errorResponse("Not found", 404, origin);
+      if (email && !isValidEmail(email)) return errorResponse("Invalid email format", 400, origin);
+
+      const hidden = honeypot || (facility.intake_answers && typeof facility.intake_answers === "object" && (facility.intake_answers as { hidden_field_filled?: boolean }).hidden_field_filled);
+      const updated = await db.facilities.update({
+        where: { id: facility.id },
+        data: {
+          ...(email ? { contact_email: email } : {}),
+          pipeline_status: "diagnostic_submitted",
+          ...(hidden
+            ? { sort_last: true, sort_last_reason: neutralSortReason(true) }
+            : {}),
+        },
+      });
+
+      if (!hidden) {
+        const diagnosticJson = diagnosticFromLead({ ...facility, ...updated, contact_email: email || facility.contact_email });
+        after(async () => {
+          try {
+            await generateAuditInProcess(facility.id, diagnosticJson);
+          } catch (err) {
+            console.error("[diagnostic-intake] generation failed:", err);
+            await db.activity_log
+              .create({
+                data: {
+                  type: "audit_delivery_failed",
+                  facility_id: facility.id,
+                  detail: err instanceof Error ? err.message : "Generation threw",
+                },
+              })
+              .catch(() => undefined);
+          }
+        });
+      }
+
+      return jsonResponse({ success: true, facilityId: facility.id }, 200, origin);
+    }
+
     const {
       facilityName,
       facilityAddress,
@@ -192,6 +282,12 @@ export async function POST(req: NextRequest) {
       websiteUrl,
       responses,
     } = body || {};
+
+    if (honeypot) {
+      if (!facilityName || !contactEmail || !isValidEmail(contactEmail)) {
+        return jsonResponse({ success: true }, 200, origin);
+      }
+    }
 
     // Bound the (billed) downstream Anthropic call: reject oversized public
     // submissions before the free-text answers reach the AI prompt. This
@@ -222,45 +318,16 @@ export async function POST(req: NextRequest) {
       responses?.[
         "About where is your facility sitting today (overall occupancy)?"
       ] || "";
-    const occupancyMap: Record<string, string> = {
-      "Under 50%": "below-60",
-      "50–59%": "below-60",
-      "60–69%": "60-75",
-      "70–79%": "60-75",
-      "80–84%": "75-85",
-      "85–89%": "85-95",
-      "90–94%": "85-95",
-      "95%+": "above-95",
-    };
 
     const totalUnitsRaw =
       responses?.[
         "What is your total unit count (approximately)?"
       ] || "";
-    const unitCountMap: Record<string, string> = {
-      "Under 100": "under-100",
-      "100–199": "100-300",
-      "200–349": "100-300",
-      "350–499": "300-500",
-      "500–749": "500+",
-      "750–999": "500+",
-      "1,000+": "500+",
-    };
 
     const biggestIssueRaw =
       responses?.[
         "What feels like the bigger issue right now?"
       ] || "";
-    const issueMap: Record<string, string> = {
-      "Not enough leads coming in": "filling-units",
-      "Plenty of leads, not enough are converting to move-ins":
-        "competitive-pressure",
-      "Both — not enough leads AND they're not converting": "filling-units",
-      "Revenue per unit is too low": "revenue",
-      "Operations are stretched thin": "operations",
-      "Not sure where to start": "filling-units",
-      "Not sure": "filling-units",
-    };
 
     // Lead scoring — prioritize follow-up based on diagnostic responses
     const urgencyRaw = responses?.["How soon are you looking to take action?"] || "";
@@ -302,9 +369,13 @@ export async function POST(req: NextRequest) {
         contact_email: contactEmail,
         contact_phone: contactPhone || null,
         website: websiteUrl || null,
-        occupancy_range: occupancyMap[occupancyRaw] || "60-75",
-        total_units: unitCountMap[totalUnitsRaw] || "100-300",
-        biggest_issue: issueMap[biggestIssueRaw] || "filling-units",
+        // Raw answer only. A skip stays null. Never invent "60-75" / "100-300".
+        occupancy_range: occupancyRaw || null,
+        total_units: totalUnitsRaw || null,
+        biggest_issue: biggestIssueRaw || null,
+        ...(honeypot
+          ? { sort_last: true, sort_last_reason: neutralSortReason(true) }
+          : {}),
         lead_score: leadScore,
         status: "intake",
         pipeline_status: "diagnostic_submitted",
@@ -366,38 +437,28 @@ export async function POST(req: NextRequest) {
         console.error("[diagnostic-intake] Activity log write failed:", err instanceof Error ? err.message : err);
       });
 
-    // Auto-trigger audit generation, after the response so the prospect is not
-    // kept waiting on the AI. after() rather than a floating fetch: a promise
-    // left running when a serverless response returns can be frozen mid-flight.
-    // And the outcome is logged — this call 401'd silently for weeks.
-    const adminSecret = process.env.ADMIN_SECRET;
-    // Not VERCEL_URL: it sits behind deployment protection and 401s (see self-url).
-    const appUrl = selfBaseUrl();
+    // In-process. A fetch to this app's own URL 401s on Vercel's login wall,
+    // which is why generated audits never landed.
+    const diagnosticJson = mapResponsesToDiagnosticInput(
+      { facilityName, facilityAddress, contactName, contactEmail, contactPhone, websiteUrl },
+      responses || {}
+    );
 
-    if (adminSecret && process.env.ANTHROPIC_API_KEY) {
-      const diagnosticJson = mapResponsesToDiagnosticInput(
-        { facilityName, facilityAddress, contactName, contactEmail, contactPhone, websiteUrl },
-        responses || {}
-      );
-
+    if (!honeypot) {
       after(async () => {
         try {
-          const res = await fetch(`${appUrl}/api/audit-generate-diagnostic`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Admin-Key": adminSecret,
-            },
-            body: JSON.stringify({
-              diagnosticJson,
-              facilityId: facility.id,
-            }),
-          });
-          if (!res.ok) {
-            console.error(`[diagnostic-intake] Auto-audit generation returned ${res.status} for facility ${facility.id}; the queued retry will try again`);
-          }
+          await generateAuditInProcess(facility.id, diagnosticJson);
         } catch (err) {
           console.error("[diagnostic-intake] Auto-audit generation trigger failed:", err);
+          await db.activity_log
+            .create({
+              data: {
+                type: "audit_delivery_failed",
+                facility_id: facility.id,
+                detail: err instanceof Error ? err.message : "Generation threw",
+              },
+            })
+            .catch(() => undefined);
         }
       });
     }

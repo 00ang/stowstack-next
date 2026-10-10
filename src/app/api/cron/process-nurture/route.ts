@@ -180,6 +180,10 @@ export async function GET(request: NextRequest) {
       WHERE ne.status = 'active'
         AND ne.next_send_at <= NOW()
         AND ns.status = 'active'
+        AND NOT EXISTS (
+          SELECT 1 FROM facilities f
+          WHERE f.id = ne.facility_id AND f.sort_last = true
+        )
       ORDER BY ne.next_send_at ASC
       LIMIT 50
     `;

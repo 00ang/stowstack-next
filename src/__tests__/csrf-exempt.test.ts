@@ -25,6 +25,7 @@ describe("isCsrfExempt — portal login footgun guard", () => {
     expect(isCsrfExempt(req("/api/consumer-lead"))).toBe(true);
     expect(isCsrfExempt(req("/api/diagnostic-intake"))).toBe(true);
     expect(isCsrfExempt(req("/api/facility-lookup"))).toBe(true);
+    expect(isCsrfExempt(req("/api/places-suggest"))).toBe(true);
   });
 
   it("exempts the landing page's own form, its tour booking and the one-tap answer", () => {

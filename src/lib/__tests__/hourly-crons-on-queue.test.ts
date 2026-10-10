@@ -9,12 +9,16 @@ import { db } from "@/lib/db";
  */
 
 vi.mock("@/lib/report-notify", () => ({ notifyClientsReportReady: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("@/lib/run-diagnostic-audit", () => ({
+  generateAuditInProcess: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("@/lib/pms-import", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/pms-import")>();
   return { ...actual, importParsed: vi.fn().mockResolvedValue({ type: "rent_roll", imported: 2 }) };
 });
 
 import { notifyClientsReportReady } from "@/lib/report-notify";
+import { generateAuditInProcess } from "@/lib/run-diagnostic-audit";
 
 const mockDb = vi.mocked(db, true);
 const CLEAN_RENT_ROLL = "unit,tenant,rent\nA1,Jane,100\nA2,Bob,120\n";
@@ -97,11 +101,11 @@ describe("diagnostic audit retry", () => {
     mockDb.facilities = { findMany: vi.fn().mockResolvedValue([stuckFacility]) };
     const { retryStuckDiagnostics } = await import("@/lib/diagnostic-retry");
     expect(await retryStuckDiagnostics({ facilityId: "fac1" })).toMatchObject({ stuck: 1, retried: 1 });
-    expect(vi.mocked(fetch).mock.calls[0][0]).toMatch(/\/api\/audit-generate-diagnostic$/);
+    expect(generateAuditInProcess).toHaveBeenCalledWith("fac1", { facilityName: "X" });
   });
 
   it("the queued check throws on a failed retry, so the queue backs off and tries again", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 502 } as Response);
+    vi.mocked(generateAuditInProcess).mockRejectedValueOnce(new Error("generation down"));
     // @ts-expect-error — db is a vi mock
     mockDb.facilities = { findMany: vi.fn().mockResolvedValue([stuckFacility]) };
     const { HANDLERS } = await import("@/lib/jobs/handlers");
