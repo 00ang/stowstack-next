@@ -17,12 +17,12 @@ const isDev = process.env.NODE_ENV !== "production";
 
 const cspDirectives = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://js.stripe.com https://connect.facebook.net https://cdnjs.cloudflare.com https://*.clerk.accounts.dev https://cal.com https://*.cal.com`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://va.vercel-scripts.com https://js.stripe.com https://connect.facebook.net https://cdnjs.cloudflare.com https://*.clerk.accounts.dev https://cal.com https://*.cal.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.stripe.com https://*.googleapis.com https://*.gstatic.com https://img.clerk.com https://*.fal.media https://*.vercel-storage.com",
   "media-src 'self' blob: https://*.fal.media https://*.vercel-storage.com",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://api.stripe.com https://*.sentry.io https://*.upstash.io https://*.clerk.com https://*.clerk.accounts.dev https://*.facebook.com https://*.fal.media https://*.fal.run https://cal.com https://*.cal.com",
+  "connect-src 'self' https://va.vercel-scripts.com https://api.stripe.com https://*.sentry.io https://*.upstash.io https://*.clerk.com https://*.clerk.accounts.dev https://*.facebook.com https://*.fal.media https://*.fal.run https://cal.com https://*.cal.com",
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://cal.com https://*.cal.com",
   "worker-src 'self' blob:",
   "object-src 'none'",
@@ -49,6 +49,10 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
 }
 
 const isPublicRoute = createRouteMatcher([
+  // Vercel Web Analytics + Speed Insights. Same-origin, no session. Listed so
+  // Clerk cannot redirect them if the matcher ever lets the proxy see them.
+  "/_vercel/insights(.*)",
+  "/_vercel/speed-insights(.*)",
   "/",
   "/pricing",
   "/guide",
@@ -188,7 +192,25 @@ function isSameOriginRequest(req: NextRequest): boolean {
   }
 }
 
+/**
+ * Vercel serves Web Analytics and Speed Insights on these same-origin paths
+ * (`/_vercel/insights/script.js`, `/view`, `/_vercel/speed-insights/vitals`).
+ * They must not hit CSRF, Clerk, or any redirect.
+ */
+export function isVercelObservabilityPath(pathname: string): boolean {
+  return (
+    pathname === "/_vercel/insights" ||
+    pathname.startsWith("/_vercel/insights/") ||
+    pathname === "/_vercel/speed-insights" ||
+    pathname.startsWith("/_vercel/speed-insights/")
+  );
+}
+
 export default async function proxy(request: NextRequest) {
+  if (isVercelObservabilityPath(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
   // Sentry route context for all requests
   Sentry.setTag("route", request.nextUrl.pathname);
   Sentry.setTag("method", request.method);
@@ -238,7 +260,7 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/((?!_next|_vercel|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",
   ],
 };

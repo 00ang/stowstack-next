@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Inter, JetBrains_Mono, Archivo } from "next/font/google";
 import ScrollProgress from "@/components/scroll-progress";
 import GrainOverlay from "@/components/grain-overlay";
 import Analytics from "@/components/analytics";
+import { VercelInsightsFilter } from "@/components/vercel-insights-filter";
 import PaletteSwitchBar from "@/components/palette-switch-bar";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/palette-boot";
 import "./globals.css";
@@ -171,6 +174,9 @@ export default function RootLayout({
           </a>
           <Suspense fallback={null}>
             <Analytics />
+            <VercelInsightsFilter />
+            <VercelAnalytics />
+            <SpeedInsights />
           </Suspense>
           <ScrollProgress />
           <GrainOverlay />
