@@ -19,6 +19,15 @@ vi.mock("@/lib/intake/score-lead", () => ({
     honeypot ? "A hidden field was filled." : "Sorted lower for a look.",
 }));
 
+vi.mock("botid/server", () => ({
+  checkBotId: vi.fn().mockResolvedValue({
+    isBot: false,
+    isHuman: true,
+    isVerifiedBot: false,
+    bypassed: false,
+  }),
+}));
+
 vi.mock("@/lib/with-rate-limit", () => ({
   applyRateLimit: vi.fn().mockResolvedValue(null),
   applyRateLimitStrict: vi.fn().mockResolvedValue(null),
@@ -32,6 +41,7 @@ vi.mock("@/lib/email", async () => {
   };
 });
 
+import { checkBotId } from "botid/server";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { issueChallenge, issueMathProblem, solveChallenge } from "@/lib/human-check/server";
@@ -151,6 +161,22 @@ describe("POST /api/audit-form", () => {
     expect(m.facilities.create).not.toHaveBeenCalled();
     expect(notify).not.toHaveBeenCalled();
     expect(m.activity_log.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a bot before a lead is saved or an email is sent", async () => {
+    vi.mocked(checkBotId).mockResolvedValueOnce({
+      isBot: true,
+      isHuman: false,
+      isVerifiedBot: false,
+      bypassed: false,
+      verifiedBotName: undefined,
+      verifiedBotCategory: undefined,
+      classificationReason: undefined,
+    });
+    const res = await post(proved(valid));
+    expect(res.status).toBe(403);
+    expect(m.facilities.create).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
   });
 
   it("rejects a correct browser check when the math answer is wrong", async () => {

@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { checkBotId } from "botid/server";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { corsResponse, getOrigin } from "@/lib/api-helpers";
@@ -124,6 +125,9 @@ export async function POST(request: NextRequest) {
     if (honeypot) {
       return NextResponse.json({ error: "That request was not accepted." }, { status: 400 });
     }
+
+    const botRejected = await rejectAutomatedClient();
+    if (botRejected) return botRejected;
 
     const math = await verifyMathAnswer(body.mathProblem, body.mathAnswer);
     if (!math.ok) {
@@ -258,6 +262,25 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Audit form error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+/**
+ * Vercel BotID, with the deep check enabled in the project firewall.
+ * A request that did not come from the page is rejected before a lead exists.
+ */
+async function rejectAutomatedClient() {
+  try {
+    const verification = await checkBotId({
+      advancedOptions: { checkLevel: "deepAnalysis" },
+    });
+    if (verification.isBot) {
+      return NextResponse.json({ error: "That request was not accepted." }, { status: 403 });
+    }
+    return null;
+  } catch (error) {
+    console.error("[audit-form] bot check failed:", error);
+    return NextResponse.json({ error: "That request was not accepted." }, { status: 403 });
   }
 }
 
