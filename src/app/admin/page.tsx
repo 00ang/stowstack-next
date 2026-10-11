@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { answerRows } from "@/lib/intake/questions";
+import type { LeadStep } from "@/lib/lead-step";
+import { LeadStepMark } from "@/components/admin/lead-step-mark";
 
 /* ─── Types ────────────────────────────────────────────────────── */
 
@@ -51,6 +53,7 @@ interface Lead {
   notes: Array<{ text: string; at: string }>;
   createdAt: string;
   updatedAt: string;
+  step?: LeadStep | null;
 }
 
 interface LeadsResponse {
@@ -334,6 +337,11 @@ function LeadExpandedRow({
 
   return (
     <div className="border-t border-[var(--border-subtle)] bg-[var(--color-light)] px-4 py-4 sm:px-6">
+      {lead.step && (
+        <div className="mb-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3 sm:p-4">
+          <LeadStepMark step={lead.step} />
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left Column - Details */}
         <div className="space-y-4">

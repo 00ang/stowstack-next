@@ -8,6 +8,7 @@ import { isValidEmail, sanitizeString, escapeHtml } from "@/lib/validation";
 import { SENDERS, sendEmail } from "@/lib/email";
 import { answersJson, mergeIntakeAnswers } from "@/lib/intake/merge-answers";
 import { intakePhone, PHONE_SERVER_ERROR } from "@/lib/intake/phone";
+import { applyAnswerProgress, withAuditStarted } from "@/lib/intake/progress";
 import { neutralSortReason, scoreAndStore } from "@/lib/intake/score-lead";
 
 const HOMEPAGE_SOURCES = new Set(["homepage_popup", "contact"]);
@@ -42,6 +43,22 @@ export async function GET(request: NextRequest) {
   });
   if (!facility) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Opening the token link is the audit start. Stamp it once. Older
+  // answers stay as they are. A failed write still returns the saved answers.
+  const stamped = withAuditStarted(facility.intake_answers, new Date());
+  let answers: unknown = facility.intake_answers || {};
+  if (stamped.changed) {
+    try {
+      await db.facilities.update({
+        where: { id: facility.id },
+        data: { intake_answers: answersJson(stamped.answers) },
+      });
+      answers = stamped.answers;
+    } catch (err) {
+      console.error("[audit-form] audit start stamp failed:", err);
+    }
+  }
+
   return NextResponse.json({
     facilityId: facility.id,
     contactName: facility.contact_name,
@@ -49,7 +66,7 @@ export async function GET(request: NextRequest) {
     phone: facility.contact_phone,
     facilityName: facility.name,
     location: facility.location,
-    answers: facility.intake_answers || {},
+    answers,
   });
 }
 
@@ -271,11 +288,17 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.elapsedSeconds === "number" && body.elapsedSeconds >= 0 && body.elapsedSeconds < 3600) {
       merged.intake_answers.seconds_to_complete = Math.round(body.elapsedSeconds);
     }
+    const intake_answers = applyAnswerProgress(
+      facility.intake_answers,
+      merged.intake_answers,
+      patch,
+      new Date()
+    );
 
     await db.facilities.update({
       where: { id: facility.id },
       data: {
-        intake_answers: answersJson(merged.intake_answers),
+        intake_answers: answersJson(intake_answers),
         ...merged.columns,
       },
     });
@@ -284,7 +307,7 @@ export async function PATCH(request: NextRequest) {
       console.error("[jev] score after answer failed:", err)
     );
 
-    return NextResponse.json({ success: true, answers: merged.intake_answers });
+    return NextResponse.json({ success: true, answers: intake_answers });
   } catch (error) {
     console.error("Audit form update error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

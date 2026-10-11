@@ -14,6 +14,7 @@ import { isValidEmail, escapeHtml, sanitizeString } from "@/lib/validation";
 import { randomBytes } from "crypto";
 import { intakePhone } from "@/lib/intake/phone";
 import { answersJson } from "@/lib/intake/merge-answers";
+import { withAuditFinished, withAuditStarted } from "@/lib/intake/progress";
 import { diagnosticFromLead } from "@/lib/intake/to-diagnostic";
 import { neutralSortReason } from "@/lib/intake/score-lead";
 import { generateAuditInProcess } from "@/lib/run-diagnostic-audit";
@@ -213,10 +214,15 @@ export async function POST(req: NextRequest) {
           status: "intake",
           pipeline_status: "diagnostic_submitted",
           intake_token: token,
-          intake_answers: answersJson({
-            source: "diagnostic",
-            ...(hidden ? { hidden_field_filled: true } : {}),
-          }),
+          intake_answers: answersJson(
+            withAuditStarted(
+              {
+                source: "diagnostic",
+                ...(hidden ? { hidden_field_filled: true } : {}),
+              },
+              new Date()
+            ).answers
+          ),
           sort_last: hidden,
           sort_last_reason: hidden ? neutralSortReason(true) : null,
           occupancy_range: null,
@@ -244,6 +250,7 @@ export async function POST(req: NextRequest) {
         data: {
           ...(email ? { contact_email: email } : {}),
           pipeline_status: "diagnostic_submitted",
+          intake_answers: answersJson(withAuditFinished(facility.intake_answers, new Date())),
           ...(hidden
             ? { sort_last: true, sort_last_reason: neutralSortReason(true) }
             : {}),

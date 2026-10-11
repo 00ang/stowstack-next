@@ -10,6 +10,7 @@ import {
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { provisionPortalAccess } from "@/lib/portal-provisioning";
+import { stepsForFacilities } from "@/lib/lead-step-data";
 
 function facilityToLead(
   row: Record<string, unknown>,
@@ -127,12 +128,14 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const leads = facilities.map((f) =>
-      facilityToLead(
+    const stepById = await stepsForFacilities(facilities);
+    const leads = facilities.map((f) => ({
+      ...facilityToLead(
         f as unknown as Record<string, unknown>,
         notesByFacility[f.id] || []
-      )
-    );
+      ),
+      step: stepById.get(f.id) ?? null,
+    }));
 
     const auditCount = await db.shared_audits.count();
 
