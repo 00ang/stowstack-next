@@ -11,7 +11,7 @@ import {
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { escapeHtml } from "@/lib/validation";
-import { SENDERS, sendEmail } from "@/lib/email";
+import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
 
 export async function OPTIONS(req: NextRequest) {
   return corsResponse(req.headers.get("origin"));
@@ -133,7 +133,7 @@ async function handleNewRequest(
   // Notify admin
   await sendEmail({
     from: SENDERS.system,
-    to: process.env.ADMIN_EMAIL || "blake@storageads.com",
+    to: submissionNotifyRecipients(),
     subject: `Data Deletion Request: ${sanitizedEmail}`,
     tags: [{ name: "type", value: "data_deletion_admin" }],
     idempotencyKey: `data-deletion-admin:${request.id}`,

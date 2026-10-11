@@ -9,10 +9,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { IntakeWizard } from "@/components/intake/intake-wizard";
 import { POPUP_STEPS } from "@/lib/intake/questions";
+import { useHumanProof } from "@/lib/use-human-proof";
 
 const STORAGE_KEY = "sa_homepage_lead_dismissed";
-const SHOW_DELAY_MS = 8000;
-const MOBILE_FALLBACK_MS = 12000;
+const SHOW_DELAY_MS = 2000;
 const INK = "#16161A";
 
 export default function HomepageLeadPopup() {
@@ -20,10 +20,13 @@ export default function HomepageLeadPopup() {
   const [done, setDone] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const human = useHumanProof(show);
+  const [mathAnswer, setMathAnswer] = useState("");
 
   const remember = useCallback((value: "dismissed" | "submitted") => {
     try {
-      localStorage.setItem(STORAGE_KEY, value);
+      if (value === "submitted") localStorage.setItem(STORAGE_KEY, "submitted");
+      else sessionStorage.setItem(STORAGE_KEY, "dismissed");
     } catch {
       /* private mode */
     }
@@ -31,7 +34,8 @@ export default function HomepageLeadPopup() {
 
   const alreadyHandled = useCallback(() => {
     try {
-      return Boolean(localStorage.getItem(STORAGE_KEY));
+      if (localStorage.getItem(STORAGE_KEY) === "submitted") return true;
+      return sessionStorage.getItem(STORAGE_KEY) === "dismissed";
     } catch {
       return false;
     }
@@ -57,9 +61,6 @@ export default function HomepageLeadPopup() {
     if (alreadyHandled()) return;
 
     const delay = window.setTimeout(open, SHOW_DELAY_MS);
-    const mobileFallback = window.setTimeout(() => {
-      if (window.matchMedia("(max-width: 767px)").matches) open();
-    }, MOBILE_FALLBACK_MS);
 
     const onMouseLeave = (e: MouseEvent) => {
       if (e.clientY <= 8) open();
@@ -68,7 +69,6 @@ export default function HomepageLeadPopup() {
 
     return () => {
       window.clearTimeout(delay);
-      window.clearTimeout(mobileFallback);
       document.documentElement.removeEventListener("mouseleave", onMouseLeave);
     };
   }, [alreadyHandled, open]);
@@ -177,10 +177,14 @@ export default function HomepageLeadPopup() {
           <IntakeWizard
             steps={POPUP_STEPS}
             showContact
+            mathProblem={human.math}
+            mathAnswer={mathAnswer}
+            onMathAnswer={setMathAnswer}
             onCreate={async (input) => {
               const controller = new AbortController();
               const timeoutId = window.setTimeout(() => controller.abort(), 15000);
               try {
+                const gate = await human.load();
                 const res = await fetch("/api/audit-form", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -192,10 +196,17 @@ export default function HomepageLeadPopup() {
                     consent: input.consent,
                     website_url: input.website,
                     elapsedSeconds: input.elapsedSeconds,
+                    humanProof: gate.humanProof,
+                    mathProblem: gate.math,
+                    mathAnswer: input.mathAnswer,
                   }),
                 });
                 const payload = await res.json().catch(() => null);
                 if (!res.ok || !payload?.facilityId || !payload?.intakeToken) {
+                  if (res.status === 403) {
+                    setMathAnswer("");
+                    void human.refresh();
+                  }
                   if (res.status === 429) throw new Error("Too many requests. Try again in a minute.");
                   throw new Error(payload?.error || "Couldn't send. Please try again.");
                 }
