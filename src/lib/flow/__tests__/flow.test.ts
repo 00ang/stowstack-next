@@ -173,6 +173,37 @@ describe("chooseMove", () => {
     expect(move.reason).toContain("At this pace, 2 by Oct 31.");
   });
 
+  it("puts the top suggested funnel ahead of the facility's own move", () => {
+    const o = ontology();
+    const move = chooseMove({
+      ontology: o,
+      pace: null,
+      working: null,
+      where: { surface: "dashboard" },
+      suggestion: {
+        id: "vacant_sizes",
+        sentence: 'Build "Fill the empty sizes".',
+        reason: "10x10 has 18 of 80 empty.",
+        why: "The number to watch: Empty 10x10.",
+      },
+    })!;
+    expect(move.source).toBe("suggest");
+    expect(move.label).toBe("Build this funnel");
+    expect(move.href).toBe("/portal/campaigns?build=vacant_sizes");
+    expect(move.why).toBe("The number to watch: Empty 10x10.");
+  });
+
+  it("still asks for the unit mix before any suggested funnel", () => {
+    const move = chooseMove({
+      ontology: noUnits(),
+      pace: null,
+      working: null,
+      where: { surface: "dashboard" },
+      suggestion: { id: "vacant_sizes", sentence: "Build it.", reason: "Empty sizes." },
+    })!;
+    expect(move.id).toBe("foundation:units");
+  });
+
   it("falls back to the facility's top move when on pace", () => {
     const o = ontology();
     const pace = goalPace({ month: "2026-10", target: 12, actual: 4 }, OCT_7);

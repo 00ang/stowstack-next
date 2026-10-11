@@ -99,13 +99,20 @@ function WorkingChip() {
 function Bar() {
   const flow = useFlow();
   const setShown = flow?.setShown;
-  const chosen = useMemo(
-    () =>
-      flow
-        ? chooseMove({ ontology: flow.ontology, pace: flow.pace, working: flow.working, where: flow.where })
-        : null,
-    [flow],
-  );
+  const chosen = useMemo(() => {
+    if (!flow) return null;
+    const top = flow.suggestions[0];
+    const suggestion =
+      top && flow.where.surface !== "campaigns" && flow.where.surface !== "campaign"
+        ? {
+            id: top.id,
+            sentence: `Build "${top.name}".`,
+            reason: top.why.map((line) => line.text).join(" "),
+            why: `The number to watch: ${top.metric}.`,
+          }
+        : null;
+    return chooseMove({ ontology: flow.ontology, pace: flow.pace, working: flow.working, where: flow.where, suggestion });
+  }, [flow]);
   const shownId = flow?.override ? null : chosen?.id ?? null;
   useEffect(() => {
     setShown?.(flow?.override ? null : chosen);
