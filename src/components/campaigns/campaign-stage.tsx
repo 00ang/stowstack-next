@@ -22,6 +22,7 @@ import {
   type NodeType,
 } from "@/lib/funnel-graph";
 import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
+import { SkyBand, useSkyMode } from "@/components/design/dl003/ui";
 import { useFlow } from "@/components/flow/flow-context";
 import { funnelContextFromOntology, goalMonths } from "./context";
 import { FunnelCanvas, placeFrom, placeFunction } from "./funnel-canvas";
@@ -93,6 +94,7 @@ export function CampaignStage({
   fill?: boolean;
 }) {
   const sample = isPortalDemo();
+  const sky = useSkyMode();
   const narrow = useNarrow();
   // In the portal the thread already holds this facility's ontology; reuse it.
   const flow = useFlow();
@@ -327,6 +329,13 @@ export function CampaignStage({
             : "-mx-4 -my-5 flex h-[calc(100dvh-7.5rem)] min-h-[520px] flex-col overflow-hidden md:-mx-6 md:-my-6"
       }
     >
+      {sky === "hero" && <SkyBand variant="hero" short label="003 · A sky · hero band · canvas stays cool" />}
+      {sky === "strip" && <SkyBand variant="strip" label="003 · A sky · thin strip" />}
+      {sky === "canvas" && (
+        <div className="d3-kicker shrink-0 border-b border-[var(--ic-ink)] bg-white px-3 py-1.5">
+          003 · A sky · canvas backdrop · nodes stay on white
+        </div>
+      )}
       <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-2 border-b border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2 sm:px-4">
         <div className="flex min-w-0 basis-full items-center gap-2 sm:basis-auto sm:flex-1">
           <button type="button" onClick={onBack} className="shrink-0 text-[13px] font-extrabold underline underline-offset-4">
@@ -380,6 +389,15 @@ export function CampaignStage({
         </div>
       </div>
 
+      {sky === "hero" && (
+        <div className="d3-note shrink-0">
+          <svg width="72" height="14" viewBox="0 0 72 14" aria-hidden>
+            <path d="M2 8 C 16 4, 28 11, 40 7 C 52 3, 60 10, 70 6" fill="none" stroke="#83372F" strokeWidth="2.2" strokeLinecap="round" />
+          </svg>
+          Nothing on this canvas spends until you publish.
+        </div>
+      )}
+
       {draft.notice && (
         <div role="status" className="flex shrink-0 items-start justify-between gap-3 bg-[var(--ic-ink)] px-3 py-2 text-[13px] font-semibold text-[var(--ic-pane)] sm:px-4">
           <span>{draft.notice}</span>
@@ -414,6 +432,7 @@ export function CampaignStage({
               <FunnelCanvas
                 graph={draft.graph}
                 ctx={ctx}
+                sky={sky === "canvas"}
                 focusKey={draft.viewportKey}
                 onMove={draft.moveNode}
                 onConnectPorts={draft.connectPorts}

@@ -570,7 +570,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
       <a href="#portal-main" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-[60] focus:rounded-lg focus:bg-[var(--color-dark)] focus:px-3 focus:py-2 focus:text-sm focus:text-[var(--color-light)]">
         Skip to content
       </a>
-      <div className="flex h-screen overflow-hidden bg-[var(--color-light)]">
+      <div className={`flex h-screen overflow-hidden bg-[var(--color-light)]${demo ? " dl003" : ""}`}>
         <Sidebar client={client} mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} showOnboarding={showOnboarding} rail={builder} />
         <div className="flex flex-1 flex-col overflow-hidden">
           <PortalHeader client={client} onToggle={() => { haptic("light"); setMobileOpen((v) => !v); }} onLogout={handleLogout} expanded={mobileOpen} toggleRef={toggleRef} />

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>StorageAds · ad set 003</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@600&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink:#16161A; --sky:#93AFE7; --sage:#E4EADE; --crayon:#83372F; --fill:#B2E4ED; --gain:#D9FFE5; --blue:#2054B7; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background:#E0E0E5; font-family: Manrope, system-ui, sans-serif; color: var(--ink); padding: 32px; }
+  .sheet { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+  .ad { position: relative; overflow: hidden; background: #fff; color: var(--ink); flex: none; }
+  .k { font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: 18px; color: #525766; }
+  h1 { font-weight: 800; letter-spacing: -0.035em; line-height: .96; }
+  .sub { font-weight: 600; line-height: 1.25; }
+  .hand { display: block; color: var(--ink); }
+  .row { display: flex; align-items: center; gap: 16px; }
+  .word { font-weight: 800; letter-spacing: -0.03em; }
+  .sky { background: var(--sky); overflow: hidden; }
+  .sky img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; image-rendering: pixelated; }
+  .pane { background: #fff; border: 1px solid #121214; }
+  .awning { display: flex; height: 18px; border: 1px solid #121214; }
+  .awning i { flex: 1; display: block; }
+  .awning i:nth-child(1) { background: #E8281E; }
+  .awning i:nth-child(2) { background: #396335; }
+  .awning i:nth-child(3) { background: #2054B7; }
+
+  /* 01 sky */
+  #a1 { width: 1080px; height: 1080px; background: var(--sky); }
+  #a1 .sky { height: 640px; }
+  #a1 .pane { position: absolute; left: 48px; right: 48px; bottom: 48px; padding: 36px 40px 32px; }
+  #a1 h1 { font-size: 84px; margin-top: 22px; }
+  #a1 .sub { font-size: 28px; margin-top: 16px; }
+  #a1 .foot { margin-top: 22px; }
+
+  /* 02 levels */
+  #a2 { width: 1080px; height: 1080px; padding: 56px 52px 48px; display: flex; flex-direction: column; }
+  #a2 h1 { font-size: 72px; margin-top: 14px; }
+  #a2 .grid { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; }
+  .tile { border: 1px solid #121214; position: relative; display: flex; flex-direction: column; min-height: 0; }
+  .tile .name { font-family: "IBM Plex Mono", monospace; font-size: 16px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 14px 16px 0; }
+  .meter { position: relative; flex: 1; margin: 12px 16px 0; min-height: 120px; }
+  .lv { position: absolute; left: 0; right: 0; bottom: 0; border-top: 2px solid #121214; }
+  .lv.f { background: var(--fill); }
+  .lv.g { background: var(--gain); }
+  .num { position: absolute; left: 0; bottom: 6px; font-weight: 800; font-size: 64px; letter-spacing: -0.04em; line-height: 1; }
+  .meta { padding: 8px 16px 14px; font-weight: 700; font-size: 22px; }
+  .crayon { position: absolute; top: 8px; right: 10px; width: 150px; text-align: center; color: var(--crayon); font-weight: 800; font-size: 22px; line-height: 1; }
+  .crayon svg { display: block; width: 150px; height: 54px; }
+  #a2 .foot { margin-top: 18px; font-size: 22px; font-weight: 600; }
+
+  /* 03 figure */
+  #a3 { width: 1080px; height: 1080px; display: grid; grid-template-columns: 500px 1fr; }
+  #a3 .plate { position: relative; background: #537B88; overflow: hidden; }
+  #a3 .plate img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #a3 .grain { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .1; mix-blend-mode: multiply; pointer-events: none; }
+  #a3 .copy { padding: 40px 36px 32px; display: flex; flex-direction: column; }
+  #a3 h1 { font-size: 52px; margin-top: 10px; }
+  #a3 ol { list-style: none; margin-top: 28px; display: flex; flex-direction: column; gap: 18px; }
+  #a3 li { display: flex; gap: 14px; align-items: flex-start; font-weight: 600; font-size: 26px; line-height: 1.25; }
+  #a3 b { flex: none; width: 40px; height: 40px; border: 3px solid var(--crayon); border-radius: 50%; color: var(--crayon); display: grid; place-items: center; font-size: 22px; }
+  .tb { margin-top: auto; border: 1px solid #121214; display: grid; grid-template-columns: 1fr 1fr; font-family: "IBM Plex Mono", monospace; font-size: 14px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+  .tb div { padding: 8px 10px; border-right: 1px solid #121214; border-bottom: 1px solid #121214; }
+  .tb div:nth-child(2n) { border-right: 0; }
+
+  /* 04 reassure */
+  #a4 { width: 1080px; height: 1080px; background: var(--sage); padding: 72px 68px; display: flex; flex-direction: column; }
+  #a4 h1 { font-size: 84px; margin-top: 28px; max-width: 920px; }
+  #a4 .sub { font-size: 36px; margin-top: 28px; }
+  #a4 .later { font-size: 32px; font-weight: 800; margin-top: 18px; }
+  #a4 .foot { margin-top: auto; }
+
+  /* 05 story sign */
+  #a5 { width: 1080px; height: 1920px; padding: 0; display: flex; flex-direction: column; background: #fff; }
+  #a5 .awning { height: 28px; border: 0; border-bottom: 1px solid #121214; }
+  #a5 .mid { padding: 80px 72px; flex: 1; display: flex; flex-direction: column; }
+  #a5 .word { font-size: 132px; line-height: .9; margin-top: 28px; }
+  #a5 .spine { height: 2px; background: #121214; margin: 48px 0; width: 100%; }
+  #a5 h1 { font-size: 78px; }
+  #a5 .sub { font-size: 42px; margin-top: 20px; }
+  #a5 .foot { margin-top: auto; padding-top: 48px; font-size: 22px; }
+
+  /* 06 title story */
+  #a6 { width: 1080px; height: 1920px; background: var(--blue); color: #fff; display: flex; flex-direction: column; }
+  #a6 .mid { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 80px 72px; }
+  #a6 .k { color: rgba(255,255,255,.75); }
+  #a6 h1 { font-size: 148px; margin-top: 18px; }
+  #a6 .sub { font-size: 48px; margin-top: 24px; font-weight: 700; }
+  #a6 .awning { height: 28px; border: 0; }
+
+  /* 07 landscape */
+  #a7 { width: 1200px; height: 628px; display: grid; grid-template-columns: 440px 1fr; }
+  #a7 .sky { height: 100%; }
+  #a7 .copy { padding: 48px 48px 40px; display: flex; flex-direction: column; }
+  #a7 h1 { font-size: 78px; margin-top: 16px; }
+  #a7 .sub { font-size: 28px; margin-top: 16px; max-width: 640px; }
+  #a7 .foot { margin-top: auto; }
+
+  /* 08 gap */
+  #a8 { width: 1080px; height: 1080px; padding: 52px 52px 40px; display: flex; flex-direction: column; }
+  #a8 h1 { font-size: 68px; margin-top: 12px; }
+  #a8 .cols { margin-top: 28px; flex: 1; display: grid; grid-template-columns: 1fr 72px 1fr; gap: 8px; align-items: end; }
+  #a8 .col { border: 1px solid #121214; height: 100%; display: flex; flex-direction: column; position: relative; }
+  #a8 .col .name { font-family: "IBM Plex Mono", monospace; font-size: 16px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; padding: 16px 16px 0; }
+  #a8 .brace { color: var(--crayon); font-weight: 800; font-size: 20px; text-align: center; align-self: center; }
+  #a8 .foot { margin-top: 16px; font-size: 18px; }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <article class="ad" id="a1" data-name="01-sky-square">
+    <div class="sky"><img src="sky-1080.png" alt="" /></div>
+    <div class="pane">
+      <div class="row">
+        <svg class="hand" width="64" height="64" viewBox="0 0 120 120" aria-hidden="true"><rect x="16" y="54" width="66" height="56" fill="currentColor"/><rect x="16" y="18" width="12" height="42" fill="currentColor"/><rect x="34" y="8" width="12" height="52" fill="currentColor"/><rect x="52" y="14" width="12" height="46" fill="currentColor"/><rect x="70" y="24" width="12" height="36" fill="currentColor"/><rect x="82" y="60" width="24" height="14" fill="currentColor"/></svg>
+        <span class="word" style="font-size:40px">StorageAds</span>
+      </div>
+      <h1>Ad spend in.<br>Move-ins out.</h1>
+      <p class="sub">One system, built only for storage. You turn it on.</p>
+      <p class="k foot">storageads.com</p>
+    </div>
+  </article>
+
+  <article class="ad" id="a2" data-name="02-levels-square">
+    <p class="k">One question</p>
+    <h1>Which sizes still have room?</h1>
+    <div class="grid">
+      <div class="tile">
+        <div class="name">10×10 drive-up</div>
+        <div class="crayon">
+          <svg viewBox="0 0 150 54" aria-hidden="true"><path d="M8 30 C 14 8, 50 6, 75 14 C 110 4, 142 18, 136 32 C 144 48, 100 52, 74 44 C 40 54, 6 46, 8 30" fill="none" stroke="#83372F" stroke-width="3" stroke-linecap="round"/></svg>
+          <span>18 empty</span>
+        </div>
+        <div class="meter"><div class="lv f" style="height:78%"></div><div class="num">78%</div></div>
+        <div class="meta">62 of 80 rented</div>
+      </div>
+      <div class="tile">
+        <div class="name">10×10 climate</div>
+        <div class="meter"><div class="lv f" style="height:70%"></div><div class="num">70%</div></div>
+        <div class="meta">28 of 40 rented</div>
+      </div>
+      <div class="tile">
+        <div class="name">10×30</div>
+        <div class="meter"><div class="lv g" style="height:100%"></div><div class="num">100%</div></div>
+        <div class="meta">12 of 12 rented</div>
+      </div>
+      <div class="tile">
+        <div class="name">Parking</div>
+        <div class="meter"><div class="lv f" style="height:70%"></div><div class="num">70%</div></div>
+        <div class="meta">14 of 20 rented</div>
+      </div>
+    </div>
+    <p class="foot">Sample facility, Maple Street. The tile fills the way the unit does.</p>
+  </article>
+
+  <article class="ad" id="a3" data-name="03-figure-square">
+    <div class="plate">
+      <img src="../site-mocks-003/html/assets/facility-teal.png" alt="" />
+      <svg class="grain" aria-hidden="true"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#grain)"/></svg>
+    </div>
+    <div class="copy">
+      <p class="k">Figure 1</p>
+      <h1>From the ad to a signed lease.</h1>
+      <ol>
+        <li><b>1</b><span>An ad on Meta or Google.</span></li>
+        <li><b>2</b><span>A page made for that ad.</span></li>
+        <li><b>3</b><span>The renter reserves a unit.</span></li>
+        <li><b>4</b><span>You mark the move-in.</span></li>
+      </ol>
+      <div class="tb">
+        <div>Sheet 01</div><div>Scale 1:1</div>
+        <div>Storage only</div><div>Oct 2026</div>
+      </div>
+    </div>
+  </article>
+
+  <article class="ad" id="a4" data-name="04-reassure-square">
+    <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+      <g fill="none" stroke="#83372F" stroke-width="4" stroke-linecap="round">
+        <path d="M60 14 C 88 12, 106 34, 104 58 C 108 86, 84 108, 58 104 C 30 108, 12 84, 16 56 C 12 30, 34 12, 60 14"/>
+        <path d="M42 52 l2 10"/><path d="M76 52 l2 10"/>
+        <path d="M40 74 C 50 88, 70 88, 80 72"/>
+      </g>
+    </svg>
+    <h1>We're not running any ads right now.</h1>
+    <p class="sub">Most independent operators aren't.</p>
+    <p class="later">A fence sign is not a plan.</p>
+    <div class="foot row">
+      <svg class="hand" width="48" height="48" viewBox="0 0 120 120" aria-hidden="true"><rect x="16" y="54" width="66" height="56" fill="currentColor"/><rect x="16" y="18" width="12" height="42" fill="currentColor"/><rect x="34" y="8" width="12" height="52" fill="currentColor"/><rect x="52" y="14" width="12" height="46" fill="currentColor"/><rect x="70" y="24" width="12" height="36" fill="currentColor"/><rect x="82" y="60" width="24" height="14" fill="currentColor"/></svg>
+      <span class="word" style="font-size:32px">StorageAds</span>
+    </div>
+  </article>
+
+  <article class="ad" id="a5" data-name="05-sign-story">
+    <div class="awning" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="mid">
+      <svg class="hand" width="220" height="220" viewBox="0 0 120 120" aria-hidden="true"><rect x="16" y="54" width="66" height="56" fill="currentColor"/><rect x="16" y="18" width="12" height="42" fill="currentColor"/><rect x="34" y="8" width="12" height="52" fill="currentColor"/><rect x="52" y="14" width="12" height="46" fill="currentColor"/><rect x="70" y="24" width="12" height="36" fill="currentColor"/><rect x="82" y="60" width="24" height="14" fill="currentColor"/></svg>
+      <div class="word">StorageAds</div>
+      <div class="spine"></div>
+      <h1>The REITs already run this.</h1>
+      <p class="sub">Now you can plug it in.</p>
+      <p class="k foot">storageads.com</p>
+    </div>
+  </article>
+
+  <article class="ad" id="a6" data-name="06-title-story">
+    <div class="mid">
+      <p class="k">One system</p>
+      <h1>StorageAds</h1>
+      <p class="sub">Built to fill units.</p>
+    </div>
+    <div class="awning" aria-hidden="true"><i></i><i></i><i></i></div>
+  </article>
+
+  <article class="ad" id="a7" data-name="07-question-landscape">
+    <div class="sky"><img src="sky-side.png" alt="" /></div>
+    <div class="copy">
+      <div class="row">
+        <svg class="hand" width="44" height="44" viewBox="0 0 120 120" aria-hidden="true"><rect x="16" y="54" width="66" height="56" fill="currentColor"/><rect x="16" y="18" width="12" height="42" fill="currentColor"/><rect x="34" y="8" width="12" height="52" fill="currentColor"/><rect x="52" y="14" width="12" height="46" fill="currentColor"/><rect x="70" y="24" width="12" height="36" fill="currentColor"/><rect x="82" y="60" width="24" height="14" fill="currentColor"/></svg>
+        <span class="word" style="font-size:28px">StorageAds</span>
+      </div>
+      <h1>Is it working?</h1>
+      <p class="sub">You mark the move-in. The report shows what you marked.</p>
+      <p class="k foot">storageads.com</p>
+    </div>
+  </article>
+
+  <article class="ad" id="a8" data-name="08-gap-square">
+    <p class="k">The occupancy gap</p>
+    <h1>The space between is the work.</h1>
+    <div class="cols">
+      <div class="col">
+        <div class="name">Extra Space</div>
+        <div class="meter" style="flex:1;margin:16px"><div class="lv g" style="height:92.6%"></div><div class="num">92.6%</div></div>
+        <div class="meta">Q4 2025</div>
+      </div>
+      <div class="brace">
+        <svg width="64" height="220" viewBox="0 0 64 220" aria-hidden="true"><path d="M48 16 C 20 16, 16 50, 16 110 C 16 170, 20 204, 48 204" fill="none" stroke="#83372F" stroke-width="4" stroke-linecap="round"/></svg>
+        <div>the work</div>
+      </div>
+      <div class="col">
+        <div class="name">Independents</div>
+        <div class="meter" style="flex:1;margin:16px"><div class="lv f" style="height:87.2%"></div><div class="num">87.2%</div></div>
+        <div class="meta">2026 average</div>
+      </div>
+    </div>
+    <p class="k foot">Sourced industry figures. Not a client result.</p>
+  </article>
+
+</div>
+</body>
+</html>

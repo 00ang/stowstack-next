@@ -7,6 +7,7 @@ import { useFlow } from "@/components/flow/flow-context";
 import { typeHue } from "@/lib/ontology/registry";
 import type { ObjectTypeKey, Ontology } from "@/lib/ontology/types";
 import type { ToolKey } from "@/lib/ontology/types";
+import { SkyBand } from "@/components/design/dl003/ui";
 import {
   stationAhead,
   stationInputs,
@@ -209,7 +210,9 @@ export function ToolsTrack({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[var(--ic-ground)] text-[var(--ic-ink)]">
-      <div className="shrink-0 px-3 pb-2 pt-3 sm:px-4">
+      {sample && <SkyBand variant="strip" label="003 · A sky · thin strip · stations stay white" />}
+      <div className={`shrink-0 px-3 pb-2 pt-3 sm:px-4${sample ? " d3-sage-band" : ""}`}>
+        {sample && <div className="d3-kicker mb-2">003 · sage band · one question, the intent</div>}
         <div className="hidden flex-wrap items-center gap-2 md:flex">
           <span className="text-[22px] font-extrabold leading-none">I want to</span>
           <select

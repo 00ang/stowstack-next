@@ -293,6 +293,8 @@ interface CanvasProps {
   edgeLabels?: Record<string, string>;
   /** Each function's result from the last publish. */
   published?: Record<string, NodeResult>;
+  /** Sample-portal mock: cloud dither behind the nodes. Nodes stay white. */
+  sky?: boolean;
 }
 
 function CanvasInner({
@@ -308,6 +310,7 @@ function CanvasInner({
   suggestFor,
   edgeLabels,
   published,
+  sky,
   wrapper,
 }: CanvasProps & { wrapper: HTMLDivElement | null }) {
   const flow = useReactFlow();
@@ -459,8 +462,9 @@ function CanvasInner({
         minZoom={FIT_MIN_ZOOM}
         maxZoom={1.6}
         onInit={() => frameStart()}
+        style={sky ? { background: "transparent" } : undefined}
       >
-        <Background gap={24} size={1.2} color="#C3C5CF" />
+        {sky ? null : <Background gap={24} size={1.2} color="#C3C5CF" />}
       </ReactFlow>
       {picker && (
         <FunctionPicker
@@ -482,7 +486,7 @@ export function FunnelCanvas(props: CanvasProps) {
   // The element itself, held in state (a callback ref), so its size can be read while rendering the picker.
   const [wrapper, setWrapper] = useState<HTMLDivElement | null>(null);
   return (
-    <div ref={setWrapper} className="funnel-canvas relative h-full min-h-0 w-full bg-[var(--ic-ground)]">
+    <div ref={setWrapper} className={`funnel-canvas relative h-full min-h-0 w-full ${props.sky ? "d3-canvas-sky" : "bg-[var(--ic-ground)]"}`}>
       <ReactFlowProvider>
         <CanvasInner {...props} wrapper={wrapper} />
         <CanvasTools />

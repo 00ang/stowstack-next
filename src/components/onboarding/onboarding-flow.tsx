@@ -11,6 +11,7 @@ import { TypeGlyph } from "@/components/ontology/object-mark";
 import { FacilityInstrument } from "@/components/ontology/facility-instrument";
 import { GoalPanel, useGoalContext, useStartCampaign } from "@/components/campaigns/campaigns-home";
 import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
+import { FigureOne, Question, SkyBand } from "@/components/design/dl003/ui";
 import type { ObjectTypeKey } from "@/lib/ontology/types";
 
 /**
@@ -343,6 +344,21 @@ export function OnboardingFlow() {
   const field = "w-full border border-[var(--ic-ink)] bg-[var(--ic-pane)] px-3 py-2 text-[15px] font-semibold text-[var(--ic-ink)] outline-none focus:outline focus:outline-2 focus:outline-[var(--ic-selected)]";
 
   return (
+    <div className="pb-16">
+      {sample && (
+        <div data-dl003="setup">
+          <SkyBand variant="hero" short label="003 · A sky · welcome band" />
+          <div className="mx-auto w-full max-w-3xl space-y-4 px-4 pt-4">
+            <FigureOne />
+            <Question
+              sage
+              kicker="003 · sage · plain reassurance"
+              q="We're not spending anything yet."
+              a="Most independent operators start here. Nothing goes live until you publish a campaign, and you still mark each move-in yourself."
+            />
+          </div>
+        </div>
+      )}
     <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6 md:pt-8">
       <Label>Setup · about 3 minutes to see your facility</Label>
       <div className="mt-2">
@@ -736,6 +752,7 @@ export function OnboardingFlow() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }

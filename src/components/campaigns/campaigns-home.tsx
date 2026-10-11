@@ -25,6 +25,7 @@ import {
   type TemplateKey,
 } from "@/lib/funnel-graph";
 import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
+import { CampaignLiveCard, SkyBand } from "@/components/design/dl003/ui";
 import { funnelContextFromOntology } from "./context";
 import { NodeIcon } from "./icons";
 
@@ -298,6 +299,15 @@ export function CampaignsHome({ facilityId }: { facilityId: string }) {
   const hasRows = !!rows && rows.length > 0;
 
   return (
+    <div className="pb-16">
+      {sample && (
+        <div data-dl003="campaigns">
+          <SkyBand variant="hero" short label="003 · A sky · hero band · list stays white" />
+          <div className="mx-auto w-full max-w-5xl px-4 md:px-6">
+            <CampaignLiveCard />
+          </div>
+        </div>
+      )}
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 md:px-6 md:py-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
@@ -344,6 +354,7 @@ export function CampaignsHome({ facilityId }: { facilityId: string }) {
           )}
         </>
       )}
+    </div>
     </div>
   );
 }
