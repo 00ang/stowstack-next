@@ -44,6 +44,11 @@ export const RATE_LIMIT_TIERS = {
     requests: 10,
     windowSeconds: 3600,
   },
+  // Audit and contact posts. Stops a slow script that stays under the per-minute cap.
+  AUDIT_FORM_HOURLY: {
+    requests: 30,
+    windowSeconds: 3600,
+  },
   // Hourly limits for signup routes (partner + self-service)
   SIGNUP_HOURLY: {
     requests: 5,

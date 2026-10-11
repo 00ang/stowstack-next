@@ -13,6 +13,7 @@ import {
   PHONE_HINT,
   PHONE_PLACEHOLDER,
 } from "@/lib/intake/phone";
+import { MathCheck } from "@/components/marketing/math-check";
 
 const INK = "#16161A";
 const INSTRUCTION = "#525766";
@@ -31,6 +32,9 @@ export function IntakeWizard({
   onCreate,
   onFinished,
   finishLabel = "That's enough",
+  mathProblem,
+  mathAnswer = "",
+  onMathAnswer,
 }: {
   steps: IntakeStep[];
   showContact: boolean;
@@ -42,9 +46,13 @@ export function IntakeWizard({
     consent: boolean;
     website: string;
     elapsedSeconds: number;
+    mathAnswer?: string;
   }) => Promise<Created>;
   onFinished: (ids: Created) => void;
   finishLabel?: string;
+  mathProblem?: { a: number; b: number } | null;
+  mathAnswer?: string;
+  onMathAnswer?: (next: string) => void;
 }) {
   const started = useRef(Date.now());
   const [phase, setPhase] = useState<"contact" | "questions">(
@@ -148,13 +156,15 @@ export function IntakeWizard({
   async function submitContact(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (!name.trim() || !intakePhone(phone) || !consent) {
+    if (!name.trim() || !intakePhone(phone) || !consent || (mathProblem !== undefined && !mathAnswer.trim())) {
       setError(
         !consent
           ? "Check the box so we can call or text you."
           : !intakePhone(phone)
             ? PHONE_CLIENT_ERROR
-            : "Name and phone are required."
+            : mathProblem !== undefined && !mathAnswer.trim()
+              ? "Answer the math question before sending."
+              : "Name and phone are required."
       );
       return;
     }
@@ -167,6 +177,7 @@ export function IntakeWizard({
         consent: true,
         website,
         elapsedSeconds: elapsed(),
+        mathAnswer,
       });
       setIds(created);
       if (visible.length === 0) onFinished(created);
@@ -266,9 +277,12 @@ export function IntakeWizard({
               Message and data rates may apply.
             </span>
           </label>
+          {mathProblem !== undefined && (
+            <MathCheck problem={mathProblem} value={mathAnswer} onChange={(next) => onMathAnswer?.(next)} />
+          )}
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || (mathProblem !== undefined && !mathProblem)}
             className="btn-primary flex w-full items-center justify-center gap-2"
             style={{ minHeight: 52 }}
           >

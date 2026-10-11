@@ -1,14 +1,18 @@
 import { randomBytes } from "crypto";
+import { checkBotId } from "botid/server";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { corsResponse, getOrigin } from "@/lib/api-helpers";
-import { applyRateLimit } from "@/lib/with-rate-limit";
+import { applyRateLimitStrict } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidEmail, sanitizeString, escapeHtml } from "@/lib/validation";
-import { SENDERS, sendEmail } from "@/lib/email";
+import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
+import { humanProofError, mathAnswerError, verifyHumanProof, verifyMathAnswer } from "@/lib/human-check/server";
+import { leadTextIsAutomated } from "@/lib/spam-text";
 import { answersJson, mergeIntakeAnswers } from "@/lib/intake/merge-answers";
 import { intakePhone, PHONE_SERVER_ERROR } from "@/lib/intake/phone";
-import { neutralSortReason, scoreAndStore } from "@/lib/intake/score-lead";
+import { applyAnswerProgress, withAuditStarted } from "@/lib/intake/progress";
+import { scoreAndStore } from "@/lib/intake/score-lead";
 
 const HOMEPAGE_SOURCES = new Set(["homepage_popup", "contact"]);
 
@@ -20,7 +24,7 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const limited = await applyRateLimit(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
+  const limited = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
   if (limited) return limited;
 
   const token = new URL(request.url).searchParams.get("token") || "";
@@ -42,6 +46,22 @@ export async function GET(request: NextRequest) {
   });
   if (!facility) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Opening the token link is the audit start. Stamp it once. Older
+  // answers stay as they are. A failed write still returns the saved answers.
+  const stamped = withAuditStarted(facility.intake_answers, new Date());
+  let answers: unknown = facility.intake_answers || {};
+  if (stamped.changed) {
+    try {
+      await db.facilities.update({
+        where: { id: facility.id },
+        data: { intake_answers: answersJson(stamped.answers) },
+      });
+      answers = stamped.answers;
+    } catch (err) {
+      console.error("[audit-form] audit start stamp failed:", err);
+    }
+  }
+
   return NextResponse.json({
     facilityId: facility.id,
     contactName: facility.contact_name,
@@ -49,13 +69,15 @@ export async function GET(request: NextRequest) {
     phone: facility.contact_phone,
     facilityName: facility.name,
     location: facility.location,
-    answers: facility.intake_answers || {},
+    answers,
   });
 }
 
 export async function POST(request: NextRequest) {
-  const limited = await applyRateLimit(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
+  const limited = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
   if (limited) return limited;
+  const hourly = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.AUDIT_FORM_HOURLY, "audit-form-hour");
+  if (hourly) return hourly;
 
   try {
     const body = await request.json();
@@ -99,7 +121,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
       }
     } else if (source === "contact") {
-      if (honeypot) return NextResponse.json({ success: true });
       if (!name || !email) {
         return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
       }
@@ -110,13 +131,39 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: PHONE_SERVER_ERROR }, { status: 400 });
       }
     } else {
-      if (honeypot) return NextResponse.json({ success: true });
       if (!name || !email || !facilityName || !location) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
       }
       if (!isValidEmail(email)) {
         return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
       }
+    }
+
+    if (honeypot) {
+      return NextResponse.json({ error: "That request was not accepted." }, { status: 400 });
+    }
+
+    const botRejected = await rejectAutomatedClient();
+    if (botRejected) return botRejected;
+
+    const math = await verifyMathAnswer(body.mathProblem, body.mathAnswer);
+    if (!math.ok) {
+      return NextResponse.json({ error: mathAnswerError(math.reason) }, { status: 403 });
+    }
+
+    const proof = await verifyHumanProof(body.humanProof);
+    if (!proof.ok) {
+      return NextResponse.json({ error: humanProofError(proof.reason) }, { status: 403 });
+    }
+
+    // A correct math answer can still be scripted. Random tokens are not a
+    // facility, and they are rejected before a row or an email exists.
+    if (leadTextIsAutomated({ name, facilityName, location })) {
+      console.info("[audit-form] rejected random field text");
+      return NextResponse.json(
+        { error: "Use the real facility name and city." },
+        { status: 400 }
+      );
     }
 
     const resolvedFacilityName =
@@ -133,7 +180,6 @@ export async function POST(request: NextRequest) {
             : null;
 
     const intakeToken = source === "homepage_popup" ? randomBytes(24).toString("hex") : null;
-    const hidden = Boolean(honeypot) && source === "homepage_popup";
 
     const facility = await db.facilities.create({
       data: {
@@ -161,19 +207,16 @@ export async function POST(request: NextRequest) {
               intake_answers: answersJson({
                 source: "homepage_popup",
                 consent: true,
-                ...(hidden ? { hidden_field_filled: true } : {}),
                 ...(typeof body.elapsedSeconds === "number"
                   ? { seconds_to_complete: body.elapsedSeconds }
                   : {}),
               }),
-              sort_last: hidden,
-              sort_last_reason: hidden ? neutralSortReason(true) : null,
             }
           : {}),
       },
     });
 
-    if (source === "homepage_popup" && !hidden) {
+    if (source === "homepage_popup") {
       void scoreAndStore(facility.id).catch((err) =>
         console.error("[jev] score after create failed:", err)
       );
@@ -197,7 +240,7 @@ export async function POST(request: NextRequest) {
       })
       .catch((err) => console.error("[activity_log] Fire-and-forget failed:", err));
 
-    if (!hidden) {
+    {
       const subject =
         source === "homepage_popup"
           ? `Homepage lead (first month of StorageAds free): ${escapeHtml(name)}`
@@ -207,7 +250,7 @@ export async function POST(request: NextRequest) {
 
       await sendEmail({
         from: SENDERS.noreply,
-        to: [process.env.ADMIN_EMAIL || "blake@storageads.com"],
+        to: submissionNotifyRecipients(),
         subject,
         tags: [{ name: "type", value: source === "audit_form" ? "audit_request" : source }],
         html: `
@@ -240,13 +283,34 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Vercel BotID, with the deep check enabled in the project firewall.
+ * A request that did not come from the page is rejected before a lead exists.
+ */
+async function rejectAutomatedClient() {
+  try {
+    const verification = await checkBotId({
+      advancedOptions: { checkLevel: "deepAnalysis" },
+    });
+    if (verification.isBot) {
+      return NextResponse.json({ error: "That request was not accepted." }, { status: 403 });
+    }
+    return null;
+  } catch (error) {
+    console.error("[audit-form] bot check failed:", error);
+    return NextResponse.json({ error: "That request was not accepted." }, { status: 403 });
+  }
+}
+
+/**
  * Save one qualifier answer onto the lead created at step 1.
  * Unknown keys are ignored. A skip clears that answer and does not
  * invent a value for the ones still blank.
  */
 export async function PATCH(request: NextRequest) {
-  const limited = await applyRateLimit(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
+  const limited = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
   if (limited) return limited;
+  const hourly = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.AUDIT_FORM_HOURLY, "audit-form-hour");
+  if (hourly) return hourly;
 
   try {
     const body = await request.json();
@@ -261,6 +325,12 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Missing lead" }, { status: 400 });
     }
 
+    // Same browser check as the first save. The intake token is the lead.
+    // A new math problem is not required on each question, or the popup
+    // could not move to the next screen.
+    const botRejected = await rejectAutomatedClient();
+    if (botRejected) return botRejected;
+
     const facility = await db.facilities.findFirst({
       where: { id: facilityId, intake_token: intakeToken },
       select: { id: true, intake_answers: true },
@@ -271,11 +341,17 @@ export async function PATCH(request: NextRequest) {
     if (typeof body.elapsedSeconds === "number" && body.elapsedSeconds >= 0 && body.elapsedSeconds < 3600) {
       merged.intake_answers.seconds_to_complete = Math.round(body.elapsedSeconds);
     }
+    const intake_answers = applyAnswerProgress(
+      facility.intake_answers,
+      merged.intake_answers,
+      patch,
+      new Date()
+    );
 
     await db.facilities.update({
       where: { id: facility.id },
       data: {
-        intake_answers: answersJson(merged.intake_answers),
+        intake_answers: answersJson(intake_answers),
         ...merged.columns,
       },
     });
@@ -284,7 +360,7 @@ export async function PATCH(request: NextRequest) {
       console.error("[jev] score after answer failed:", err)
     );
 
-    return NextResponse.json({ success: true, answers: merged.intake_answers });
+    return NextResponse.json({ success: true, answers: intake_answers });
   } catch (error) {
     console.error("Audit form update error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

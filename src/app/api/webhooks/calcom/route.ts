@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 import { db } from "@/lib/db";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
-import { SENDERS, sendEmail } from "@/lib/email";
+import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
 
 const WEBHOOK_SECRET = process.env.CALCOM_WEBHOOK_SECRET;
 
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
 
           // Send pre-call context email to Blake (non-blocking).
           {
-            const adminEmail = process.env.ADMIN_EMAIL || "blake@storageads.com";
+            const adminEmail = submissionNotifyRecipients();
             void sendEmail({
               from: SENDERS.noreply,
               to: adminEmail,

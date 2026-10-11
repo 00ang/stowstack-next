@@ -13,10 +13,13 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/email", () => ({
-  sendEmail: vi.fn(),
-  SENDERS: { notifications: "StorageAds <notifications@storageads.com>" },
-}));
+vi.mock("@/lib/email", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/email")>("@/lib/email");
+  return {
+    ...actual,
+    sendEmail: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/with-rate-limit", () => ({
   applyRateLimit: vi.fn().mockResolvedValue(null),

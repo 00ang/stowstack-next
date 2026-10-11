@@ -19,19 +19,34 @@ vi.mock("@/lib/intake/score-lead", () => ({
     honeypot ? "A hidden field was filled." : "Sorted lower for a look.",
 }));
 
+vi.mock("botid/server", () => ({
+  checkBotId: vi.fn().mockResolvedValue({
+    isBot: false,
+    isHuman: true,
+    isVerifiedBot: false,
+    bypassed: false,
+  }),
+}));
+
 vi.mock("@/lib/with-rate-limit", () => ({
   applyRateLimit: vi.fn().mockResolvedValue(null),
+  applyRateLimitStrict: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("@/lib/email", () => ({
-  sendEmail: vi.fn().mockResolvedValue({ ok: true }),
-  SENDERS: { noreply: "StorageAds <noreply@storageads.com>" },
-}));
+vi.mock("@/lib/email", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/email")>("@/lib/email");
+  return {
+    ...actual,
+    sendEmail: vi.fn().mockResolvedValue({ ok: true }),
+  };
+});
 
+import { checkBotId } from "botid/server";
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { issueChallenge, issueMathProblem, solveChallenge } from "@/lib/human-check/server";
 import { scoreAndStore } from "@/lib/intake/score-lead";
-import { PATCH, POST } from "../route";
+import { GET, PATCH, POST } from "../route";
 
 const m = db as unknown as {
   facilities: {
@@ -74,6 +89,18 @@ const valid = {
   occupancyRange: "80-90%",
 };
 
+function proved(body: Record<string, unknown>) {
+  const challenge = issueChallenge();
+  const math = issueMathProblem();
+  if (!challenge || !math) throw new Error("expected a challenge");
+  return {
+    ...body,
+    humanProof: solveChallenge(challenge),
+    mathProblem: math,
+    mathAnswer: String(math.a + math.b),
+  };
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   m.facilities.create.mockResolvedValue({ id: "fac-1" });
@@ -96,8 +123,8 @@ describe("POST /api/audit-form", () => {
     expect(m.facilities.create).not.toHaveBeenCalled();
   });
 
-  it("creates the facility and notifies Blake on a valid submission", async () => {
-    const res = await post(valid);
+  it("creates the facility and notifies Blake and Angelo on a valid submission", async () => {
+    const res = await post(proved(valid));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toMatchObject({ success: true, facilityId: "fac-1" });
@@ -115,11 +142,84 @@ describe("POST /api/audit-form", () => {
     const arg = notify.mock.calls[0][0];
     expect(arg.subject).toContain("Sunset Storage");
     expect(arg.html).toContain("pat@sunsetstorage.com");
+    expect(arg.to).toEqual(
+      expect.arrayContaining(["blake@storageads.com", "angelo@storageads.com"])
+    );
     expect(m.activity_log.create).toHaveBeenCalled();
   });
 
+  it("rejects a proved request whose name, facility, and city are random tokens", async () => {
+    const res = await post(
+      proved({
+        name: "PpGLJz0lct",
+        email: "debbieransomeiu280@gmail.com",
+        facilityName: "JlDSdbF6Rp",
+        location: "g8cDAvrmd4",
+      })
+    );
+    expect(res.status).toBe(400);
+    expect(m.facilities.create).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+    expect(m.activity_log.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a bot before a lead is saved or an email is sent", async () => {
+    vi.mocked(checkBotId).mockResolvedValueOnce({
+      isBot: true,
+      isHuman: false,
+      isVerifiedBot: false,
+      bypassed: false,
+      verifiedBotName: undefined,
+      verifiedBotCategory: undefined,
+      classificationReason: undefined,
+    });
+    const res = await post(proved(valid));
+    expect(res.status).toBe(403);
+    expect(m.facilities.create).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("rejects a correct browser check when the math answer is wrong", async () => {
+    const body = proved(valid);
+    const res = await post({ ...body, mathAnswer: "0" });
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(json.error).toMatch(/wasn't right/);
+    expect(m.facilities.create).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("rejects a second try that reuses the same math question", async () => {
+    const body = proved(valid);
+    const first = await post(body);
+    expect(first.status).toBe(200);
+    const challenge = issueChallenge();
+    if (!challenge) throw new Error("expected a challenge");
+    const second = await post({ ...body, humanProof: solveChallenge(challenge) });
+    expect(second.status).toBe(403);
+    expect(m.facilities.create).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a scripted post before saving a lead or emailing anyone", async () => {
+    const res = await post(valid);
+    expect(res.status).toBe(403);
+    expect(m.facilities.create).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("rejects a reused proof", async () => {
+    const body = proved(valid);
+    const first = await post(body);
+    expect(first.status).toBe(200);
+    const second = await post(body);
+    expect(second.status).toBe(403);
+    expect(m.facilities.create).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledTimes(1);
+  });
+
   it("trims the email and tolerates a non-string email", async () => {
-    await post({ ...valid, email: "  pat@sunsetstorage.com  " });
+    await post(proved({ ...valid, email: "  pat@sunsetstorage.com  " }));
     expect(m.facilities.create.mock.calls[0][0].data.contact_email).toBe(
       "pat@sunsetstorage.com"
     );
@@ -127,17 +227,19 @@ describe("POST /api/audit-form", () => {
 
   it("500s (not a crash) when the DB write fails", async () => {
     m.facilities.create.mockRejectedValue(new Error("db down"));
-    const res = await post(valid);
+    const res = await post(proved(valid));
     expect(res.status).toBe(500);
   });
 
   it("stores a homepage popup lead with name + phone and writes activity", async () => {
-    const res = await post({
-      source: "homepage_popup",
-      name: "Pat Owner",
-      phone: "512-555-0123",
-      consent: true,
-    });
+    const res = await post(
+      proved({
+        source: "homepage_popup",
+        name: "Pat Owner",
+        phone: "512-555-0123",
+        consent: true,
+      })
+    );
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.facilityId).toBe("fac-1");
@@ -167,6 +269,18 @@ describe("POST /api/audit-form", () => {
     });
   });
 
+  it("rejects a homepage popup that skipped the browser check", async () => {
+    const res = await post({
+      source: "homepage_popup",
+      name: "Pat Owner",
+      phone: "512-555-0123",
+      consent: true,
+    });
+    expect(res.status).toBe(403);
+    expect(m.facilities.create).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+  });
+
   it("rejects a homepage popup without TCPA consent or a valid phone", async () => {
     const noConsent = await post({
       source: "homepage_popup",
@@ -186,33 +300,56 @@ describe("POST /api/audit-form", () => {
     expect(m.facilities.create).not.toHaveBeenCalled();
   });
 
-  it("saves a honeypot hit and sorts it last instead of dropping it", async () => {
-    const res = await post({
-      source: "homepage_popup",
-      name: "Bot",
-      phone: "512-555-0123",
-      consent: true,
-      website_url: "https://spam.test",
-    });
-    expect(res.status).toBe(200);
-    expect(m.facilities.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        sort_last: true,
-        sort_last_reason: "A hidden field was filled.",
-      }),
-    });
+  it("rejects a honeypot without saving a lead or sending email", async () => {
+    const res = await post(
+      proved({
+        source: "homepage_popup",
+        name: "Bot",
+        phone: "512-555-0123",
+        consent: true,
+        website_url: "https://spam.test",
+      })
+    );
+    expect(res.status).toBe(400);
+    expect(m.facilities.create).not.toHaveBeenCalled();
     expect(notify).not.toHaveBeenCalled();
   });
 
   it("accepts an international number with a country code", async () => {
-    const res = await post({
-      source: "homepage_popup",
-      name: "Ayrshire Owner",
-      phone: "+44 141 555 0100",
-      consent: true,
-    });
+    const res = await post(
+      proved({
+        source: "homepage_popup",
+        name: "Ayrshire Owner",
+        phone: "+44 141 555 0100",
+        consent: true,
+      })
+    );
     expect(res.status).toBe(200);
     expect(m.facilities.create.mock.calls[0][0].data.contact_phone).toBe("+441415550100");
+  });
+
+  it("rejects a bot before a saved answer is changed", async () => {
+    vi.mocked(checkBotId).mockResolvedValueOnce({
+      isBot: true,
+      isHuman: false,
+      isVerifiedBot: false,
+      bypassed: false,
+      verifiedBotName: undefined,
+      verifiedBotCategory: undefined,
+      classificationReason: undefined,
+    });
+    m.facilities.findFirst.mockResolvedValue({
+      id: "fac-1",
+      intake_answers: { source: "homepage_popup", consent: true },
+    });
+    const res = await patch({
+      facilityId: "fac-1",
+      intakeToken: "tok",
+      answers: { role: "Owner" },
+    });
+    expect(res.status).toBe(403);
+    expect(m.facilities.update).not.toHaveBeenCalled();
+    expect(scoreAndStore).not.toHaveBeenCalled();
   });
 
   it("saves one answer and does not invent the ones still blank", async () => {
@@ -228,6 +365,8 @@ describe("POST /api/audit-form", () => {
     expect(res.status).toBe(200);
     const data = m.facilities.update.mock.calls[0][0].data;
     expect(data.intake_answers.role).toBe("Owner");
+    expect(data.intake_answers.progress.last_step).toBe("role");
+    expect(data.intake_answers.progress.reached.role).toEqual(expect.any(String));
     expect(data.intake_answers.occupancy).toBeUndefined();
     expect(data.intake_answers.units).toBeUndefined();
     expect(data.total_units).toBeUndefined();
@@ -251,7 +390,49 @@ describe("POST /api/audit-form", () => {
     expect(data.intake_answers.occupancy).toBeUndefined();
     expect(data.intake_answers.units).toBeUndefined();
     expect(data.intake_answers.role).toBe("Owner");
+    expect(data.intake_answers.progress.last_step).toBe("units");
+    expect(data.intake_answers.progress.skipped).toEqual(["occupancy", "units"]);
     expect(data.occupancy_range).toBeNull();
     expect(data.total_units).toBeNull();
+  });
+});
+
+describe("GET /api/audit-form", () => {
+  it("stamps audit start once when the diagnostic link is opened", async () => {
+    m.facilities.findUnique.mockResolvedValue({
+      id: "fac-1",
+      contact_name: "Pat",
+      contact_email: null,
+      contact_phone: "+15125550123",
+      name: "Homepage inquiry",
+      location: "Not provided",
+      intake_answers: { source: "homepage_popup", role: "Owner" },
+    });
+
+    const first = await GET(
+      createMockRequest("http://localhost:3000/api/audit-form?token=tok")
+    );
+    expect(first.status).toBe(200);
+    const saved = m.facilities.update.mock.calls[0][0].data.intake_answers;
+    expect(saved.role).toBe("Owner");
+    expect(saved.progress.audit_started_at).toEqual(expect.any(String));
+    expect(saved.occupancy).toBeUndefined();
+
+    m.facilities.findUnique.mockResolvedValue({
+      id: "fac-1",
+      contact_name: "Pat",
+      contact_email: null,
+      contact_phone: "+15125550123",
+      name: "Homepage inquiry",
+      location: "Not provided",
+      intake_answers: saved,
+    });
+    m.facilities.update.mockClear();
+
+    const second = await GET(
+      createMockRequest("http://localhost:3000/api/audit-form?token=tok")
+    );
+    expect(second.status).toBe(200);
+    expect(m.facilities.update).not.toHaveBeenCalled();
   });
 });

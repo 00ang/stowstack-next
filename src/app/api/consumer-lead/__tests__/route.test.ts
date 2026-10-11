@@ -21,10 +21,13 @@ vi.mock("@/lib/with-rate-limit", () => ({
 }));
 
 // Canonical email layer — spy on sends so we can assert the audit-tool notify.
-vi.mock("@/lib/email", () => ({
-  sendEmail: vi.fn().mockResolvedValue({ ok: true }),
-  SENDERS: { notifications: "StorageAds <notifications@storageads.com>" },
-}));
+vi.mock("@/lib/email", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/email")>("@/lib/email");
+  return {
+    ...actual,
+    sendEmail: vi.fn().mockResolvedValue({ ok: true }),
+  };
+});
 
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
@@ -93,7 +96,7 @@ describe("POST /api/consumer-lead", () => {
     expect(m.partial_leads.create).not.toHaveBeenCalled();
   });
 
-  it("notifies Blake on an audit_tool lead", async () => {
+  it("notifies Blake and Angelo on an audit_tool lead", async () => {
     await post({
       sessionId: "audit_abc",
       email: "op@example.com",
@@ -107,6 +110,9 @@ describe("POST /api/consumer-lead", () => {
     expect(arg.from).toBe("StorageAds <notifications@storageads.com>");
     expect(arg.subject).toContain("Sunset Storage");
     expect(arg.html).toContain("op@example.com");
+    expect(arg.to).toEqual(
+      expect.arrayContaining(["blake@storageads.com", "angelo@storageads.com"])
+    );
   });
 
   it("does NOT notify for non-audit-tool sources (e.g. landing pages)", async () => {
