@@ -12,8 +12,7 @@ import { POPUP_STEPS } from "@/lib/intake/questions";
 import { useHumanProof } from "@/lib/use-human-proof";
 
 const STORAGE_KEY = "sa_homepage_lead_dismissed";
-const SHOW_DELAY_MS = 8000;
-const MOBILE_FALLBACK_MS = 12000;
+const SHOW_DELAY_MS = 2000;
 const INK = "#16161A";
 
 export default function HomepageLeadPopup() {
@@ -26,7 +25,8 @@ export default function HomepageLeadPopup() {
 
   const remember = useCallback((value: "dismissed" | "submitted") => {
     try {
-      localStorage.setItem(STORAGE_KEY, value);
+      if (value === "submitted") localStorage.setItem(STORAGE_KEY, "submitted");
+      else sessionStorage.setItem(STORAGE_KEY, "dismissed");
     } catch {
       /* private mode */
     }
@@ -34,7 +34,8 @@ export default function HomepageLeadPopup() {
 
   const alreadyHandled = useCallback(() => {
     try {
-      return Boolean(localStorage.getItem(STORAGE_KEY));
+      if (localStorage.getItem(STORAGE_KEY) === "submitted") return true;
+      return sessionStorage.getItem(STORAGE_KEY) === "dismissed";
     } catch {
       return false;
     }
@@ -60,9 +61,6 @@ export default function HomepageLeadPopup() {
     if (alreadyHandled()) return;
 
     const delay = window.setTimeout(open, SHOW_DELAY_MS);
-    const mobileFallback = window.setTimeout(() => {
-      if (window.matchMedia("(max-width: 767px)").matches) open();
-    }, MOBILE_FALLBACK_MS);
 
     const onMouseLeave = (e: MouseEvent) => {
       if (e.clientY <= 8) open();
@@ -71,7 +69,6 @@ export default function HomepageLeadPopup() {
 
     return () => {
       window.clearTimeout(delay);
-      window.clearTimeout(mobileFallback);
       document.documentElement.removeEventListener("mouseleave", onMouseLeave);
     };
   }, [alreadyHandled, open]);
