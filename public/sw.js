@@ -34,9 +34,10 @@ self.addEventListener("fetch", (event) => {
   // Only handle GET requests
   if (request.method !== "GET") return;
 
-  // Skip API routes — always go to network
+  // Skip API routes and Vercel analytics beacons — always go to network.
   const url = new URL(request.url);
   if (url.pathname.startsWith("/api/")) return;
+  if (url.pathname.startsWith("/_vercel/")) return;
 
   // Network-first strategy for navigation (HTML pages)
   if (request.mode === "navigate") {

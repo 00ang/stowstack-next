@@ -46,7 +46,7 @@ import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { issueChallenge, issueMathProblem, solveChallenge } from "@/lib/human-check/server";
 import { scoreAndStore } from "@/lib/intake/score-lead";
-import { PATCH, POST } from "../route";
+import { GET, PATCH, POST } from "../route";
 
 const m = db as unknown as {
   facilities: {
@@ -328,6 +328,30 @@ describe("POST /api/audit-form", () => {
     expect(m.facilities.create.mock.calls[0][0].data.contact_phone).toBe("+441415550100");
   });
 
+  it("rejects a bot before a saved answer is changed", async () => {
+    vi.mocked(checkBotId).mockResolvedValueOnce({
+      isBot: true,
+      isHuman: false,
+      isVerifiedBot: false,
+      bypassed: false,
+      verifiedBotName: undefined,
+      verifiedBotCategory: undefined,
+      classificationReason: undefined,
+    });
+    m.facilities.findFirst.mockResolvedValue({
+      id: "fac-1",
+      intake_answers: { source: "homepage_popup", consent: true },
+    });
+    const res = await patch({
+      facilityId: "fac-1",
+      intakeToken: "tok",
+      answers: { role: "Owner" },
+    });
+    expect(res.status).toBe(403);
+    expect(m.facilities.update).not.toHaveBeenCalled();
+    expect(scoreAndStore).not.toHaveBeenCalled();
+  });
+
   it("saves one answer and does not invent the ones still blank", async () => {
     m.facilities.findFirst.mockResolvedValue({
       id: "fac-1",
@@ -341,6 +365,8 @@ describe("POST /api/audit-form", () => {
     expect(res.status).toBe(200);
     const data = m.facilities.update.mock.calls[0][0].data;
     expect(data.intake_answers.role).toBe("Owner");
+    expect(data.intake_answers.progress.last_step).toBe("role");
+    expect(data.intake_answers.progress.reached.role).toEqual(expect.any(String));
     expect(data.intake_answers.occupancy).toBeUndefined();
     expect(data.intake_answers.units).toBeUndefined();
     expect(data.total_units).toBeUndefined();
@@ -364,7 +390,49 @@ describe("POST /api/audit-form", () => {
     expect(data.intake_answers.occupancy).toBeUndefined();
     expect(data.intake_answers.units).toBeUndefined();
     expect(data.intake_answers.role).toBe("Owner");
+    expect(data.intake_answers.progress.last_step).toBe("units");
+    expect(data.intake_answers.progress.skipped).toEqual(["occupancy", "units"]);
     expect(data.occupancy_range).toBeNull();
     expect(data.total_units).toBeNull();
+  });
+});
+
+describe("GET /api/audit-form", () => {
+  it("stamps audit start once when the diagnostic link is opened", async () => {
+    m.facilities.findUnique.mockResolvedValue({
+      id: "fac-1",
+      contact_name: "Pat",
+      contact_email: null,
+      contact_phone: "+15125550123",
+      name: "Homepage inquiry",
+      location: "Not provided",
+      intake_answers: { source: "homepage_popup", role: "Owner" },
+    });
+
+    const first = await GET(
+      createMockRequest("http://localhost:3000/api/audit-form?token=tok")
+    );
+    expect(first.status).toBe(200);
+    const saved = m.facilities.update.mock.calls[0][0].data.intake_answers;
+    expect(saved.role).toBe("Owner");
+    expect(saved.progress.audit_started_at).toEqual(expect.any(String));
+    expect(saved.occupancy).toBeUndefined();
+
+    m.facilities.findUnique.mockResolvedValue({
+      id: "fac-1",
+      contact_name: "Pat",
+      contact_email: null,
+      contact_phone: "+15125550123",
+      name: "Homepage inquiry",
+      location: "Not provided",
+      intake_answers: saved,
+    });
+    m.facilities.update.mockClear();
+
+    const second = await GET(
+      createMockRequest("http://localhost:3000/api/audit-form?token=tok")
+    );
+    expect(second.status).toBe(200);
+    expect(m.facilities.update).not.toHaveBeenCalled();
   });
 });
