@@ -22,6 +22,7 @@ export default function HomepageLeadPopup() {
   const [token, setToken] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const human = useHumanProof(show);
+  const [mathAnswer, setMathAnswer] = useState("");
 
   const remember = useCallback((value: "dismissed" | "submitted") => {
     try {
@@ -179,11 +180,14 @@ export default function HomepageLeadPopup() {
           <IntakeWizard
             steps={POPUP_STEPS}
             showContact
+            mathProblem={human.math}
+            mathAnswer={mathAnswer}
+            onMathAnswer={setMathAnswer}
             onCreate={async (input) => {
               const controller = new AbortController();
               const timeoutId = window.setTimeout(() => controller.abort(), 15000);
               try {
-                const humanProof = await human.proof();
+                const gate = await human.load();
                 const res = await fetch("/api/audit-form", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -195,12 +199,17 @@ export default function HomepageLeadPopup() {
                     consent: input.consent,
                     website_url: input.website,
                     elapsedSeconds: input.elapsedSeconds,
-                    ...(humanProof ? { humanProof } : {}),
+                    humanProof: gate.humanProof,
+                    mathProblem: gate.math,
+                    mathAnswer: input.mathAnswer,
                   }),
                 });
                 const payload = await res.json().catch(() => null);
                 if (!res.ok || !payload?.facilityId || !payload?.intakeToken) {
-                  if (res.status === 403) human.invalidate();
+                  if (res.status === 403) {
+                    setMathAnswer("");
+                    void human.refresh();
+                  }
                   if (res.status === 429) throw new Error("Too many requests. Try again in a minute.");
                   throw new Error(payload?.error || "Couldn't send. Please try again.");
                 }

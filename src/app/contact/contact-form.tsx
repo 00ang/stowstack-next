@@ -5,12 +5,14 @@ import Link from "next/link";
 import { ArrowLeft, Check } from "lucide-react";
 import { CAL_BOOKING_URL } from "@/lib/booking";
 import { useHumanProof } from "@/lib/use-human-proof";
+import { MathCheck } from "@/components/marketing/math-check";
 
 export default function ContactForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const human = useHumanProof(true);
+  const [mathAnswer, setMathAnswer] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,7 +23,7 @@ export default function ContactForm() {
     const form = new FormData(e.currentTarget);
     const payload = Object.fromEntries(form) as Record<string, string>;
     if (payload.website_url?.trim()) {
-      setSubmitted(true);
+      setError("That request was not accepted.");
       setSubmitting(false);
       return;
     }
@@ -30,7 +32,7 @@ export default function ContactForm() {
     const timeoutId = window.setTimeout(() => controller.abort(), 20000);
 
     try {
-      const humanProof = await human.proof();
+      const gate = await human.load();
       const res = await fetch("/api/audit-form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -40,14 +42,17 @@ export default function ContactForm() {
           email: payload.email,
           phone: payload.phone,
           message: payload.message,
-          ...(humanProof ? { humanProof } : {}),
+          humanProof: gate.humanProof,
+          mathProblem: gate.math,
+          mathAnswer,
         }),
         signal: controller.signal,
       });
       if (res.ok) {
         setSubmitted(true);
       } else if (res.status === 403) {
-        human.invalidate();
+        setMathAnswer("");
+        void human.refresh();
         const body = await res.json().catch(() => null);
         setError(body?.error || "Confirm this browser before sending.");
       } else if (res.status === 429) {
@@ -173,7 +178,8 @@ export default function ContactForm() {
               className="input-field"
               aria-label="Message"
             />
-            <button type="submit" disabled={submitting} className="btn-primary w-full">
+            <MathCheck problem={human.math} value={mathAnswer} onChange={setMathAnswer} />
+            <button type="submit" disabled={submitting || !human.math} className="btn-primary w-full">
               {submitting ? "Sending…" : "Send message"}
             </button>
             {error && (

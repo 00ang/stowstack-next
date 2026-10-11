@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { createHmac, randomBytes, randomInt, timingSafeEqual } from "crypto";
 import { Redis } from "@upstash/redis";
 import {
   canonicalChallenge,
@@ -7,10 +7,11 @@ import {
   MAX_COUNTER,
   meetsDifficulty,
   type Challenge,
+  type MathProblem,
   type Proof,
 } from "@/lib/human-check/shared";
 
-export type { Challenge, Proof };
+export type { Challenge, MathProblem, Proof };
 
 const usedNonces = new Set<string>();
 const USED_CAP = 5_000;
@@ -98,6 +99,84 @@ export async function verifyHumanProof(
   }
   if (!(await claimNonce(proof.nonce))) return { ok: false, reason: "replay" };
   return { ok: true };
+}
+
+export function issueMathProblem(now = Date.now()): MathProblem | null {
+  const secret = humanCheckSecret();
+  if (!secret) return null;
+  const a = randomInt(2, 10);
+  const b = randomInt(2, 10);
+  const nonce = randomBytes(16).toString("hex");
+  const expiresAt = now + CHALLENGE_TTL_MS;
+  return {
+    nonce,
+    a,
+    b,
+    expiresAt,
+    signature: sign(secret, mathMessage(nonce, a, b, expiresAt)),
+  };
+}
+
+export type MathFailure = "missing" | "malformed" | "signature" | "expired" | "wrong" | "replay";
+
+export async function verifyMathAnswer(
+  problem: unknown,
+  answer: unknown,
+  now = Date.now()
+): Promise<{ ok: true } | { ok: false; reason: MathFailure }> {
+  const secret = humanCheckSecret();
+  if (!secret) return { ok: false, reason: "missing" };
+  if (problem == null || answer == null || answer === "") return { ok: false, reason: "missing" };
+  if (!isMathProblem(problem)) return { ok: false, reason: "malformed" };
+
+  const expectedSig = sign(secret, mathMessage(problem.nonce, problem.a, problem.b, problem.expiresAt));
+  if (!safeEqual(expectedSig, problem.signature)) return { ok: false, reason: "signature" };
+  if (problem.expiresAt < now) return { ok: false, reason: "expired" };
+  if (!(await claimNonce(problem.nonce))) return { ok: false, reason: "replay" };
+
+  const given = typeof answer === "number" ? String(answer) : typeof answer === "string" ? answer.trim() : "";
+  if (!/^\d{1,3}$/.test(given) || Number(given) !== problem.a + problem.b) {
+    return { ok: false, reason: "wrong" };
+  }
+  return { ok: true };
+}
+
+export function mathAnswerError(reason: MathFailure) {
+  switch (reason) {
+    case "wrong":
+      return "That answer wasn't right. Try the new question.";
+    case "expired":
+      return "That question expired. Answer the new one.";
+    case "replay":
+      return "That question was already used. Answer the new one.";
+    default:
+      return "Answer the math question before sending.";
+  }
+}
+
+function mathMessage(nonce: string, a: number, b: number, expiresAt: number) {
+  return `math.${nonce}.${a}.${b}.${expiresAt}`;
+}
+
+function isMathProblem(value: unknown): value is MathProblem {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.nonce === "string" &&
+    /^[a-f0-9]{32}$/.test(record.nonce) &&
+    typeof record.a === "number" &&
+    typeof record.b === "number" &&
+    Number.isInteger(record.a) &&
+    Number.isInteger(record.b) &&
+    record.a >= 2 &&
+    record.a <= 9 &&
+    record.b >= 2 &&
+    record.b <= 9 &&
+    typeof record.expiresAt === "number" &&
+    Number.isFinite(record.expiresAt) &&
+    typeof record.signature === "string" &&
+    /^[a-f0-9]{64}$/.test(record.signature)
+  );
 }
 
 export function humanProofError(reason: ProofFailure) {

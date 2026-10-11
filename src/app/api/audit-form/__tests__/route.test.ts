@@ -21,6 +21,7 @@ vi.mock("@/lib/intake/score-lead", () => ({
 
 vi.mock("@/lib/with-rate-limit", () => ({
   applyRateLimit: vi.fn().mockResolvedValue(null),
+  applyRateLimitStrict: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("@/lib/email", async () => {
@@ -33,7 +34,7 @@ vi.mock("@/lib/email", async () => {
 
 import { db } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-import { issueChallenge, solveChallenge } from "@/lib/human-check/server";
+import { issueChallenge, issueMathProblem, solveChallenge } from "@/lib/human-check/server";
 import { scoreAndStore } from "@/lib/intake/score-lead";
 import { PATCH, POST } from "../route";
 
@@ -80,8 +81,14 @@ const valid = {
 
 function proved(body: Record<string, unknown>) {
   const challenge = issueChallenge();
-  if (!challenge) throw new Error("expected a challenge");
-  return { ...body, humanProof: solveChallenge(challenge) };
+  const math = issueMathProblem();
+  if (!challenge || !math) throw new Error("expected a challenge");
+  return {
+    ...body,
+    humanProof: solveChallenge(challenge),
+    mathProblem: math,
+    mathAnswer: String(math.a + math.b),
+  };
 }
 
 beforeEach(() => {
@@ -131,7 +138,7 @@ describe("POST /api/audit-form", () => {
     expect(m.activity_log.create).toHaveBeenCalled();
   });
 
-  it("drops a proved request whose name, facility, and city are random tokens", async () => {
+  it("rejects a proved request whose name, facility, and city are random tokens", async () => {
     const res = await post(
       proved({
         name: "PpGLJz0lct",
@@ -140,12 +147,32 @@ describe("POST /api/audit-form", () => {
         location: "g8cDAvrmd4",
       })
     );
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(json).toEqual({ success: true });
+    expect(res.status).toBe(400);
     expect(m.facilities.create).not.toHaveBeenCalled();
     expect(notify).not.toHaveBeenCalled();
     expect(m.activity_log.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a correct browser check when the math answer is wrong", async () => {
+    const body = proved(valid);
+    const res = await post({ ...body, mathAnswer: "0" });
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(json.error).toMatch(/wasn't right/);
+    expect(m.facilities.create).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("rejects a second try that reuses the same math question", async () => {
+    const body = proved(valid);
+    const first = await post(body);
+    expect(first.status).toBe(200);
+    const challenge = issueChallenge();
+    if (!challenge) throw new Error("expected a challenge");
+    const second = await post({ ...body, humanProof: solveChallenge(challenge) });
+    expect(second.status).toBe(403);
+    expect(m.facilities.create).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledTimes(1);
   });
 
   it("rejects a scripted post before saving a lead or emailing anyone", async () => {
@@ -247,7 +274,7 @@ describe("POST /api/audit-form", () => {
     expect(m.facilities.create).not.toHaveBeenCalled();
   });
 
-  it("saves a honeypot hit and sorts it last instead of dropping it", async () => {
+  it("rejects a honeypot without saving a lead or sending email", async () => {
     const res = await post(
       proved({
         source: "homepage_popup",
@@ -257,13 +284,8 @@ describe("POST /api/audit-form", () => {
         website_url: "https://spam.test",
       })
     );
-    expect(res.status).toBe(200);
-    expect(m.facilities.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        sort_last: true,
-        sort_last_reason: "A hidden field was filled.",
-      }),
-    });
+    expect(res.status).toBe(400);
+    expect(m.facilities.create).not.toHaveBeenCalled();
     expect(notify).not.toHaveBeenCalled();
   });
 

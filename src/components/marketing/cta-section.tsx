@@ -9,6 +9,7 @@ import { CAL_BOOKING_URL, CAL_EMBED_SLUG } from "@/lib/booking";
 import Cite from "./cite";
 import { RevealText } from "./motion";
 import { useHumanProof } from "@/lib/use-human-proof";
+import { MathCheck } from "@/components/marketing/math-check";
 
 const TRUST_SIGNALS = [
   { icon: Shield, text: "No long-term contracts" },
@@ -30,6 +31,7 @@ export default function CTASection() {
   const calContainerRef = useRef<HTMLDivElement>(null);
   const calInitRef = useRef(false);
   const human = useHumanProof(true);
+  const [mathAnswer, setMathAnswer] = useState("");
 
   // Initialize Cal.com embed using the official snippet pattern.
   // The snippet defines window.Cal as a queue, then loads the embed script,
@@ -170,28 +172,35 @@ export default function CTASection() {
     // input. If filled, drop the submission silently with a fake "success"
     // so bots don't get feedback to iterate.
     if (data.website_url && data.website_url.trim() !== "") {
-      setIsSubmitted(true);
+      setSubmitError("That request was not accepted.");
       setIsSubmitting(false);
       return;
     }
     delete data.website_url;
+    delete data.math_answer;
 
     // 20s timeout so a hung network never leaves the user stuck on "Sending..."
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     try {
-      const humanProof = await human.proof();
+      const gate = await human.load();
       const res = await fetch("/api/audit-form", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, ...(humanProof ? { humanProof } : {}) }),
+        body: JSON.stringify({
+          ...data,
+          humanProof: gate.humanProof,
+          mathProblem: gate.math,
+          mathAnswer,
+        }),
         signal: controller.signal,
       });
       if (res.ok) {
         setIsSubmitted(true);
       } else if (res.status === 403) {
-        human.invalidate();
+        setMathAnswer("");
+        void human.refresh();
         const payload = await res.json().catch(() => null);
         setSubmitError(payload?.error || "Confirm this browser before sending.");
       } else if (res.status === 429) {
@@ -441,9 +450,11 @@ export default function CTASection() {
                   )}
                 </div>
 
+                <MathCheck problem={human.math} value={mathAnswer} onChange={setMathAnswer} />
+
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !human.math}
                   className="btn-primary w-full"
                 >
                   {isSubmitting ? "Submitting..." : "Request audit"}

@@ -16,6 +16,15 @@ export type Proof = Challenge & {
   counter: number;
 };
 
+/** Addition problem. The answer is not included; the signature covers both numbers. */
+export type MathProblem = {
+  nonce: string;
+  a: number;
+  b: number;
+  expiresAt: number;
+  signature: string;
+};
+
 export function proofMessage(nonce: string, counter: number) {
   return `${nonce}:${counter}`;
 }

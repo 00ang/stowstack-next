@@ -2,17 +2,20 @@ import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { corsResponse, getOrigin } from "@/lib/api-helpers";
-import { applyRateLimit } from "@/lib/with-rate-limit";
+import { applyRateLimitStrict } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidEmail, sanitizeString, escapeHtml } from "@/lib/validation";
 import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
-import { humanProofError, verifyHumanProof } from "@/lib/human-check/server";
+import { humanProofError, mathAnswerError, verifyHumanProof, verifyMathAnswer } from "@/lib/human-check/server";
 import { leadTextIsAutomated } from "@/lib/spam-text";
 import { answersJson, mergeIntakeAnswers } from "@/lib/intake/merge-answers";
 import { intakePhone, PHONE_SERVER_ERROR } from "@/lib/intake/phone";
-import { neutralSortReason, scoreAndStore } from "@/lib/intake/score-lead";
+import { scoreAndStore } from "@/lib/intake/score-lead";
 
 const HOMEPAGE_SOURCES = new Set(["homepage_popup", "contact"]);
+
+/** Caps a slow script that stays under the per-minute limit. */
+const AUDIT_HOURLY = { requests: 30, windowSeconds: 60 * 60 };
 
 const OFFER_NOTE =
   "Offer: first month of StorageAds fee free from ads going live; operator pays ad spend. Source: homepage popup.";
@@ -22,7 +25,7 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const limited = await applyRateLimit(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
+  const limited = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
   if (limited) return limited;
 
   const token = new URL(request.url).searchParams.get("token") || "";
@@ -56,8 +59,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const limited = await applyRateLimit(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
+  const limited = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
   if (limited) return limited;
+  const hourly = await applyRateLimitStrict(request, AUDIT_HOURLY, "audit-form-hour");
+  if (hourly) return hourly;
 
   try {
     const body = await request.json();
@@ -101,7 +106,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
       }
     } else if (source === "contact") {
-      if (honeypot) return NextResponse.json({ success: true });
       if (!name || !email) {
         return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
       }
@@ -112,7 +116,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: PHONE_SERVER_ERROR }, { status: 400 });
       }
     } else {
-      if (honeypot) return NextResponse.json({ success: true });
       if (!name || !email || !facilityName || !location) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
       }
@@ -121,17 +124,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (honeypot) {
+      return NextResponse.json({ error: "That request was not accepted." }, { status: 400 });
+    }
+
+    const math = await verifyMathAnswer(body.mathProblem, body.mathAnswer);
+    if (!math.ok) {
+      return NextResponse.json({ error: mathAnswerError(math.reason) }, { status: 403 });
+    }
+
     const proof = await verifyHumanProof(body.humanProof);
     if (!proof.ok) {
       return NextResponse.json({ error: humanProofError(proof.reason) }, { status: 403 });
     }
 
-    // A solved browser check still lets a headless browser through. Random
-    // tokens in the name, facility, or city are not a real audit request.
-    // Pretend it saved so the bot does not rewrite the fields and try again.
+    // A correct math answer can still be scripted. Random tokens are not a
+    // facility, and they are rejected before a row or an email exists.
     if (leadTextIsAutomated({ name, facilityName, location })) {
-      console.info("[audit-form] dropped random field text");
-      return NextResponse.json({ success: true });
+      console.info("[audit-form] rejected random field text");
+      return NextResponse.json(
+        { error: "Use the real facility name and city." },
+        { status: 400 }
+      );
     }
 
     const resolvedFacilityName =
@@ -148,7 +162,6 @@ export async function POST(request: NextRequest) {
             : null;
 
     const intakeToken = source === "homepage_popup" ? randomBytes(24).toString("hex") : null;
-    const hidden = Boolean(honeypot) && source === "homepage_popup";
 
     const facility = await db.facilities.create({
       data: {
@@ -176,19 +189,16 @@ export async function POST(request: NextRequest) {
               intake_answers: answersJson({
                 source: "homepage_popup",
                 consent: true,
-                ...(hidden ? { hidden_field_filled: true } : {}),
                 ...(typeof body.elapsedSeconds === "number"
                   ? { seconds_to_complete: body.elapsedSeconds }
                   : {}),
               }),
-              sort_last: hidden,
-              sort_last_reason: hidden ? neutralSortReason(true) : null,
             }
           : {}),
       },
     });
 
-    if (source === "homepage_popup" && !hidden) {
+    if (source === "homepage_popup") {
       void scoreAndStore(facility.id).catch((err) =>
         console.error("[jev] score after create failed:", err)
       );
@@ -212,7 +222,7 @@ export async function POST(request: NextRequest) {
       })
       .catch((err) => console.error("[activity_log] Fire-and-forget failed:", err));
 
-    if (!hidden) {
+    {
       const subject =
         source === "homepage_popup"
           ? `Homepage lead (first month of StorageAds free): ${escapeHtml(name)}`
@@ -260,7 +270,7 @@ export async function POST(request: NextRequest) {
  * invent a value for the ones still blank.
  */
 export async function PATCH(request: NextRequest) {
-  const limited = await applyRateLimit(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
+  const limited = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
   if (limited) return limited;
 
   try {
