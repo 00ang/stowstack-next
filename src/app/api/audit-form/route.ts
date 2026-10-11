@@ -14,9 +14,6 @@ import { scoreAndStore } from "@/lib/intake/score-lead";
 
 const HOMEPAGE_SOURCES = new Set(["homepage_popup", "contact"]);
 
-/** Caps a slow script that stays under the per-minute limit. */
-const AUDIT_HOURLY = { requests: 30, windowSeconds: 60 * 60 };
-
 const OFFER_NOTE =
   "Offer: first month of StorageAds fee free from ads going live; operator pays ad spend. Source: homepage popup.";
 
@@ -61,7 +58,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const limited = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.PUBLIC_WRITE, "audit-form");
   if (limited) return limited;
-  const hourly = await applyRateLimitStrict(request, AUDIT_HOURLY, "audit-form-hour");
+  const hourly = await applyRateLimitStrict(request, RATE_LIMIT_TIERS.AUDIT_FORM_HOURLY, "audit-form-hour");
   if (hourly) return hourly;
 
   try {
