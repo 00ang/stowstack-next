@@ -9,10 +9,13 @@ import { GET, POST } from "../route";
 vi.mock("@vercel/blob", () => ({
   put: vi.fn(async () => ({ url: "https://blob.example/report.csv" })),
 }));
-vi.mock("@/lib/email", () => ({
-  SENDERS: { notifications: "notifications@storageads.com" },
-  sendEmail: vi.fn(),
-}));
+vi.mock("@/lib/email", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/email")>("@/lib/email");
+  return {
+    ...actual,
+    sendEmail: vi.fn(),
+  };
+});
 
 /** Build an authenticated multipart portal-upload POST with a real File. */
 function uploadPost(file: File) {

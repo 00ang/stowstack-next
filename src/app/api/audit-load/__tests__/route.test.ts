@@ -15,10 +15,13 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn().mockResolvedValue({ allowed: true }),
 }));
 
-vi.mock("@/lib/email", () => ({
-  sendEmail: vi.fn().mockResolvedValue({ ok: true }),
-  SENDERS: { notifications: "StorageAds <notifications@storageads.com>" },
-}));
+vi.mock("@/lib/email", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/email")>("@/lib/email");
+  return {
+    ...actual,
+    sendEmail: vi.fn().mockResolvedValue({ ok: true }),
+  };
+});
 
 import { db } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -97,6 +100,9 @@ describe("GET /api/audit-load", () => {
     const arg = notify.mock.calls[0][0];
     expect(arg.subject).toContain("Audit Opened");
     expect(arg.idempotencyKey).toBe("audit-first-view:aud-1");
+    expect(arg.to).toEqual(
+      expect.arrayContaining(["blake@storageads.com", "angelo@storageads.com"])
+    );
   });
 
   it("fires the hot-lead alert exactly when crossing the 3-view threshold", async () => {

@@ -7,7 +7,7 @@ import {
   getOrigin,
   corsResponse,
 } from "@/lib/api-helpers";
-import { SENDERS, sendEmail } from "@/lib/email";
+import { SENDERS, sendEmail, submissionNotifyRecipients } from "@/lib/email";
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidEmail, escapeHtml, sanitizeString } from "@/lib/validation";
@@ -407,7 +407,7 @@ export async function POST(req: NextRequest) {
     // Send notification email (fire-and-forget).
     void sendEmail({
       from: SENDERS.notifications,
-      to: [process.env.ADMIN_EMAIL || "blake@storageads.com"],
+      to: submissionNotifyRecipients(),
       subject: `[Score: ${leadScore}] New Diagnostic: ${escapeHtml(facilityName)}`,
       tags: [{ name: "type", value: "diagnostic_intake" }],
       html: `

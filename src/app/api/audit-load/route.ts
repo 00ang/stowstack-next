@@ -7,7 +7,7 @@ import {
   corsResponse,
 } from "@/lib/api-helpers";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { sendEmail, SENDERS } from "@/lib/email";
+import { sendEmail, SENDERS, submissionNotifyRecipients } from "@/lib/email";
 import { escapeHtml } from "@/lib/validation";
 
 export async function OPTIONS(req: NextRequest) {
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       const auditJson = record.audit_json as Record<string, unknown> | null;
       const overallScore = escapeHtml(String(auditJson?.overallScore ?? "N/A"));
       const facilityName = escapeHtml(record.facility_name || "Unknown Facility");
-      const adminEmail = process.env.ADMIN_EMAIL || "blake@storageads.com";
+      const adminEmail = submissionNotifyRecipients();
       const auditUrl = `https://storageads.com/audit/${slug}`;
 
       if (currentViews === 0) {

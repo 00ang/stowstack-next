@@ -4,7 +4,7 @@ import { jsonResponse, errorResponse, getOrigin, corsResponse } from "@/lib/api-
 import { applyRateLimit } from "@/lib/with-rate-limit";
 import { RATE_LIMIT_TIERS } from "@/lib/rate-limit-tiers";
 import { isValidEmail, sanitizeString, escapeHtml } from "@/lib/validation";
-import { sendEmail, SENDERS } from "@/lib/email";
+import { sendEmail, SENDERS, submissionNotifyRecipients } from "@/lib/email";
 import { respondToNewLeadSafely, scheduleSpeedCheck } from "@/lib/respond/speed-to-lead";
 import { enqueue } from "@/lib/jobs/queue";
 import { identifyFromRequest } from "@/lib/attribution/visitor";
@@ -35,7 +35,7 @@ function notifyAuditLead(fields: {
   // Owner notification via the canonical email layer (validate/retry/skip-on-no-key).
   void sendEmail({
     from: SENDERS.notifications,
-    to: process.env.ADMIN_EMAIL || "blake@storageads.com",
+    to: submissionNotifyRecipients(),
     subject: `New Audit-Tool Lead: ${facilityName}`,
     html: `
       <h2>New Audit-Tool Lead</h2>
