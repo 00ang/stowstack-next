@@ -4,6 +4,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { clearOntologyCache, useOntology } from "@/components/ontology/use-ontology";
 import { goalPace, type FlowMove, type GoalState, type Pace, type Where, type WorkingOn } from "@/lib/flow";
 import type { Ontology } from "@/lib/ontology/types";
+import { useDiagnosis } from "./use-diagnosis";
+import type { FunnelSuggestion } from "@/lib/diagnose/suggest";
+import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
 
 /**
  * The thread through the portal: the facility's ontology, the month's goal and
@@ -48,6 +51,14 @@ interface FlowValue {
   setShown: (move: FlowMove | null) => void;
   /** Re-read the ontology and the goal now (something just changed that the next move should see). */
   refresh: () => void;
+  /** Suggested funnels, ranked, with dismissed ones removed. */
+  suggestions: FunnelSuggestion[];
+  /** Sources that would sharpen the list. */
+  diagnosisNudges: string[];
+  /** Why the list moved since the last read. Null until something changes. */
+  diagnosisLine: string | null;
+  diagnosisLoading: boolean;
+  dismissSuggestion: (id: string, evidenceKey: string) => void;
 }
 
 const FlowCtx = createContext<FlowValue | null>(null);
@@ -169,6 +180,14 @@ export function FlowProvider({
 
   const today = new Date().toISOString().slice(0, 10);
   const pace = useMemo(() => goalPace(goal, new Date(`${today}T12:00:00Z`)), [goal, today]);
+  const reloadToken = `${ontology.data?.generatedAt ?? ""}:${goalVersion}`;
+  const diagnosis = useDiagnosis({
+    facilityId,
+    authFetch,
+    reloadToken,
+    ontology: ontology.data,
+    sample: isPortalDemo(),
+  });
 
   const value = useMemo<FlowValue>(
     () => ({
@@ -186,8 +205,30 @@ export function FlowProvider({
       shown,
       setShown,
       refresh,
+      suggestions: diagnosis.suggestions,
+      diagnosisNudges: diagnosis.nudges,
+      diagnosisLine: diagnosis.line,
+      diagnosisLoading: diagnosis.loading,
+      dismissSuggestion: diagnosis.dismiss,
     }),
-    [facilityId, ontology.data, ontology.loading, goal, pace, working, setWorking, override, where, shown, refresh],
+    [
+      facilityId,
+      ontology.data,
+      ontology.loading,
+      goal,
+      pace,
+      working,
+      setWorking,
+      override,
+      where,
+      shown,
+      refresh,
+      diagnosis.suggestions,
+      diagnosis.nudges,
+      diagnosis.line,
+      diagnosis.loading,
+      diagnosis.dismiss,
+    ],
   );
 
   return <FlowCtx.Provider value={value}>{children}</FlowCtx.Provider>;

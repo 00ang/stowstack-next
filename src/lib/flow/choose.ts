@@ -52,7 +52,7 @@ export interface WorkingOn {
 export interface FlowMove {
   /** Stable id, so a list can skip the move the bar already shows. */
   id: string;
-  source: "facility" | "campaign" | "goal";
+  source: "facility" | "campaign" | "goal" | "suggest";
   sentence: string;
   reason: string;
   /** One plain line on why it matters, when the facility's numbers can say it. */
@@ -173,15 +173,41 @@ function goalMove(pace: Pace | null, ontology: Ontology, where: Where): FlowMove
   };
 }
 
+/** The top suggested funnel, when the diagnose layer has one. */
+export interface SuggestedNext {
+  id: string;
+  sentence: string;
+  reason: string;
+  why?: string;
+}
+
 export interface ChooseInput {
   ontology: Ontology | null;
   pace: Pace | null;
   working: WorkingOn | null;
   where: Where;
+  /** Ranked diagnose suggestion. Omitted, the bar behaves as before. */
+  suggestion?: SuggestedNext | null;
+}
+
+function fromSuggestion(suggestion: SuggestedNext, where: Where): FlowMove {
+  const href = `/portal/campaigns?build=${encodeURIComponent(suggestion.id)}`;
+  return {
+    id: `suggest:${suggestion.id}`,
+    source: "suggest",
+    sentence: suggestion.sentence,
+    reason: suggestion.reason,
+    why: suggestion.why,
+    label: "Build this funnel",
+    href,
+    here: isHere(href, where),
+    subject: null,
+    type: "campaigns",
+  };
 }
 
 /** The one next move for `where`, or null when nothing needs the operator. */
-export function chooseMove({ ontology, pace, working, where }: ChooseInput): FlowMove | null {
+export function chooseMove({ ontology, pace, working, where, suggestion }: ChooseInput): FlowMove | null {
   if (!ontology) return null;
   const moves = ontology.moves;
 
@@ -205,10 +231,19 @@ export function chooseMove({ ontology, pace, working, where }: ChooseInput): Flo
     if (campaign) return campaign;
   }
 
-  // 4. The month's goal.
+  // 4. A goal that hasn't been set still comes first. The suggestions aim at it.
+  if (pace && pace.target <= 0) {
+    const unset = goalMove(pace, ontology, where);
+    if (unset) return unset;
+  }
+
+  // 5. The top suggested funnel, from what the facility has shared.
+  if (suggestion) return fromSuggestion(suggestion, where);
+
+  // 6. Behind pace, with nothing live.
   const goal = goalMove(pace, ontology, where);
   if (goal) return goal;
 
-  // 5. The facility's top move.
+  // 7. The facility's top move.
   return moves[0] ? fromOntologyMove(moves[0], where) : null;
 }

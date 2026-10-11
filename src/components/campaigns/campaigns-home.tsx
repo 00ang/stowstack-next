@@ -21,9 +21,12 @@ import {
   templateBlurb,
   templateMeta,
   type FunnelContext,
+  type FunnelGoal,
   type FunnelGraph,
   type TemplateKey,
 } from "@/lib/funnel-graph";
+import { graphForSuggestion, type FunnelSuggestion } from "@/lib/diagnose/suggest";
+import { SuggestedForYou } from "./suggested";
 import { isPortalDemo } from "@/lib/portal-demo/demo-mode";
 import { funnelContextFromOntology } from "./context";
 import { NodeIcon } from "./icons";
@@ -223,6 +226,35 @@ function CampaignRow({ row }: { row: FunnelRow }) {
  * the one being worked on from then on. `before` runs first (onboarding
  * finishes itself there), so a failure stops before anything is created.
  */
+/** Open a suggested funnel as a draft. Nothing in it publishes. */
+export function useStartSuggestion(facilityId: string) {
+  const router = useRouter();
+  const flow = useFlow();
+  const [creatingId, setCreatingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const start = useCallback(
+    async (suggestion: FunnelSuggestion, goal: FunnelGoal | null, ctx: FunnelContext) => {
+      setCreatingId(suggestion.id);
+      setError(null);
+      try {
+        const graph = graphForSuggestion(suggestion, goal, ctx);
+        const created = await adminFetch<{ id: string }>("/api/funnels", {
+          method: "POST",
+          body: JSON.stringify({ facilityId, name: graph.name, archetype: "custom", config: { graph } }),
+        });
+        if (!created?.id) throw new Error("no id");
+        flow?.setWorking({ id: created.id, name: graph.name ?? suggestion.name, status: "draft", move: null });
+        router.push(campaignHref(created.id));
+      } catch {
+        setError("Couldn't start that funnel. Nothing was saved; try again.");
+        setCreatingId(null);
+      }
+    },
+    [facilityId, flow, router],
+  );
+  return { startSuggestion: start, creatingId, suggestionError: error };
+}
+
 export function useStartCampaign(facilityId: string) {
   const router = useRouter();
   const flow = useFlow();
@@ -262,24 +294,34 @@ export function CampaignsHome({ facilityId }: { facilityId: string }) {
   const params = useMemo(() => ({ facilityId }), [facilityId]);
   const { data: rows, loading, error, refetch } = useAdminFetch<FunnelRow[]>("/api/funnels", params);
   const { start, creating, error: createError } = useStartCampaign(facilityId);
+  const { startSuggestion, creatingId, suggestionError } = useStartSuggestion(facilityId);
+  const search = useSearchParams();
   // ?new=goal (the bar's "Start from your goal") opens the goal panel. Read
   // through the router so an in-app link sees its own URL, not the last page's.
-  const askedForNew = useSearchParams().get("new") === "goal";
+  const askedForNew = search.get("new") === "goal";
+  const buildId = search.get("build");
   const [panelOpenByHand, setPanelOpen] = useState(false);
   const panelOpen = panelOpenByHand || askedForNew;
 
   const ctx = useGoalContext(flow?.ontology ?? null, flow?.pace ?? null, sample);
   const suggestion = suggestTemplate(ctx);
+  const suggestions = flow?.suggestions ?? [];
+  const top = suggestions[0] ?? null;
+  const goal = ctx.goal ?? null;
 
-
-  // With nothing being built, the bar's move on this page is the goal-first build.
+  // The bar's move on this page builds the top suggestion, or the goal template
+  // when nothing has been diagnosed yet.
   const startRef = useRef((key: TemplateKey) => start(key, ctx));
+  const suggestRef = useRef<(s: FunnelSuggestion) => void>(() => {});
   useEffect(() => {
     startRef.current = (key: TemplateKey) => start(key, ctx);
+    suggestRef.current = (s: FunnelSuggestion) => void startSuggestion(s, goal, ctx);
   });
   const setOverride = flow?.setOverride;
   const working = flow?.working ?? null;
-  const reason = suggestion.because.join(" ");
+  const reason = top ? top.why.map((line) => line.text).join(" ") : suggestion.because.join(" ");
+  const overrideName = top?.name ?? templateMeta(suggestion.key).name;
+  const overrideLabel = top ? "Build this funnel" : "Build it";
   useEffect(() => {
     if (!setOverride) return;
     if (working) {
@@ -287,13 +329,25 @@ export function CampaignsHome({ facilityId }: { facilityId: string }) {
       return;
     }
     setOverride({
-      sentence: `Build "${templateMeta(suggestion.key).name}".`,
+      sentence: `Build "${overrideName}".`,
       reason,
-      label: "Build it",
-      onDo: () => void startRef.current(suggestion.key),
+      label: overrideLabel,
+      onDo: () => {
+        if (top) suggestRef.current(top);
+        else void startRef.current(suggestion.key);
+      },
     });
-  }, [setOverride, working, suggestion.key, reason]);
+  }, [setOverride, working, overrideName, reason, overrideLabel, top, suggestion.key]);
   useEffect(() => () => setOverride?.(null), [setOverride]);
+
+  const startedBuild = useRef<string | null>(null);
+  useEffect(() => {
+    if (!buildId || startedBuild.current === buildId) return;
+    const match = suggestions.find((s) => s.id === buildId);
+    if (!match) return;
+    startedBuild.current = buildId;
+    void startSuggestion(match, goal, ctx);
+  }, [buildId, suggestions, startSuggestion, goal, ctx]);
 
   const hasRows = !!rows && rows.length > 0;
 
@@ -313,6 +367,20 @@ export function CampaignsHome({ facilityId }: { facilityId: string }) {
           </ActionFill>
         )}
       </header>
+
+      <SuggestedForYou
+        suggestions={suggestions}
+        nudges={flow?.diagnosisNudges ?? []}
+        changeLine={flow?.diagnosisLine ?? null}
+        sample={sample}
+        loading={flow?.diagnosisLoading ?? false}
+        creatingId={creatingId}
+        error={suggestionError}
+        goal={goal}
+        ctx={ctx}
+        onBuild={(s) => void startSuggestion(s, goal, ctx)}
+        onDismiss={(s) => flow?.dismissSuggestion(s.id, s.evidenceKey)}
+      />
 
       {loading && !rows ? (
         <div className="flex items-center gap-2 py-10 text-[14px] font-semibold text-[var(--ic-secondary)]">

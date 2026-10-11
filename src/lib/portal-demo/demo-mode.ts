@@ -1,5 +1,6 @@
 import type { ClientData, PortalSession } from "@/lib/portal-helpers";
 import { buildOntology } from "@/lib/ontology/build";
+import { maplePicture } from "@/lib/diagnose/sample";
 import { DEMO_FACILITY_ID, demoRows } from "./demo-rows";
 import { demoFunnelsAnswer } from "./demo-funnels";
 import { clearDemoTools, demoGoalTarget, demoToolAnswer } from "./demo-tools";
@@ -134,6 +135,8 @@ function answer(url: URL, method: string, rawBody?: string): Answer {
   switch (path) {
     case "/api/portal-ontology":
       return ok(buildOntology(demoRows(now), now));
+    case "/api/facility-diagnosis":
+      return ok({ picture: maplePicture(now) });
     case "/api/attribution":
       return ok(attribution(url, now));
     case "/api/client-goals": {
